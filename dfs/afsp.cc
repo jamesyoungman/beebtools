@@ -10,10 +10,11 @@
 #include <regex.h>
 
 using std::string;
+using std::vector;
 
-namespace 
+namespace
 {
-  string render_regex_error(int code, regex_t* preg) 
+  string render_regex_error(int code, regex_t* preg)
   {
     string result;
     size_t msg_len = regerror(code, preg, NULL, 0);
@@ -25,38 +26,18 @@ namespace
     return result;
   }
 
-  std::vector<string> match_groups(const char *input,
-				   int max_match_count,
-				   regmatch_t matches[]) 
-  {
-    std::vector<string> result;
-    result.reserve(max_match_count);
-    for (int i = 0; i < max_match_count; ++i) 
-      {
-	if (matches[i].rm_so != -1)
-	  {
-	    result.emplace_back(input + matches[i].rm_so, input + matches[i].rm_eo);
-	  }
-	else
-	  {
-	    result.emplace_back();
-	  }
-      }
-    return result;
-  }
-
 #if defined(VERBOSE_FOR_TESTS)
   void display_matches(const char *reg_pattern, const string& input,
-		       const std::vector<string>& matches) 
+		       const std::vector<string>& matches)
   {
     std::cout << "Matches of regex " << reg_pattern
 	      << " for input " << input << ", "
 	      << matches.size() << " groups:\n";
     decltype (matches.size()) i;
-    for (i = 0; i < matches.size(); ++i) 
+    for (i = 0; i < matches.size(); ++i)
       {
 	std::cout << "Group " << std::setw(3) << i << ": ";
-	if (!matches[i].empty()) 
+	if (!matches[i].empty())
 	  std::cout << "matched " << matches[i];
 	else
 	  std::cout << "did not match";
@@ -65,7 +46,7 @@ namespace
   }
 #endif
 
-  string drive_prefix(int drive) 
+  string drive_prefix(int drive)
   {
     string result;
     result.reserve(3);
@@ -81,54 +62,150 @@ namespace
     result[0] = directory;
     return result;
   }
-  
+
+  class RegularExpression
+  {
+  public:
+    explicit RegularExpression(const string& pattern)
+      : pattern_(pattern) , called_regcomp_(false), error_message_("you must call Compile()"),
+	max_matches_(CountGroups(pattern))
+    {
+    }
+
+    ~RegularExpression()
+    {
+      if (called_regcomp_)
+	{
+	  regfree(&compiled_);
+	  called_regcomp_ = false;
+	}
+    }
+
+
+    bool Valid() const
+    {
+      return error_message_.empty();
+    }
+
+    bool Compile()
+    {
+      int regex_result;
+      called_regcomp_ = true;
+      if (0 != (regex_result=regcomp(&compiled_, pattern_.c_str(), REG_EXTENDED)))
+	error_message_ = render_regex_error(regex_result, &compiled_);
+      else
+	  error_message_.clear();
+      return Valid();
+    }
+
+    const string& ErrorMessage() const
+    {
+      return error_message_;
+    }
+
+    vector<string> Match(const char* s)
+    {
+      vector<regmatch_t> matches;
+      matches.resize(max_matches_);
+      const int regex_result = regexec(&compiled_, s, max_matches_, matches.data(), 0);
+      vector<string> groups;
+
+      if (0 == regex_result)
+	{
+	  error_message_.clear();
+	  ExtractMatches(s, matches, &groups);
+	}
+      else if (REG_NOMATCH == regex_result)
+	{
+	  error_message_.clear();
+	}
+      else
+	{
+	  error_message_.assign(render_regex_error(regex_result, &compiled_));
+	}
+      return groups;
+    }
+
+  // Disable copying and assignment.
+  RegularExpression& operator=(const RegularExpression&) = delete;
+  RegularExpression(const RegularExpression&) = delete;
+
+  private:
+    static size_t CountGroups(const string& s)
+    {
+      // This function does not understand escaping, so it
+      // over-estimates, but that's OK.
+      return 1 + std::count(s.begin(), s.end(), '(');
+    }
+
+    static void ExtractMatches(const char* input, const vector<regmatch_t>& matches, vector<string>* groups)
+    {
+      vector<string> result;
+      result.reserve(matches.size());
+      size_t last_nonempty = 0;
+      for (size_t i = 0; i < matches.size(); ++i)
+	{
+	  if (matches[i].rm_so == -1)
+	    {
+	      result.emplace_back();
+	    }
+	  else
+	    {
+	      last_nonempty = i;
+	      result.emplace_back(input + matches[i].rm_so, input + matches[i].rm_eo);
+	    }
+	}
+      result.resize(last_nonempty + 1);
+      std::swap(result, *groups);
+    }
+
+    string pattern_;
+    bool called_regcomp_;
+    string error_message_;
+    regex_t compiled_;
+    size_t max_matches_;
+  };
+
   bool qualify(const DFSContext& ctx, const string& filename,
 	       string* out, string* error_message)
   {
     static const char invalid[] = "not a valid file name";
-    regex_t drive_dir_name;
-    auto regex_fail =
-      [error_message, out, &drive_dir_name](int code) -> bool 
-      {
-	error_message->assign(render_regex_error(code, &drive_dir_name));
-	out->clear();
-	return false;
-      };
-			
     static const char *ddn_pat = "^"
       "(:[0-9][.])?"		// drive
       "([^.:#*][.])?"		// directory
       "([^.:#*]+)$";		// file name
-    int regex_result;
-    if (0 != (regex_result=regcomp(&drive_dir_name, ddn_pat, REG_EXTENDED)))
-      return regex_fail(regex_result);
-    enum { NMATCHES = 4 };
-    regmatch_t matches[NMATCHES];
-    regex_result = regexec(&drive_dir_name, filename.c_str(), NMATCHES, matches, 0);
-    switch (regex_result)
+    RegularExpression rx(ddn_pat);
+    if (!rx.Compile())
       {
-      case 0:			// OK
-	break;
-      case REG_NOMATCH:
+	std::cerr << "Failed to compile Regex: " << rx.ErrorMessage();
+      }
+    assert(rx.Valid());
+    auto groups = rx.Match(filename.c_str());
+    if (!rx.Valid())
+      {
+	error_message->assign(rx.ErrorMessage());
+	return false;
+      }
+    if (groups.empty())
+      {
 	error_message->assign(invalid);
 	return false;
-      default:
-	return regex_fail(regex_result);
       }
-    auto groups = match_groups(filename.c_str(), NMATCHES, matches);
+
 #if defined(VERBOSE_FOR_TESTS)
     display_matches(ddn_pat, filename, groups);
-#endif    
+#endif
+
     string drive, directory, name;
-    if (!groups[1].empty())  
+    if (groups.size() > 1 && !groups[1].empty())
       drive = groups[1];
     else
       drive = drive_prefix(ctx.current_drive);
-    if (!groups[2].empty())
+    if (groups.size() > 2 && !groups[2].empty())
       directory = groups[2];
     else
       directory = directory_prefix(ctx.current_directory);
-    if (!groups[3].empty())
+    if (groups.size() > 3 && !groups[3].empty())
       {
 	name = groups[3];
       }
@@ -141,7 +218,7 @@ namespace
     return true;
   }
 
-  
+
   bool one_qualify_test(const DFSContext& ctx,
 			const string& filename,
 			bool expected_return,
@@ -152,12 +229,12 @@ namespace
     bool actual_return = qualify(ctx, filename, &actual_output, &actual_error);
     auto describe_call = [&]() -> string
 		{
-		  return "qualify(ctx, \"" + filename + 
+		  return "qualify(ctx, \"" + filename +
 		    "\", &actual_output, &actual_error)";
 		};
     auto show_result = [&]()
 		       {
-			 if (actual_return) 
+			 if (actual_return)
 			   {
 			     std::cerr << "output was "
 				       << actual_output << "\n";
@@ -199,7 +276,7 @@ namespace
 }
 
 
-bool AFSPMatcher::SelfTest() 
+bool AFSPMatcher::SelfTest()
 {
   DFSContext ctx;
   std::vector<bool> results;
@@ -237,7 +314,7 @@ AFSPMatcher::MakeUnique(const string& pattern)
   std::unique_ptr<AFSPMatcher> result = std::make_unique<AFSPMatcher>(k, pattern);
   if (!result)
     return std::move(result);
-  if (!result->Valid()) 
+  if (!result->Valid())
     result.reset();
   return std::move(result);
 }
