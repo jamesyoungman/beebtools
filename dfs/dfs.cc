@@ -274,21 +274,59 @@ inline bool case_insensitive_less(const string& left,
   return tolower(*result.first) < tolower(*result.second);
 }
 
+unsigned long sign_extend(unsigned long address)
+{
+  /*
+   The load and execute addresses are 18 bits.  The largest unsigned
+   18-bit value is 0x3FFFF (or &3FFFF if you prefer).  However, the
+   DFS *INFO command prints the address &3F1900 as FF1900.  This is
+   because, per pages K.3-1 to K.3-2 of the BBC Master Reference
+   manual part 2,
+
+   > BASIC sets the high-order bits of the load address to the
+   > high-order address of the processor it is running on.  This
+   > enables you to tell if a file was saved from the I/O processor
+   > or a co-processor.  For example if there was a BASIC file
+   > called prog1, its information might look like this:
+   >
+   > prog1 FFFF0E00 FFFF8023 00000777 000023
+   >
+   > This indicates that prog1 was saved on an I/O processor-only
+   > machine with PAGE set to &E00.  The execution address
+   > (FFFF8023) is not significant for BASIC programs.
+  */
+  if (address & 0x20000)
+    {
+      // We sign-extend just two digits (unlike the example above) ,
+      // as this is what the BBC model B DFS does.
+      return 0xFF0000 | address;
+    }
+  else
+    {
+      return address;
+    }
+}
 
 bool cmd_info(const Image& image, const char)
 {
   const int entries = image.catalog_entry_count();
   cout << std::hex;
   cout << std::uppercase;
+  using std::setw;
+  using std::setfill;
   for (int i = 1; i <= entries; ++i)
     {
-      auto entry = image.get_catalog_entry(i);
+      const auto& entry = image.get_catalog_entry(i);
+      unsigned long load_addr, exec_addr;
+      load_addr = sign_extend(entry.load_address());
+      exec_addr = sign_extend(entry.exec_address());
       cout << entry.directory() << "." << entry.name() << " "
-	   << (entry.is_locked() ? "L" : " ")
-	   << std::setw(6) << std::setfill('0') << entry.load_address() << " "
-	   << std::setw(6) << std::setfill('0') << entry.exec_address() << " "
-	   << std::setw(6) << std::setfill('0') << entry.file_length() << " "
-	   << std::setw(3) << std::setfill('0') << entry.start_sector() << "\n";
+	   << (entry.is_locked() ? " L " : "   ")
+	   << setw(6) << setfill('0') << load_addr << " "
+	   << setw(6) << setfill('0') << exec_addr << " "
+	   << setw(6) << setfill('0') << entry.file_length() << " "
+	   << setw(3) << setfill('0') << entry.start_sector()
+	   << "\n";
     }
   return true;
 }
