@@ -27,6 +27,17 @@ typedef unsigned char byte;
 typedef vector<byte>::size_type offset;
 typedef unsigned short sector_count_type; // needs 10 bits
 
+struct Context
+{
+  Context(char dir, int drive)
+    : current_directory(dir), current_drive(drive)
+  {
+  }
+  char current_directory;
+  int current_drive;
+};
+
+
 enum class Format
   {
    HDFS,
@@ -307,7 +318,8 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-bool cmd_info(const Image& image, const char)
+bool cmd_info(const Image& image, const Context&,
+	      const vector<string>&)
 {
   const int entries = image.catalog_entry_count();
   cout << std::hex;
@@ -331,7 +343,8 @@ bool cmd_info(const Image& image, const char)
   return true;
 }
 
-bool cmd_cat(const Image& image, const char current_directory)
+bool cmd_cat(const Image& image, const Context& ctx,
+	     const vector<string>&)
 {
   cout << image.title();
   if (image.disc_format() != Format::HDFS)
@@ -341,9 +354,10 @@ bool cmd_cat(const Image& image, const char current_directory)
     }
   cout << "\n";
   const auto opt = image.opt_value();
-  cout << "Drive 0            Option "
+  cout << "Drive "<< ctx.current_drive
+       << "            Option "
        << opt << " (" << decode_opt(opt) << ")\n";
-  cout << "Dir. :0." << current_directory
+  cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
        << "          "
        << "Lib. :0.$\n\n";
 
@@ -356,15 +370,15 @@ bool cmd_cat(const Image& image, const char current_directory)
 
 
   auto compare_entries =
-    [&image, &current_directory](int left, int right) -> bool
+    [&image, &ctx](int left, int right) -> bool
     {
       const auto& l = image.get_catalog_entry(left);
       const auto& r = image.get_catalog_entry(right);
       // Ensure that entries in the current directory sort
       // first.
       auto mapdir =
-	[&current_directory] (char dir) -> char {
-	  return dir == current_directory ? 0 : tolower(dir);
+	[&ctx] (char dir) -> char {
+	  return dir == ctx.current_directory ? 0 : tolower(dir);
 	};
 
       if (mapdir(l.directory()) < mapdir(r.directory()))
@@ -386,7 +400,7 @@ bool cmd_cat(const Image& image, const char current_directory)
   for (int i = 1; i <= entries; ++i)
     {
       auto entry = image.get_catalog_entry(ordered_catalog_index[i]);
-      if (entry.directory() != current_directory)
+      if (entry.directory() != ctx.current_directory)
 	{
 	  if (!printed_gap)
 	    {
@@ -403,7 +417,7 @@ bool cmd_cat(const Image& image, const char current_directory)
 	}
 
       cout << " ";
-      if (entry.directory() != current_directory)
+      if (entry.directory() != ctx.current_directory)
 	cout << " " << entry.directory() << ".";
       else
 	cout << "   ";
@@ -423,7 +437,6 @@ bool cmd_cat(const Image& image, const char current_directory)
   return true;
 }
 
-
 bool load_image(const char *filename, vector<byte>* image)
 {
   std::ifstream infile(filename, std::ifstream::in);
@@ -438,11 +451,16 @@ bool load_image(const char *filename, vector<byte>* image)
 
 namespace
 {
-  typedef std::function<bool(const Image&, const char)> Command;
+  typedef
+  std::function<bool(const Image&,
+		     const Context& ctx,
+		     const vector<string>& extra_args)> Command;
   std::map<string, Command> commands;
 };
 
-bool cmd_help(const Image&, const char)
+bool cmd_help(const Image&, const Context&,
+	      const vector<string>&)
+
 {
   cout << "Known commands:\n";
   for (const auto& c : commands)
@@ -450,21 +468,65 @@ bool cmd_help(const Image&, const char)
   return true;
 }
 
+std::pair<bool, int> get_drive_number(const char *s)
+{
+  long v = 0;
+  bool ok = [s, &v]() {
+	      char *end;
+	      errno = 0;
+	      v = strtol(optarg, &end, 10);
+	      if ((v == LONG_MIN || v == LONG_MAX) && errno)
+		{
+		  cerr << "Value " << optarg << " is out of range.\n";
+		  return false;
+		}
+	      if (v == 0 && end == optarg)
+		{
+		  // No digit at optarg[0].
+		  cerr << "Please specify a decimal number as"
+		       << "the argument for --drive\n";
+		  return false;
+		}
+	      if (*end)
+		{
+		  cerr << "Unexpected non-decimal suffix after "
+		       << "argument to --drive: " << end << "\n";
+		  return false;
+		}
+	      if (v < 0 || v > 2)
+		{
+		  cerr << "Drive number should be between 0 and 2.\n ";
+		  return false;
+		}
+	      return true;
+	    }();
+  return std::make_pair(ok, static_cast<int>(v));
+}
+
 enum OptSignifier
   {
    OPT_IMAGE_FILE = SCHAR_MIN,
    OPT_CWD,
+   OPT_DRIVE,
   };
 
 int main (int argc, char *argv[])
 {
   const char *image_file = NULL;
-  char wd = '$';
+  Context ctx('$', 0);
   int longindex;
+  // struct option fields: name, has_arg, *flag, val
   static const struct option opts[] =
     {
+     // --file controls which disk image file we open
      { "file", 1, NULL, OPT_IMAGE_FILE },
+     // --dir controls which directory the program should believe is
+     // current (as for *DIR).
      { "dir", 1, NULL, OPT_CWD },
+     // --drive controls which drive the program should believe is
+     // associated with the disk image specified in --file (as for
+     // *DRIVE).
+     { "drive", 1, NULL, OPT_DRIVE },
      { 0, 0, 0, 0 },
     };
 
@@ -488,7 +550,15 @@ int main (int argc, char *argv[])
 		   << " should have one character only.\n";
 	      return 1;
 	    }
-	  wd = optarg[0];
+	  ctx.current_directory = optarg[0];
+	  break;
+	case OPT_DRIVE:
+	  {
+	    bool ok;
+	    std::tie(ok, ctx.current_drive) = get_drive_number(optarg);
+	    if (!ok)
+	      return 1;
+	  }
 	  break;
 	}
     }
@@ -497,9 +567,14 @@ int main (int argc, char *argv[])
       cerr << "Please specify a command (try \"help\")\n";
       return 1;
     }
-
-  commands = { {"cat", cmd_cat}, {"help", cmd_help}, { "info", cmd_info } };
+  Command x = cmd_cat;
+  commands["cat"] = cmd_cat;		  // *CAT
+  commands["help"] = cmd_help;
+  commands["info"] = cmd_info;		  // *INFO
   const string cmd_name = argv[optind];
+  vector<string> extra_args;
+  if (optind < argc)
+    extra_args.assign(&argv[optind], &argv[argc]);
   auto selected_command = commands.find(cmd_name);
   if (selected_command == commands.end())
     {
@@ -514,7 +589,7 @@ int main (int argc, char *argv[])
 	   << ": " << strerror(errno) << "\n";
       return 1;
     }
-  return selected_command->second(image, wd) ? 1 : 0;
+  return selected_command->second(image, ctx, extra_args) ? 1 : 0;
 }
 
 
