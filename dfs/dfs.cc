@@ -12,6 +12,8 @@
 #include <iomanip>
 #include <vector>
 
+#include "dfscontext.h"
+
 enum
   {
    SECTOR_BYTES = 256
@@ -26,17 +28,6 @@ using std::vector;
 typedef unsigned char byte;
 typedef vector<byte>::size_type offset;
 typedef unsigned short sector_count_type; // needs 10 bits
-
-struct Context
-{
-  Context(char dir, int drive)
-    : current_directory(dir), current_drive(drive)
-  {
-  }
-  char current_directory;
-  int current_drive;
-};
-
 
 enum class Format
   {
@@ -318,7 +309,7 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-bool cmd_info(const Image& image, const Context&,
+bool cmd_info(const Image& image, const DFSContext&,
 	      const vector<string>&)
 {
   const int entries = image.catalog_entry_count();
@@ -343,7 +334,7 @@ bool cmd_info(const Image& image, const Context&,
   return true;
 }
 
-bool cmd_cat(const Image& image, const Context& ctx,
+bool cmd_cat(const Image& image, const DFSContext& ctx,
 	     const vector<string>&)
 {
   cout << image.title();
@@ -453,12 +444,12 @@ namespace
 {
   typedef
   std::function<bool(const Image&,
-		     const Context& ctx,
+		     const DFSContext& ctx,
 		     const vector<string>& extra_args)> Command;
   std::map<string, Command> commands;
 };
 
-bool cmd_help(const Image&, const Context&,
+bool cmd_help(const Image&, const DFSContext&,
 	      const vector<string>&)
 
 {
@@ -513,7 +504,7 @@ enum OptSignifier
 int main (int argc, char *argv[])
 {
   const char *image_file = NULL;
-  Context ctx('$', 0);
+  DFSContext ctx('$', 0);
   int longindex;
   // struct option fields: name, has_arg, *flag, val
   static const struct option opts[] =
