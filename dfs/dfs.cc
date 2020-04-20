@@ -450,7 +450,7 @@ bool cmd_list(const Image& image, const DFSContext& ctx,
       cout << std::setfill(' ') << std::setbase(10);
       for (const byte *p = body_start; p < body_end; ++p)
 	{
-	  if (start_of_line) 
+	  if (start_of_line)
 	    {
 	      cout << std::setw(4) << line_number++ << ' ';
 	      start_of_line = false;
@@ -519,6 +519,47 @@ bool cmd_dump(const Image& image, const DFSContext& ctx,
 			return true;
 		      });
 }
+
+bool cmd_extract_all(const Image& image, const DFSContext&,
+		     const vector<string>& args)
+{
+  if (args.size() < 2)
+    {
+      cerr << "extract-all: please specify the destination directory.\n";
+      return false;
+    }
+  if (args.size() > 2)
+    {
+      cerr << "extract-all: just one argument (the destination directory) is needed.\n";
+      return false;
+    }
+  string dest_dir(args[1]);
+  if (dest_dir.back() != '/')
+    dest_dir.push_back('/');
+  const int entries = image.catalog_entry_count();
+  for (int i = 1; i <= entries; ++i)
+    {
+      const auto& entry = image.get_catalog_entry(i);
+      auto [start, end] = image.file_body(i);
+
+      const string output_basename(string(1, entry.directory()) + "." + rtrim(entry.name()));
+      const string output_body_file = dest_dir + output_basename;
+
+      std::ofstream outfile(output_body_file, std::ofstream::out);
+      outfile.write(reinterpret_cast<const char*>(start),
+		    end - start);
+      outfile.close();
+      if (!outfile.good())
+	{
+	  std::cerr << output_body_file << ": " << strerror(errno) << "\n";
+	  return false;
+	}
+
+      // TODO: create a .inf file.
+    }
+  return true;
+}
+
 
 bool cmd_info(const Image& image, const DFSContext& ctx,
 	      const vector<string>& args)
@@ -816,6 +857,7 @@ int main (int argc, char *argv[])
   commands["type"] = cmd_type;		  // *TYPE
   commands["dump"] = cmd_dump;		  // *DUMP
   commands["list"] = cmd_list;		  // *LIST
+  commands["extract-all"] = cmd_extract_all;
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)
