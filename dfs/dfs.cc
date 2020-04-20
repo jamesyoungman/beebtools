@@ -3,9 +3,11 @@
 #include <string.h>
 #include <getopt.h>
 #include <limits.h>
+#include <assert.h>
 
 #include <algorithm>
 #include <map>
+#include <exception>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -38,6 +40,53 @@ enum class Format
    WDFS,
    Solidisk,
   };
+
+
+typedef std::function<bool(int /* sector number */,
+			   const byte data[],
+			   unsigned short len)> FileSectorVisitor;
+
+class ExceptionBase : public std::exception
+{
+public:
+  explicit ExceptionBase(const string& msg)
+    : error_message_(msg) {}
+
+  const char *what() const throw()
+  {
+    return error_message_.c_str();
+  }
+protected:
+  std::string error_message_;
+};
+
+// class InternalError : public std::logic_error
+// {
+// public:
+//   explicit InternalError(const string& msg)
+//     : std::logic_error("internal error: " + msg)
+//   {
+//   }
+// };
+
+class OsError : public ExceptionBase
+{
+public:
+  explicit OsError(int errno_value)
+    : ExceptionBase(strerror(errno_value))
+  {
+  }
+};
+
+
+class BadImage : public ExceptionBase
+{
+public:
+  BadImage(const string& msg)
+    : ExceptionBase("bad disk image: " + msg)
+  {
+  }
+};
 
 namespace
 {
@@ -246,7 +295,6 @@ public:
     return result;
   }
 
-
   int find_catalog_slot_for_name(const DFSContext& ctx, const string& arg) const
   {
     auto [dir, name] = directory_and_name_of(ctx, arg);
@@ -284,6 +332,21 @@ public:
     return -1;
   }
 
+  std::pair<const byte*, const byte*> file_body(int slot) const
+  {
+    if (slot < 1 || slot > catalog_entry_count())
+      throw std::range_error("catalog slot is out of range");
+
+    auto entry = get_catalog_entry(slot);
+    auto offset = static_cast<unsigned long>(SECTOR_BYTES) * entry.start_sector();
+    auto length = entry.file_length();
+    if (length > img_.size())
+      throw BadImage("file size for catalog entry is larger than the disk image");
+    if (offset > (img_.size() - length))
+      throw BadImage("file extends beyond the end of the disk image");
+    const byte* start = img_.data() + offset;
+    return std::make_pair(start, start + length);
+  }
 
 private:
   vector<byte> img_;
@@ -323,8 +386,14 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-bool cmd_type(const Image& image, const DFSContext& ctx,
-	      const vector<string>& args)
+typedef std::function<bool(const unsigned char* body_start,
+			   const unsigned char* body_end,
+			   const vector<string>& args_tail)> file_body_logic;
+
+
+bool body_command(const Image& image, const DFSContext& ctx,
+		  const vector<string>& args,
+		  file_body_logic logic)
 {
   if (args.size() < 2)
     {
@@ -342,8 +411,80 @@ bool cmd_type(const Image& image, const DFSContext& ctx,
       std::cerr << args[1] << ": not found\n";
       return false;
     }
-  std::cerr << "type: not implemented\n";
-  return false;
+  auto [start, end] = image.file_body(slot);
+  const vector<string> tail(args.begin() + 1, args.end());
+  return logic(start, end, tail);
+}
+
+
+
+bool cmd_type(const Image& image, const DFSContext& ctx,
+	      const vector<string>& args)
+{
+  file_body_logic display_contents =
+    [](const byte* body_start,
+       const byte *body_end,
+       const vector<string>&)
+    {
+      vector<byte> data(body_start, body_end);
+      for (byte& ch : data)
+	{
+	  if (ch == '\r')
+	    ch = '\n';
+	}
+      return std::cout.write(reinterpret_cast<const char*>(data.data()), data.size()).good();
+    };
+  return body_command(image, ctx, args, display_contents);
+}
+
+namespace {
+  const long int HexdumpStride = 8;
+}
+
+
+bool hexdump_bytes(size_t pos, size_t len, const byte* data)
+{
+  cout << std::setw(6) << std::setfill('0') << pos;
+  for (size_t i = 0; i < HexdumpStride; ++i)
+    {
+      if (i < len)
+	cout << ' ' << std::setw(2) << std::setfill('0') << unsigned(data[pos + i]);
+      else
+	cout << std::setw(3) << std::setfill(' ') << ' ';
+    }
+  cout << ' ';
+  for (size_t i = 0; i < len; ++i)
+    {
+      const char ch = data[pos + i];
+      if (isgraph(ch))
+	cout << ch;
+      else
+	cout << '.';
+    }
+  cout << '\n';
+  return true;
+}
+
+bool cmd_dump(const Image& image, const DFSContext& ctx,
+	      const vector<string>& args)
+{
+  return body_command(image, ctx, args,
+		      [](const byte* body_start,
+			 const byte *body_end,
+			 const vector<string>&)
+		      {
+			std::cout << std::hex;
+			assert(body_end > body_start);
+			size_t len = body_end - body_start;
+			for (size_t pos = 0; pos < len; pos += HexdumpStride)
+			  {
+			    auto avail = (pos + HexdumpStride > len) ? (len - pos) : HexdumpStride;
+
+			    if (!hexdump_bytes(pos, avail, body_start))
+			      return false;
+			  }
+			return true;
+		      });
 }
 
 bool cmd_info(const Image& image, const DFSContext& ctx,
@@ -493,18 +634,28 @@ bool cmd_cat(const Image& image, const DFSContext& ctx,
   return true;
 }
 
-bool load_image(const char *filename, vector<byte>* image)
+void load_image(const char *filename, vector<byte>* image)
 {
   std::ifstream infile(filename, std::ifstream::in);
-  if (!infile.seekg(0, infile.end))
-    return false;
-  const int len = infile.tellg();
-  if (len == 0)
-      return false;
-  if (!infile.seekg(0, infile.beg))
-    return false;
+  int len;
+
+  const bool ok = [&len, &infile] {
+		    if (!infile.seekg(0, infile.end))
+		      return false;
+		    len = infile.tellg();
+		    if (len == 0)
+		      return false;
+		    if (!infile.seekg(0, infile.beg))
+		      return false;
+		    return true;
+		  }();
+  if (!ok)
+    throw OsError(errno);
   image->resize(len);
-  return infile.read(reinterpret_cast<char*>(image->data()), len).good();
+  if (len < SECTOR_BYTES * 2)
+    throw BadImage("disk image is too short to contain a valid catalog");
+  if (!infile.read(reinterpret_cast<char*>(image->data()), len).good())
+    throw OsError(errno);
 }
 
 namespace
@@ -630,6 +781,7 @@ int main (int argc, char *argv[])
   commands["help"] = cmd_help;
   commands["info"] = cmd_info;		  // *INFO
   commands["type"] = cmd_type;		  // *TYPE
+  commands["dump"] = cmd_dump;		  // *DUMP
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)
@@ -642,10 +794,13 @@ int main (int argc, char *argv[])
     }
 
   vector<byte> image;
-  if (!load_image(image_file, &image))
+  try
     {
-      cerr << "failed to dump " << image_file
-	   << ": " << strerror(errno) << "\n";
+      load_image(image_file, &image);
+    }
+  catch (ExceptionBase& e)
+    {
+      cerr << "failed to dump " << image_file << ": " << e.what() << "\n";
       return 1;
     }
   return selected_command->second(image, ctx, extra_args) ? 1 : 0;
