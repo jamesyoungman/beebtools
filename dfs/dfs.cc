@@ -397,13 +397,13 @@ bool body_command(const Image& image, const DFSContext& ctx,
 {
   if (args.size() < 2)
     {
-      cerr << "type: please five a file name which you want to type.\n";
+      cerr << "please ive a file name .\n";
       return false;
     }
   if (args.size() > 2)
     {
       // The Beeb ignores subsequent arguments.
-      cerr << "info: ignoring additional arguments.\n";
+      cerr << "warning: ignoring additional arguments.\n";
     }
   const int slot = image.find_catalog_slot_for_name(ctx, args[1]);
   if (-1 == slot)
@@ -435,6 +435,39 @@ bool cmd_type(const Image& image, const DFSContext& ctx,
       return std::cout.write(reinterpret_cast<const char*>(data.data()), data.size()).good();
     };
   return body_command(image, ctx, args, display_contents);
+}
+
+bool cmd_list(const Image& image, const DFSContext& ctx,
+	      const vector<string>& args)
+{
+  file_body_logic display_numbered_lines =
+    [](const byte* body_start,
+       const byte *body_end,
+       const vector<string>&) -> bool
+    {
+      int line_number = 1;
+      bool start_of_line = true;
+      cout << std::setfill(' ') << std::setbase(10);
+      for (const byte *p = body_start; p < body_end; ++p)
+	{
+	  if (start_of_line) 
+	    {
+	      cout << std::setw(4) << line_number++ << ' ';
+	      start_of_line = false;
+	    }
+	  if (*p == 0x0D)
+	    {
+	      cout << '\n';
+	      start_of_line = true;
+	    }
+	  else
+	    {
+	      cout << static_cast<char>(*p);
+	    }
+	}
+      return true;
+    };
+  return body_command(image, ctx, args, display_numbered_lines);
 }
 
 namespace {
@@ -782,6 +815,7 @@ int main (int argc, char *argv[])
   commands["info"] = cmd_info;		  // *INFO
   commands["type"] = cmd_type;		  // *TYPE
   commands["dump"] = cmd_dump;		  // *DUMP
+  commands["list"] = cmd_list;		  // *LIST
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)
