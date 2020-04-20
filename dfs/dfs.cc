@@ -341,9 +341,11 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
   for (int i = 1; i <= entries; ++i)
     {
       const auto& entry = image.get_catalog_entry(i);
-      std::cerr << "info: directory is '" << entry.directory() << "'\n";
       const string full_name = string(1, entry.directory()) + "." + entry.name();
+#if VERBOSE_FOR_TESTS
+      std::cerr << "info: directory is '" << entry.directory() << "'\n";
       std::cerr << "info: item is '" << full_name << "'\n";
+#endif
       if (!matcher->Matches(full_name))
 	  continue;
       unsigned long load_addr, exec_addr;

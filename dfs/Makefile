@@ -13,7 +13,7 @@ clean:
 	$(RM) $(TARGETS)
 
 dfs: dfs.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS_TESTS) -o $@ dfs.cc afsp.cc
+	$(CXX) $(CXXFLAGS) -o $@ dfs.cc afsp.cc
 
 test_afsp: test_afsp.cc afsp.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS_TESTS) -o $@ test_afsp.cc afsp.cc
