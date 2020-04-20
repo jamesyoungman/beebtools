@@ -14,6 +14,7 @@
 
 #include "dfscontext.h"
 #include "afsp.h"
+#include "fsp.h"
 
 enum
   {
@@ -245,37 +246,49 @@ public:
     return result;
   }
 
+
+  int find_catalog_slot_for_name(const DFSContext& ctx, const string& arg) const
+  {
+    auto [dir, name] = directory_and_name_of(ctx, arg);
+#if VERBOSE_FOR_TESTS
+    std::cerr << "find_catalog_slot_for_name: dir=" << dir << ", name=" << name << "\n";
+#endif
+    const int entries = catalog_entry_count();
+    for (int i = 1; i <= entries; ++i)
+      {
+	const auto& entry = get_catalog_entry(i);
+#if VERBOSE_FOR_TESTS
+	std::cerr << "Looking for " << arg << ", considering " << entry.directory()
+		  << "." << entry.name() << "\n";
+#endif
+	const string trimmed_name(rtrim(entry.name()));
+
+	if (dir != entry.directory())
+	  {
+#if VERBOSE_FOR_TESTS
+	    std::cerr << "No match; " << dir << " != " << entry.directory() << "\n";
+#endif
+	    continue;
+	  }
+
+	if (!case_insensitive_equal(name, trimmed_name))
+	  {
+#if VERBOSE_FOR_TESTS
+	    std::cerr << "No match; " << name << " != " << trimmed_name << "\n";
+#endif
+	    continue;
+	  }
+
+	return i;
+      }
+    return -1;
+  }
+
+
 private:
   vector<byte> img_;
   Format disc_format_;
 };
-
-inline bool case_insensitive_less(const string& left,
-				  const string& right)
-{
-  auto comp =
-    [](const unsigned char lhs,
-       const unsigned char rhs)
-    {
-      return tolower(lhs) == tolower(rhs);
-    };
-  const auto result = std::mismatch(left.cbegin(), left.cend(),
-				    right.cbegin(), right.cend(),
-				    comp);
-  if (result.second == right.cend())
-    {
-      // Mismatch because right is at end-of-string.  Therefore either
-      // the strings are the same length or right is shorter.  So left
-      // cannot be less.
-      return false;
-    }
-  if (result.first == left.cend())
-    {
-      // Equal, so left cannot be less.
-      return false;
-    }
-  return tolower(*result.first) < tolower(*result.second);
-}
 
 unsigned long sign_extend(unsigned long address)
 {
@@ -310,12 +323,35 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
+bool cmd_type(const Image& image, const DFSContext& ctx,
+	      const vector<string>& args)
+{
+  if (args.size() < 2)
+    {
+      cerr << "type: please five a file name which you want to type.\n";
+      return false;
+    }
+  if (args.size() > 2)
+    {
+      // The Beeb ignores subsequent arguments.
+      cerr << "info: ignoring additional arguments.\n";
+    }
+  const int slot = image.find_catalog_slot_for_name(ctx, args[1]);
+  if (-1 == slot)
+    {
+      std::cerr << args[1] << ": not found\n";
+      return false;
+    }
+  std::cerr << "type: not implemented\n";
+  return false;
+}
+
 bool cmd_info(const Image& image, const DFSContext& ctx,
 	      const vector<string>& args)
 {
   if (args.size() < 2)
     {
-      cerr << "info: please five a file name of wildcard specifying which files "
+      cerr << "info: please give a file name of wildcard specifying which files "
 	   << "you want to see information about.\n";
       return false;
     }
@@ -593,6 +629,7 @@ int main (int argc, char *argv[])
   commands["cat"] = cmd_cat;		  // *CAT
   commands["help"] = cmd_help;
   commands["info"] = cmd_info;		  // *INFO
+  commands["type"] = cmd_type;		  // *TYPE
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)

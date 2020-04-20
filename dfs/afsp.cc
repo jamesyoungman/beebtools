@@ -1,5 +1,4 @@
 #include "afsp.h"
-#include "dfscontext.h"
 
 #include <algorithm>
 #include <functional>
@@ -10,6 +9,9 @@
 
 #include <assert.h>
 #include <regex.h>
+
+#include "fsp.h"
+#include "dfscontext.h"
 
 using std::string;
 using std::vector;
@@ -216,17 +218,6 @@ namespace
       }
     out->assign(drive + directory + name);
     return true;
-  }
-
-  string rtrim(const string& input)
-  {
-    const static string space(" ");
-    auto endpos = input.find_last_not_of(space);
-    if(string::npos != endpos)
-      {
-	return input.substr(0, endpos+1);
-      }
-    return "";
   }
 
   bool qualify(const DFSContext& ctx, const string& filename,

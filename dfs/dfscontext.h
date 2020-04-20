@@ -1,6 +1,8 @@
 #if !defined(INC_DFSCONTEXT_H)
 #define INC_DFSCONTEXT_H 1
 
+#include <string>
+
 struct DFSContext
 {
   DFSContext(char dir, int drive)
@@ -12,7 +14,7 @@ struct DFSContext
     : current_directory('$'), current_drive(0)
    {
    }
-  
+
   char current_directory;
   int current_drive;
 };
