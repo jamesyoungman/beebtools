@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "dfscontext.h"
+#include "afsp.h"
 
 enum
   {
@@ -309,9 +310,29 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-bool cmd_info(const Image& image, const DFSContext&,
-	      const vector<string>&)
+bool cmd_info(const Image& image, const DFSContext& ctx,
+	      const vector<string>& args)
 {
+  if (args.size() < 2)
+    {
+      cerr << "info: please five a file name of wildcard specifying which files "
+	   << "you want to see information about.\n";
+      return false;
+    }
+  if (args.size() > 2)
+    {
+      cerr << "info: please specify no more than one argument (you specified "
+	   << (args.size() - 1) << ")\n";
+      return false;
+    }
+  string error_message;
+  std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::MakeUnique(ctx, args[1], &error_message);
+  if (!matcher)
+    {
+      cerr << "Not a valid pattern (" << error_message << "): " << args[1] << "\n";
+      return false;
+    }
+
   const int entries = image.catalog_entry_count();
   cout << std::hex;
   cout << std::uppercase;
@@ -320,6 +341,11 @@ bool cmd_info(const Image& image, const DFSContext&,
   for (int i = 1; i <= entries; ++i)
     {
       const auto& entry = image.get_catalog_entry(i);
+      std::cerr << "info: directory is '" << entry.directory() << "'\n";
+      const string full_name = string(1, entry.directory()) + "." + entry.name();
+      std::cerr << "info: item is '" << full_name << "'\n";
+      if (!matcher->Matches(full_name))
+	  continue;
       unsigned long load_addr, exec_addr;
       load_addr = sign_extend(entry.load_address());
       exec_addr = sign_extend(entry.exec_address());
@@ -337,6 +363,7 @@ bool cmd_info(const Image& image, const DFSContext&,
 bool cmd_cat(const Image& image, const DFSContext& ctx,
 	     const vector<string>&)
 {
+  // TODO: sole argument is the drive number.
   cout << image.title();
   if (image.disc_format() != Format::HDFS)
     {
@@ -433,7 +460,9 @@ bool load_image(const char *filename, vector<byte>* image)
   std::ifstream infile(filename, std::ifstream::in);
   if (!infile.seekg(0, infile.end))
     return false;
-  int len = infile.tellg();
+  const int len = infile.tellg();
+  if (len == 0)
+      return false;
   if (!infile.seekg(0, infile.beg))
     return false;
   image->resize(len);

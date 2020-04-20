@@ -7,14 +7,16 @@ HEADERS = dfscontext.h afsp.h
 
 default: $(TARGETS)
 
+everything-compiles: $(TARGETS)
+
 clean:
 	$(RM) $(TARGETS)
 
 dfs: dfs.cc $(HEADERS)
-	$(CXX) $(CXXFLAGS) -o $@ dfs.cc
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS_TESTS) -o $@ dfs.cc afsp.cc
 
 test_afsp: test_afsp.cc afsp.cc $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS_TESTS) -o $@ test_afsp.cc afsp.cc
 
-check: $(TESTS)
+check: everything-compiles $(TESTS)
 	for testprogram in $(TESTS); do echo running $${testprogram}... && ./$${testprogram} || exit 1; done
