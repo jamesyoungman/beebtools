@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <map>
 #include <exception>
+#include <locale>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -295,6 +296,13 @@ public:
     return result;
   }
 
+  int max_file_count() const
+  {
+    // We do not currently correctly support Watford DFS format discs.
+    return 31;
+  }
+
+
   int find_catalog_slot_for_name(const DFSContext& ctx, const string& arg) const
   {
     auto [dir, name] = directory_and_name_of(ctx, arg);
@@ -397,7 +405,7 @@ bool body_command(const Image& image, const DFSContext& ctx,
 {
   if (args.size() < 2)
     {
-      cerr << "please ive a file name .\n";
+      cerr << "please ive a file name.\n";
       return false;
     }
   if (args.size() > 2)
@@ -732,6 +740,62 @@ void load_image(const char *filename, vector<byte>* image)
     throw OsError(errno);
 }
 
+struct comma_thousands : std::numpunct<char>
+{
+  char do_thousands_sep() const
+  {
+    return ',';
+  }
+
+  std::string do_grouping() const
+  {
+    return "\3";		// groups of 3 digits
+  }
+};
+
+
+bool cmd_free(const Image& image, const DFSContext&,
+	      const vector<string>& args)
+{
+  if (args.size() > 1)
+    {
+      cerr << "no additional command-line arguments are needed.\n";
+      return false;
+    }
+  int sectors_used = 2;
+  const int entries = image.catalog_entry_count();
+  for (int i = 1; i <= entries; ++i)
+    {
+      const auto& entry = image.get_catalog_entry(i);
+      ldiv_t division = ldiv(entry.file_length(), SECTOR_BYTES);
+      const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
+      const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
+      if (last_sector_of_file > sectors_used)
+	{
+	  sectors_used = last_sector_of_file;
+	}
+    }
+  int files_free = image.max_file_count() - image.catalog_entry_count();
+  int sectors_free = image.disc_sector_count() - sectors_used;
+  cout << std::uppercase;
+  auto show = [](int files, int sectors, const string& desc)
+	      {
+		cout << std::setw(2) << std::dec << files << " Files "
+		     << std::setw(3) << std::hex << sectors << " Sectors "
+		     << std::setw(7) << std::dec << (sectors * SECTOR_BYTES)
+		     << " Bytes " << desc << "\n";
+	      };
+
+  auto prevlocale = cout.imbue(std::locale(cout.getloc(),
+					   new comma_thousands)); // takes ownership
+  show(files_free, sectors_free, "Free");
+  show(image.catalog_entry_count(), sectors_used, "Used");
+  cout.imbue(prevlocale);
+  return true;
+}
+
+
+
 namespace
 {
   typedef
@@ -850,13 +914,13 @@ int main (int argc, char *argv[])
       cerr << "Please specify a command (try \"help\")\n";
       return 1;
     }
-  Command x = cmd_cat;
   commands["cat"] = cmd_cat;		  // *CAT
   commands["help"] = cmd_help;
   commands["info"] = cmd_info;		  // *INFO
   commands["type"] = cmd_type;		  // *TYPE
   commands["dump"] = cmd_dump;		  // *DUMP
   commands["list"] = cmd_list;		  // *LIST
+  commands["free"] = cmd_free;		  // *FREE
   commands["extract-all"] = cmd_extract_all;
   const string cmd_name = argv[optind];
   vector<string> extra_args;
