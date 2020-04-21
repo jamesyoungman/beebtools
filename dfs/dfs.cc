@@ -1,3 +1,5 @@
+#include "dfsimage.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,24 +18,15 @@
 #include <vector>
 
 #include "dfscontext.h"
+#include "dfsimage.h"
 #include "afsp.h"
 #include "fsp.h"
 #include "stringutil.h"
-
-enum
-  {
-   SECTOR_BYTES = 256
-  };
-
 
 using std::cerr;
 using std::cout;
 using std::string;
 using std::vector;
-
-typedef unsigned char byte;
-typedef vector<byte>::size_type offset;
-typedef unsigned short sector_count_type; // needs 10 bits
 
 namespace DFS
 {
@@ -42,15 +35,9 @@ using stringutil::rtrim;
 using stringutil::case_insensitive_equal;
 using stringutil::case_insensitive_less;
 
-enum class Format
-  {
-   HDFS,
-   DFS,
-   WDFS,
-   Solidisk,
-  };
 
 
+  
 typedef std::function<bool(int /* sector number */,
 			   const byte data[],
 			   unsigned short len)> FileSectorVisitor;
@@ -78,28 +65,30 @@ protected:
 //   }
 // };
 
-class OsError : public ExceptionBase
+class OsError : public std::exception
 {
 public:
   explicit OsError(int errno_value)
-    : ExceptionBase(strerror(errno_value))
+    : errno_value_(errno_value)
   {
   }
+  const char *what() const throw()
+  {
+    return strerror(errno_value_);
+  }
+private:
+  int errno_value_;
 };
 
 
-class BadImage : public ExceptionBase
-{
-public:
-  BadImage(const string& msg)
-    : ExceptionBase("bad disk image: " + msg)
-  {
-  }
-};
+namespace DFS {
 
+}  // namespace DFS
+
+  
 namespace
 {
-  inline static string decode_opt(byte opt)
+  inline static std::string decode_opt(byte opt)
   {
     switch (opt)
       {
@@ -117,11 +106,6 @@ namespace
     return char(b);
   }
 
-  inline char byte_to_ascii7(byte b)
-  {
-    return char(b & 0x7F);
-  }
-
   inline string extract_string(const vector<byte>& image,
 			       offset position, offset size)
   {
@@ -135,239 +119,7 @@ namespace
   {
     return SECTOR_BYTES * sector_num;
   }
-
-  inline Format identify_format(const vector<byte>& image)
-  {
-    const bool hdfs = image[0x106] & 8;
-    if (hdfs)
-      return Format::HDFS;
-
-    // Look for the Watford DFS recognition string
-    // in the initial entry in its extended catalog.
-    if (std::all_of(image.begin()+0x200, image.begin()+0x208,
-		    [](byte b) { return b = 0xAA; }))
-      {
-	return Format::WDFS;
-      }
-
-    return Format::DFS;
-  }
-
-  inline string ascii7_string(vector<byte>::const_iterator begin,
-			      vector<byte>::size_type len)
-  {
-    string result;
-    result.reserve(len);
-    std::transform(begin, begin+len,
-		   std::back_inserter(result), byte_to_ascii7);
-    return result;
-  }
 }
-
-// Note, a CatalogEntry holds an iterator into the disc image data so
-// it must not outlive the image data.
-class CatalogEntry
-{
-public:
-  CatalogEntry(vector<byte>::const_iterator image_data, int slot, Format fmt)
-    : data_(image_data), cat_offset_(slot * 8), fmt_(fmt)
-  {
-  }
-
-  CatalogEntry(const CatalogEntry& other)
-    : data_(other.data_), cat_offset_(other.cat_offset_), fmt_(other.fmt_)
-  {
-  }
-
-  inline unsigned char getbyte(unsigned int sector, unsigned short record_off) const
-  {
-    return data_[sector * 0x100 + record_off + cat_offset_];
-  }
-
-  inline unsigned long getword(unsigned int sector, unsigned short record_off) const
-  {
-    return getbyte(sector, record_off) | (getbyte(sector, record_off + 1) << 8);
-  }
-
-  string name() const
-  {
-    return ascii7_string(data_ + cat_offset_, 0x07);
-  }
-
-  char directory() const
-  {
-    return 0x7F & (data_[cat_offset_ + 0x07]);
-  }
-
-  bool is_locked() const
-  {
-    return (1 << 7) & data_[cat_offset_ + 0x07];
-  }
-
-  unsigned long load_address() const
-  {
-    unsigned long address = getword(1, 0x00);
-    address |= ((getbyte(1, 0x06) >> 2) & 3) << 16;
-    // On Solidisk there is apparently a second copy of bits 16 and 17
-    // of the load address, but we only need one copy.
-    return address;
-  }
-
-  unsigned long exec_address() const
-  {
-    return getword(1, 0x02)
-      | ((getbyte(1, 0x06) >> 6) & 3) << 16;
-  }
-
-  unsigned long file_length() const
-  {
-    return getword(1, 0x4)
-      | ((getbyte(1, 0x06) >> 4) & 3) << 16;
-  }
-
-  unsigned short start_sector() const
-  {
-    return getbyte(1, 0x07) | ((getbyte(1, 0x06) & 3) << 8);
-  }
-
-private:
-  vector<byte>::const_iterator data_;
-  offset cat_offset_;
-  Format fmt_;
-};
-
-
-class Image
-{
-public:
-  Image(const vector<byte> disc_image)
-    : img_(disc_image), disc_format_(identify_format(disc_image))
-  {
-  }
-
-  string title() const
-  {
-    vector<byte> title_data;
-    title_data.resize(12);
-    std::copy(img_.begin(), img_.begin()+8, title_data.begin());
-    std::copy(img_.begin() + 0x100, img_.begin()+0x104, title_data.begin() + 8);
-    string result;
-    result.resize(12);
-    std::transform(title_data.begin(), title_data.end(), result.begin(), byte_to_ascii7);
-    return result;
-  }
-
-  inline int opt_value() const
-  {
-    return (img_[0x106] >> 4) & 0x03;
-  }
-
-  inline int cycle_count() const
-  {
-    if (disc_format_ != Format::HDFS)
-      {
-	return int(img_[0x104]);
-      }
-    return -1;				  // signals an error
-  }
-
-  inline Format disc_format() const { return disc_format_; }
-
-  offset end_of_catalog() const
-  {
-    return img_[0x105];
-  }
-
-  int catalog_entry_count() const
-  {
-    return end_of_catalog() / 8;
-  }
-
-  CatalogEntry get_catalog_entry(int index) const
-  {
-    // TODO: bounds checking
-    return CatalogEntry(img_.cbegin(), index, disc_format());
-  }
-
-  sector_count_type disc_sector_count() const
-  {
-    sector_count_type result = img_[0x107];
-    result |= (img_[0x106] & 3) << 8;
-    if (disc_format_ == Format::HDFS)
-      {
-	// http://mdfs.net/Docs/Comp/Disk/Format/DFS disagrees with
-	// the HDFS manual on this (the former states both that this
-	// bit is b10 of the total sector count and that it is b10 of
-	// the start sector).  We go with what the HDFS manual says.
-	result |= img_[0] & (1 << 7);
-      }
-    return result;
-  }
-
-  int max_file_count() const
-  {
-    // We do not currently correctly support Watford DFS format discs.
-    return 31;
-  }
-
-
-  int find_catalog_slot_for_name(const DFSContext& ctx, const string& arg) const
-  {
-    auto [dir, name] = directory_and_name_of(ctx, arg);
-#if VERBOSE_FOR_TESTS
-    std::cerr << "find_catalog_slot_for_name: dir=" << dir << ", name=" << name << "\n";
-#endif
-    const int entries = catalog_entry_count();
-    for (int i = 1; i <= entries; ++i)
-      {
-	const auto& entry = get_catalog_entry(i);
-#if VERBOSE_FOR_TESTS
-	std::cerr << "Looking for " << arg << ", considering " << entry.directory()
-		  << "." << entry.name() << "\n";
-#endif
-	const string trimmed_name(rtrim(entry.name()));
-
-	if (dir != entry.directory())
-	  {
-#if VERBOSE_FOR_TESTS
-	    std::cerr << "No match; " << dir << " != " << entry.directory() << "\n";
-#endif
-	    continue;
-	  }
-
-	if (!case_insensitive_equal(name, trimmed_name))
-	  {
-#if VERBOSE_FOR_TESTS
-	    std::cerr << "No match; " << name << " != " << trimmed_name << "\n";
-#endif
-	    continue;
-	  }
-
-	return i;
-      }
-    return -1;
-  }
-
-  std::pair<const byte*, const byte*> file_body(int slot) const
-  {
-    if (slot < 1 || slot > catalog_entry_count())
-      throw std::range_error("catalog slot is out of range");
-
-    auto entry = get_catalog_entry(slot);
-    auto offset = static_cast<unsigned long>(SECTOR_BYTES) * entry.start_sector();
-    auto length = entry.file_length();
-    if (length > img_.size())
-      throw BadImage("file size for catalog entry is larger than the disk image");
-    if (offset > (img_.size() - length))
-      throw BadImage("file extends beyond the end of the disk image");
-    const byte* start = img_.data() + offset;
-    return std::make_pair(start, start + length);
-  }
-
-private:
-  vector<byte> img_;
-  Format disc_format_;
-};
 
 unsigned long sign_extend(unsigned long address)
 {
@@ -1000,7 +752,7 @@ int main (int argc, char *argv[])
       return 1;
     }
 
-  vector<byte> image;
+  std::vector<DFS::byte> image;
   try
     {
       DFS::load_image(image_file, &image);
