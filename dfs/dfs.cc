@@ -18,6 +18,7 @@
 #include "dfscontext.h"
 #include "afsp.h"
 #include "fsp.h"
+#include "stringutil.h"
 
 enum
   {
@@ -33,6 +34,13 @@ using std::vector;
 typedef unsigned char byte;
 typedef vector<byte>::size_type offset;
 typedef unsigned short sector_count_type; // needs 10 bits
+
+namespace DFS
+{
+
+using stringutil::rtrim;
+using stringutil::case_insensitive_equal;
+using stringutil::case_insensitive_less;
 
 enum class Format
   {
@@ -865,6 +873,11 @@ bool cmd_help(const Image&, const DFSContext&,
   return true;
 }
 
+}  // namespace DFS
+
+
+namespace {
+
 std::pair<bool, int> get_drive_number(const char *s)
 {
   long v = 0;
@@ -907,10 +920,13 @@ enum OptSignifier
    OPT_DRIVE,
   };
 
+}  // namespace
+
+
 int main (int argc, char *argv[])
 {
   const char *image_file = NULL;
-  DFSContext ctx('$', 0);
+  DFS::DFSContext ctx('$', 0);
   int longindex;
   // struct option fields: name, has_arg, *flag, val
   static const struct option opts[] =
@@ -964,14 +980,15 @@ int main (int argc, char *argv[])
       cerr << "Please specify a command (try \"help\")\n";
       return 1;
     }
-  commands["cat"] = cmd_cat;		  // *CAT
-  commands["help"] = cmd_help;
-  commands["info"] = cmd_info;		  // *INFO
-  commands["type"] = cmd_type;		  // *TYPE
-  commands["dump"] = cmd_dump;		  // *DUMP
-  commands["list"] = cmd_list;		  // *LIST
-  commands["free"] = cmd_free;		  // *FREE
-  commands["extract-all"] = cmd_extract_all;
+  using DFS::commands;
+  commands["cat"] =  DFS::cmd_cat;	// *CAT
+  commands["help"] = DFS::cmd_help;
+  commands["info"] = DFS::cmd_info; // *INFO
+  commands["type"] = DFS::cmd_type; // *TYPE
+  commands["dump"] = DFS::cmd_dump; // *DUMP
+  commands["list"] = DFS::cmd_list; // *LIST
+  commands["free"] = DFS::cmd_free; // *FREE
+  commands["extract-all"] = DFS::cmd_extract_all;
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)
@@ -986,9 +1003,9 @@ int main (int argc, char *argv[])
   vector<byte> image;
   try
     {
-      load_image(image_file, &image);
+      DFS::load_image(image_file, &image);
     }
-  catch (ExceptionBase& e)
+  catch (DFS::ExceptionBase& e)
     {
       cerr << "failed to dump " << image_file << ": " << e.what() << "\n";
       return 1;

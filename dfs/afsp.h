@@ -3,6 +3,9 @@
 
 #include "dfscontext.h"
 
+namespace DFS 
+{
+
 class AFSPMatcher 
 {
   class FactoryKey {};		// see the constructor.
@@ -33,3 +36,4 @@ class AFSPMatcher
   void *implementation_;
 };
 
+}  // namespace DFS

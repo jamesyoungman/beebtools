@@ -3,6 +3,9 @@
 
 #include <string>
 
+namespace DFS
+{
+
 struct DFSContext
 {
   DFSContext(char dir, int drive)
@@ -18,5 +21,7 @@ struct DFSContext
   char current_directory;
   int current_drive;
 };
+
+}  // namespace DFS
 
 #endif

@@ -11,6 +11,7 @@
 #include <regex.h>
 
 #include "fsp.h"
+#include "stringutil.h"
 #include "dfscontext.h"
 
 using std::string;
@@ -18,6 +19,10 @@ using std::vector;
 
 namespace
 {
+  using DFS::stringutil::rtrim;
+  using DFS::AFSPMatcher;
+  using DFS::DFSContext;
+
   string render_regex_error(int code, regex_t* preg)
   {
     string result;
@@ -170,7 +175,7 @@ namespace
     size_t max_matches_;
   };
 
-  bool transform_string_with_regex(const DFSContext& ctx,
+  bool transform_string_with_regex(const DFS::DFSContext& ctx,
 				   const string& regex_pattern,
 				   const string& input,
 				   const char * invalid,
@@ -474,6 +479,9 @@ namespace
   }
 }
 
+namespace DFS
+{
+
 bool AFSPMatcher::SelfTest()
 {
   DFSContext ctx;
@@ -626,3 +634,4 @@ AFSPMatcher::MakeUnique(const DFSContext& ctx, const string& pattern, string *er
   return std::move(result);
 }
 
+}  // namespace DFS
