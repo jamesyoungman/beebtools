@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "afsp.h"
+#include "commands.h"
 #include "dfscontext.h"
 #include "dfsimage.h"
 #include "fsp.h"
@@ -34,6 +35,8 @@ using stringutil::case_insensitive_equal;
 using stringutil::case_insensitive_less;
 
 
+std::map<std::string, Command> commands;
+  
 class OsError : public std::exception
 {
 public:
@@ -51,19 +54,6 @@ private:
 
 namespace
 {
-  inline static std::string decode_opt(byte opt)
-  {
-    switch (opt)
-      {
-      case 0: return "off";
-      case 1: return "load";
-      case 2: return "run";
-      case 3: return "exec";
-      }
-    return "?";
-  }
-
-
   inline char byte_to_char(byte b)
   {
     return char(b);
@@ -117,11 +107,6 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-typedef std::function<bool(const unsigned char* body_start,
-			   const unsigned char* body_end,
-			   const vector<string>& args_tail)> file_body_logic;
-
-
 bool body_command(const Image& image, const DFSContext& ctx,
 		  const vector<string>& args,
 		  file_body_logic logic)
@@ -148,58 +133,6 @@ bool body_command(const Image& image, const DFSContext& ctx,
 }
 
 
-
-bool cmd_type(const Image& image, const DFSContext& ctx,
-	      const vector<string>& args)
-{
-  file_body_logic display_contents =
-    [](const byte* body_start,
-       const byte *body_end,
-       const vector<string>&)
-    {
-      vector<byte> data(body_start, body_end);
-      for (byte& ch : data)
-	{
-	  if (ch == '\r')
-	    ch = '\n';
-	}
-      return std::cout.write(reinterpret_cast<const char*>(data.data()), data.size()).good();
-    };
-  return body_command(image, ctx, args, display_contents);
-}
-
-bool cmd_list(const Image& image, const DFSContext& ctx,
-	      const vector<string>& args)
-{
-  file_body_logic display_numbered_lines =
-    [](const byte* body_start,
-       const byte *body_end,
-       const vector<string>&) -> bool
-    {
-      int line_number = 1;
-      bool start_of_line = true;
-      cout << std::setfill(' ') << std::setbase(10);
-      for (const byte *p = body_start; p < body_end; ++p)
-	{
-	  if (start_of_line)
-	    {
-	      cout << std::setw(4) << line_number++ << ' ';
-	      start_of_line = false;
-	    }
-	  if (*p == 0x0D)
-	    {
-	      cout << '\n';
-	      start_of_line = true;
-	    }
-	  else
-	    {
-	      cout << static_cast<char>(*p);
-	    }
-	}
-      return true;
-    };
-  return body_command(image, ctx, args, display_numbered_lines);
-}
 
 namespace {
   const long int HexdumpStride = 8;
@@ -394,101 +327,6 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
   return true;
 }
 
-bool cmd_cat(const Image& image, const DFSContext& ctx,
-	     const vector<string>&)
-{
-  // TODO: sole argument is the drive number.
-  cout << image.title();
-  if (image.disc_format() != Format::HDFS)
-    {
-      cout << " ("  << std::setbase(16) << image.cycle_count()
-	   << std::setbase(10) << ") FM";
-    }
-  cout << "\n";
-  const auto opt = image.opt_value();
-  cout << "Drive "<< ctx.current_drive
-       << "            Option "
-       << opt << " (" << decode_opt(opt) << ")\n";
-  cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
-       << "          "
-       << "Lib. :0.$\n\n";
-
-  const int entries = image.catalog_entry_count();
-  vector<int> ordered_catalog_index;
-  ordered_catalog_index.reserve(entries);
-  ordered_catalog_index.push_back(0);	  // dummy for title
-  for (int i = 1; i <= entries; ++i)
-    ordered_catalog_index.push_back(i);
-
-
-  auto compare_entries =
-    [&image, &ctx](int left, int right) -> bool
-    {
-      const auto& l = image.get_catalog_entry(left);
-      const auto& r = image.get_catalog_entry(right);
-      // Ensure that entries in the current directory sort
-      // first.
-      auto mapdir =
-	[&ctx] (char dir) -> char {
-	  return dir == ctx.current_directory ? 0 : tolower(dir);
-	};
-
-      if (mapdir(l.directory()) < mapdir(r.directory()))
-	return true;
-      if (mapdir(r.directory()) < mapdir(l.directory()))
-	return false;
-      // Same directory, compare names.
-      return case_insensitive_less
-	(image.get_catalog_entry(left).name(),
-	 image.get_catalog_entry(right).name());
-    };
-
-  std::sort(ordered_catalog_index.begin()+1,
-	    ordered_catalog_index.end(),
-	    compare_entries);
-
-  bool left_column = true;
-  bool printed_gap = false;
-  for (int i = 1; i <= entries; ++i)
-    {
-      auto entry = image.get_catalog_entry(ordered_catalog_index[i]);
-      if (entry.directory() != ctx.current_directory)
-	{
-	  if (!printed_gap)
-	    {
-	      if (i > 1)
-		cout << (left_column ? "\n" : "\n\n");
-	      left_column = true;
-	      printed_gap = true;
-	    }
-	}
-
-      if (!left_column)
-	{
-	  cout << std::setw(6) << "";
-	}
-
-      cout << " ";
-      if (entry.directory() != ctx.current_directory)
-	cout << " " << entry.directory() << ".";
-      else
-	cout << "   ";
-      cout << entry.name();
-      if (entry.is_locked())
-	  cout << " L";
-      else
-	  cout << "  ";
-
-      if (!left_column)
-	{
-	  cout << "\n";
-	}
-      left_column = !left_column;
-    }
-  cout << "\n";
-  return true;
-}
-
 void load_image(const char *filename, vector<byte>* image)
 {
   std::ifstream infile(filename, std::ifstream::in);
@@ -568,15 +406,6 @@ bool cmd_free(const Image& image, const DFSContext&,
 }
 
 
-
-namespace
-{
-  typedef
-  std::function<bool(const Image&,
-		     const DFSContext& ctx,
-		     const vector<string>& extra_args)> Command;
-  std::map<string, Command> commands;
-};
 
 bool cmd_help(const Image&, const DFSContext&,
 	      const vector<string>&)

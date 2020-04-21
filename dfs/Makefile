@@ -6,7 +6,7 @@ TARGETS = dfs $(TESTS)
 HEADERS = dfscontext.h afsp.h fsp.h stringutil.h regularexpression.h dfsimage.h
 
 COMMON_SOURCES = afsp.cc fsp.cc stringutil.cc dfsimage.cc
-DFS_SOURCES = dfs.cc $(COMMON_SOURCES)
+DFS_SOURCES = dfs.cc cmd_cat.cc cmd_type.cc cmd_list.cc  $(COMMON_SOURCES)
 
 default: $(TARGETS)
 
