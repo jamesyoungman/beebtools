@@ -528,6 +528,50 @@ bool cmd_dump(const Image& image, const DFSContext& ctx,
 		      });
 }
 
+
+bool create_inf_file(const string& name,
+		     unsigned long crc,
+		     const CatalogEntry& entry)
+{
+  unsigned long load_addr = sign_extend(entry.load_address());
+  unsigned long exec_addr = sign_extend(entry.exec_address());
+  std::ofstream inf_file(name, std::ofstream::out);
+  inf_file << std::hex << std::uppercase;
+  // The NEXT field is missing because our source is not tape.
+  using std::setw;
+  using std::setfill;
+  inf_file << entry.directory() << '.' << entry.name()
+	   << setw(6) << setfill('0') << load_addr << " "
+	   << setw(6) << setfill('0') << exec_addr << " "
+	   << setw(6) << setfill('0') << entry.file_length() << " " // no sign-extend
+	   << (entry.is_locked() ? "Locked " : "")
+	   << "CRC=" << setw(4) << crc
+	   << "\n";
+  inf_file.close();
+  return inf_file.good();
+}
+
+inline unsigned long cycle(unsigned long crc)
+{
+  if (crc & 32768)
+    return  (((crc ^ 0x0810) & 32767) << 1) + 1;
+  else
+    return crc << 1;
+}
+
+unsigned long compute_crc(const byte* start, const byte *end)
+{
+  unsigned long crc = 0;
+  for (const byte* p = start; p < end; ++p)
+    {
+      crc ^= *p++ << 8;
+      for(int k = 0; k < 8; k++)
+	crc = cycle(crc);
+      assert((crc & ~0xFFFF) == 0);
+    }
+  return crc;
+}
+
 bool cmd_extract_all(const Image& image, const DFSContext&,
 		     const vector<string>& args)
 {
@@ -563,7 +607,13 @@ bool cmd_extract_all(const Image& image, const DFSContext&,
 	  return false;
 	}
 
-      // TODO: create a .inf file.
+      unsigned long crc = compute_crc(start, end);
+      const string inf_file_name = output_body_file + ".inf";
+      if (!create_inf_file(inf_file_name, crc, entry))
+	{
+	  std::cerr << inf_file_name << ": " << strerror(errno) << "\n";
+	  return false;
+	}
     }
   return true;
 }
