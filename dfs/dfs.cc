@@ -643,7 +643,7 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
       return false;
     }
   string error_message;
-  std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::MakeUnique(ctx, args[1], &error_message);
+  std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::make_unique(ctx, args[1], &error_message);
   if (!matcher)
     {
       cerr << "Not a valid pattern (" << error_message << "): " << args[1] << "\n";
@@ -663,7 +663,7 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
       std::cerr << "info: directory is '" << entry.directory() << "'\n";
       std::cerr << "info: item is '" << full_name << "'\n";
 #endif
-      if (!matcher->Matches(full_name))
+      if (!matcher->matches(full_name))
 	  continue;
       unsigned long load_addr, exec_addr;
       load_addr = sign_extend(entry.load_address());

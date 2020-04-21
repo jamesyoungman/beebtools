@@ -12,10 +12,10 @@ class AFSPMatcher
 
  public:
   static std::unique_ptr<AFSPMatcher>
-  MakeUnique(const DFSContext& ctx, const std::string& pattern, std::string* error);
+  make_unique(const DFSContext& ctx, const std::string& pattern, std::string* error);
 
-  bool Matches(const std::string& name);
-  static bool SelfTest();
+  bool matches(const std::string& name);
+  static bool self_test();
 
   // The point of FactoryKey is to ensure that only MakeUnique() can
   // create instances.  We can't just make the constructor pivate since
@@ -26,7 +26,7 @@ class AFSPMatcher
   ~AFSPMatcher();
 
  private:
-  bool Valid() const 
+  bool valid() const 
   {
     return valid_;
   }
@@ -36,4 +36,16 @@ class AFSPMatcher
   void *implementation_;
 };
 
+  namespace internal 
+  {
+    bool extend_wildcard(const DFSContext& ctx, const std::string& wild,
+			 std::string* out, std::string* error_message);
+  }  // namespace DFS::internal
+
+  namespace internal 
+  {
+    bool qualify(const DFSContext& ctx, const std::string& filename, std::string* out, std::string* error_message);
+    bool extend_wildcard(const DFSContext& ctx, const std::string& wild, std::string* out, std::string* error_message);
+  }
+  
 }  // namespace DFS
