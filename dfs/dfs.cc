@@ -1,25 +1,23 @@
-#include "dfsimage.h"
-
+#include <assert.h>
+#include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <limits.h>
-#include <assert.h>
 
 #include <algorithm>
-#include <map>
 #include <exception>
-#include <locale>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <locale>
+#include <map>
 #include <vector>
 
+#include "afsp.h"
 #include "dfscontext.h"
 #include "dfsimage.h"
-#include "afsp.h"
 #include "fsp.h"
 #include "stringutil.h"
 
@@ -36,35 +34,6 @@ using stringutil::case_insensitive_equal;
 using stringutil::case_insensitive_less;
 
 
-
-  
-typedef std::function<bool(int /* sector number */,
-			   const byte data[],
-			   unsigned short len)> FileSectorVisitor;
-
-class ExceptionBase : public std::exception
-{
-public:
-  explicit ExceptionBase(const string& msg)
-    : error_message_(msg) {}
-
-  const char *what() const throw()
-  {
-    return error_message_.c_str();
-  }
-protected:
-  std::string error_message_;
-};
-
-// class InternalError : public std::logic_error
-// {
-// public:
-//   explicit InternalError(const string& msg)
-//     : std::logic_error("internal error: " + msg)
-//   {
-//   }
-// };
-
 class OsError : public std::exception
 {
 public:
@@ -80,12 +49,6 @@ private:
   int errno_value_;
 };
 
-
-namespace DFS {
-
-}  // namespace DFS
-
-  
 namespace
 {
   inline static std::string decode_opt(byte opt)
@@ -733,7 +696,7 @@ int main (int argc, char *argv[])
       return 1;
     }
   using DFS::commands;
-  commands["cat"] =  DFS::cmd_cat;	// *CAT
+  commands["cat"] =  DFS::cmd_cat;  // *CAT
   commands["help"] = DFS::cmd_help;
   commands["info"] = DFS::cmd_info; // *INFO
   commands["type"] = DFS::cmd_type; // *TYPE
@@ -757,7 +720,7 @@ int main (int argc, char *argv[])
     {
       DFS::load_image(image_file, &image);
     }
-  catch (DFS::ExceptionBase& e)
+  catch (std::exception& e)
     {
       cerr << "failed to dump " << image_file << ": " << e.what() << "\n";
       return 1;
