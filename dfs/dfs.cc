@@ -37,21 +37,6 @@ using stringutil::case_insensitive_less;
 
 std::map<std::string, Command> commands;
   
-class OsError : public std::exception
-{
-public:
-  explicit OsError(int errno_value)
-    : errno_value_(errno_value)
-  {
-  }
-  const char *what() const throw()
-  {
-    return strerror(errno_value_);
-  }
-private:
-  int errno_value_;
-};
-
 namespace
 {
   inline char byte_to_char(byte b)
@@ -107,13 +92,13 @@ unsigned long sign_extend(unsigned long address)
     }
 }
 
-bool body_command(const Image& image, const DFSContext& ctx,
+bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
 		  const vector<string>& args,
 		  file_body_logic logic)
 {
   if (args.size() < 2)
     {
-      cerr << "please ive a file name.\n";
+      cerr << "please give a file name.\n";
       return false;
     }
   if (args.size() > 2)
@@ -121,13 +106,18 @@ bool body_command(const Image& image, const DFSContext& ctx,
       // The Beeb ignores subsequent arguments.
       cerr << "warning: ignoring additional arguments.\n";
     }
-  const int slot = image.find_catalog_slot_for_name(ctx, args[1]);
+  const FileSystemImage *image;
+  if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
+    return false;
+  assert(image != 0);
+
+  const int slot = image->find_catalog_slot_for_name(ctx, args[1]);
   if (-1 == slot)
     {
       std::cerr << args[1] << ": not found\n";
       return false;
     }
-  auto [start, end] = image.file_body(slot);
+  auto [start, end] = image->file_body(slot);
   const vector<string> tail(args.begin() + 1, args.end());
   return logic(start, end, tail);
 }
@@ -162,10 +152,10 @@ bool hexdump_bytes(size_t pos, size_t len, const byte* data)
   return true;
 }
 
-bool cmd_dump(const Image& image, const DFSContext& ctx,
+bool cmd_dump(const StorageConfiguration& config, const DFSContext& ctx,
 	      const vector<string>& args)
 {
-  return body_command(image, ctx, args,
+  return body_command(config, ctx, args,
 		      [](const byte* body_start,
 			 const byte *body_end,
 			 const vector<string>&)
@@ -228,9 +218,10 @@ unsigned long compute_crc(const byte* start, const byte *end)
   return crc;
 }
 
-bool cmd_extract_all(const Image& image, const DFSContext&,
+bool cmd_extract_all(const StorageConfiguration& config, const DFSContext& ctx,
 		     const vector<string>& args)
 {
+  // Use the --drive option to select which drive to extract files from.
   if (args.size() < 2)
     {
       cerr << "extract-all: please specify the destination directory.\n";
@@ -244,11 +235,15 @@ bool cmd_extract_all(const Image& image, const DFSContext&,
   string dest_dir(args[1]);
   if (dest_dir.back() != '/')
     dest_dir.push_back('/');
-  const int entries = image.catalog_entry_count();
+  const FileSystemImage* image;
+  if (config.select_drive(ctx.current_drive, &image))
+      return false;
+
+  const int entries = image->catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
     {
-      const auto& entry = image.get_catalog_entry(i);
-      auto [start, end] = image.file_body(i);
+      const auto& entry = image->get_catalog_entry(i);
+      auto [start, end] = image->file_body(i);
 
       const string output_basename(string(1, entry.directory()) + "." + rtrim(entry.name()));
       const string output_body_file = dest_dir + output_basename;
@@ -275,12 +270,12 @@ bool cmd_extract_all(const Image& image, const DFSContext&,
 }
 
 
-bool cmd_info(const Image& image, const DFSContext& ctx,
+bool cmd_info(const StorageConfiguration& storage, const DFSContext& ctx,
 	      const vector<string>& args)
 {
   if (args.size() < 2)
     {
-      cerr << "info: please give a file name of wildcard specifying which files "
+      cerr << "info: please give a file name or wildcard specifying which files "
 	   << "you want to see information about.\n";
       return false;
     }
@@ -290,6 +285,11 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
 	   << (args.size() - 1) << ")\n";
       return false;
     }
+  const FileSystemImage *image;
+  if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
+    return false;
+  assert(image != 0);
+
   string error_message;
   std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::make_unique(ctx, args[1], &error_message);
   if (!matcher)
@@ -298,14 +298,14 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
       return false;
     }
 
-  const int entries = image.catalog_entry_count();
+  const int entries = image->catalog_entry_count();
   cout << std::hex;
   cout << std::uppercase;
   using std::setw;
   using std::setfill;
   for (int i = 1; i <= entries; ++i)
     {
-      const auto& entry = image.get_catalog_entry(i);
+      const auto& entry = image->get_catalog_entry(i);
       const string full_name = string(1, entry.directory()) + "." + entry.name();
 #if VERBOSE_FOR_TESTS
       std::cerr << "info: directory is '" << entry.directory() << "'\n";
@@ -327,30 +327,6 @@ bool cmd_info(const Image& image, const DFSContext& ctx,
   return true;
 }
 
-void load_image(const char *filename, vector<byte>* image)
-{
-  std::ifstream infile(filename, std::ifstream::in);
-  int len;
-
-  const bool ok = [&len, &infile] {
-		    if (!infile.seekg(0, infile.end))
-		      return false;
-		    len = infile.tellg();
-		    if (len == 0)
-		      return false;
-		    if (!infile.seekg(0, infile.beg))
-		      return false;
-		    return true;
-		  }();
-  if (!ok)
-    throw OsError(errno);
-  image->resize(len);
-  if (len < SECTOR_BYTES * 2)
-    throw BadImage("disk image is too short to contain a valid catalog");
-  if (!infile.read(reinterpret_cast<char*>(image->data()), len).good())
-    throw OsError(errno);
-}
-
 struct comma_thousands : std::numpunct<char>
 {
   char do_thousands_sep() const
@@ -365,19 +341,32 @@ struct comma_thousands : std::numpunct<char>
 };
 
 
-bool cmd_free(const Image& image, const DFSContext&,
+bool cmd_free(const StorageConfiguration& storage, const DFSContext& ctx,
 	      const vector<string>& args)
 {
-  if (args.size() > 1)
+  const FileSystemImage *image;
+  if (args.size() > 2)
     {
-      cerr << "no additional command-line arguments are needed.\n";
+      cerr << "at most one command-line argument is needed.\n";
       return false;
     }
+  if (args.size() < 2)
+    {
+      if (!storage.select_drive(ctx.current_drive, &image))
+	return false;
+    }
+  else 
+    {
+      if (!storage.select_drive_by_number(args[1], &image))
+	return false;
+    }
+  assert(image != 0);
+
   int sectors_used = 2;
-  const int entries = image.catalog_entry_count();
+  const int entries = image->catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
     {
-      const auto& entry = image.get_catalog_entry(i);
+      const auto& entry = image->get_catalog_entry(i);
       ldiv_t division = ldiv(entry.file_length(), SECTOR_BYTES);
       const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
       const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
@@ -386,8 +375,8 @@ bool cmd_free(const Image& image, const DFSContext&,
 	  sectors_used = last_sector_of_file;
 	}
     }
-  int files_free = image.max_file_count() - image.catalog_entry_count();
-  int sectors_free = image.disc_sector_count() - sectors_used;
+  int files_free = image->max_file_count() - image->catalog_entry_count();
+  int sectors_free = image->disc_sector_count() - sectors_used;
   cout << std::uppercase;
   auto show = [](int files, int sectors, const string& desc)
 	      {
@@ -400,14 +389,14 @@ bool cmd_free(const Image& image, const DFSContext&,
   auto prevlocale = cout.imbue(std::locale(cout.getloc(),
 					   new comma_thousands)); // takes ownership
   show(files_free, sectors_free, "Free");
-  show(image.catalog_entry_count(), sectors_used, "Used");
+ show(image->catalog_entry_count(), sectors_used, "Used");
   cout.imbue(prevlocale);
   return true;
 }
 
 
 
-bool cmd_help(const Image&, const DFSContext&,
+bool cmd_help(const StorageConfiguration&, const DFSContext&,
 	      const vector<string>&)
 
 {
@@ -469,7 +458,6 @@ enum OptSignifier
 
 int main (int argc, char *argv[])
 {
-  const char *image_file = NULL;
   DFS::DFSContext ctx('$', 0);
   int longindex;
   // struct option fields: name, has_arg, *flag, val
@@ -487,6 +475,7 @@ int main (int argc, char *argv[])
      { 0, 0, 0, 0 },
     };
 
+  DFS::StorageConfiguration storage;
   int opt;
   while ((opt=getopt_long(argc, argv, "+", opts, &longindex)) != -1)
     {
@@ -497,7 +486,7 @@ int main (int argc, char *argv[])
 	  return 1;
 
 	case OPT_IMAGE_FILE:
-	  image_file = optarg;
+	  storage.connect_drive(optarg);
 	  break;
 
 	case OPT_CWD:
@@ -544,17 +533,6 @@ int main (int argc, char *argv[])
       return 1;
     }
 
-  std::vector<DFS::byte> image;
-  try
-    {
-      DFS::load_image(image_file, &image);
-    }
-  catch (std::exception& e)
-    {
-      cerr << "failed to dump " << image_file << ": " << e.what() << "\n";
-      return 1;
-    }
-  return selected_command->second(image, ctx, extra_args) ? 1 : 0;
+  storage.show_drive_configuration(std::cout);
+  return selected_command->second(storage, ctx, extra_args) ? 1 : 0;
 }
-
-

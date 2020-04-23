@@ -39,7 +39,7 @@ char CatalogEntry::directory() const
   return 0x7F & (data_[cat_offset_ + 0x07]);
 }
   
-std::string Image::title() const
+std::string FileSystemImage::title() const
 {
   std::vector<byte> title_data;
   title_data.resize(12);
@@ -53,7 +53,7 @@ std::string Image::title() const
 }
 
 
-int Image::find_catalog_slot_for_name(const DFSContext& ctx, const std::string& arg) const
+int FileSystemImage::find_catalog_slot_for_name(const DFSContext& ctx, const std::string& arg) const
 {
   auto [dir, name] = directory_and_name_of(ctx, arg);
 #if VERBOSE_FOR_TESTS
@@ -90,7 +90,7 @@ int Image::find_catalog_slot_for_name(const DFSContext& ctx, const std::string& 
   return -1;
 }
 
-std::pair<const byte*, const byte*> Image::file_body(int slot) const
+std::pair<const byte*, const byte*> FileSystemImage::file_body(int slot) const
 {
   if (slot < 1 || slot > catalog_entry_count())
     throw std::range_error("catalog slot is out of range");
@@ -99,9 +99,9 @@ std::pair<const byte*, const byte*> Image::file_body(int slot) const
   auto offset = static_cast<unsigned long>(SECTOR_BYTES) * entry.start_sector();
   auto length = entry.file_length();
   if (length > img_.size())
-    throw BadImage("file size for catalog entry is larger than the disk image");
+    throw BadFileSystemImage("file size for catalog entry is larger than the disk image");
   if (offset > (img_.size() - length))
-    throw BadImage("file extends beyond the end of the disk image");
+    throw BadFileSystemImage("file extends beyond the end of the disk image");
   const byte* start = img_.data() + offset;
     return std::make_pair(start, start + length);
 }

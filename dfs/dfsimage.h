@@ -8,14 +8,11 @@
 #include <utility>
 
 #include "dfscontext.h"
+#include "dfstypes.h"
 #include "stringutil.h"
 
 namespace DFS
 {
-  typedef unsigned char byte;
-  typedef std::vector<byte>::size_type offset;
-  typedef unsigned short sector_count_type; // needs 10 bits
-
   enum
   {
    SECTOR_BYTES = 256
@@ -30,10 +27,10 @@ enum class Format
   };
  Format identify_format(const std::vector<byte>& image);
 
-class BadImage : public std::exception
+class BadFileSystemImage : public std::exception
 {
  public:
- BadImage(const std::string& msg)
+ BadFileSystemImage(const std::string& msg)
    : error_message_(std::string("bad disk image: ") + msg)
     {
     }
@@ -113,10 +110,13 @@ private:
   Format fmt_;
 };
 
-class Image
+// FileSystemImage is an image of a single file system (as opposed to a wrapper
+// around a disk image file.  For DFS file systems, FileSystemImage usually
+// represents a side of a disk.
+class FileSystemImage
 {
 public:
- Image(const std::vector<byte> disc_image)
+ explicit FileSystemImage(const std::vector<byte>& disc_image)
     : img_(disc_image), disc_format_(identify_format(disc_image))
   {
   }

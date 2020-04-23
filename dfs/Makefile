@@ -1,11 +1,12 @@
 RM = rm -f
 CXXFLAGS = -ggdb -Wall -Wextra -std=c++17
+CFLAGS = -ggdb -Wall -Wextra
 CPPFLAGS_TESTS = -DVERBOSE_FOR_TESTS=1
 TESTS = test_afsp test_stringutil
-TARGETS = dfs $(TESTS)
-HEADERS = dfscontext.h afsp.h fsp.h stringutil.h regularexpression.h dfsimage.h
+TARGETS = dfs splitimage $(TESTS)
+HEADERS = dfscontext.h afsp.h fsp.h stringutil.h regularexpression.h dfsimage.h storage.h dfstypes.h
 
-COMMON_SOURCES = afsp.cc fsp.cc stringutil.cc dfsimage.cc
+COMMON_SOURCES = afsp.cc fsp.cc stringutil.cc dfsimage.cc storage.cc
 DFS_SOURCES = dfs.cc cmd_cat.cc cmd_type.cc cmd_list.cc  $(COMMON_SOURCES)
 
 default: $(TARGETS)
@@ -17,6 +18,9 @@ clean:
 
 dfs: $(DFS_SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) -o $@ $(DFS_SOURCES)
+
+splitimage: splitimage.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 test_afsp: test_afsp.cc $(COMMON_SOURCES) $(HEADERS)
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS_TESTS) -o $@ test_afsp.cc afsp.cc fsp.cc stringutil.cc

@@ -7,7 +7,7 @@
 namespace DFS 
 {
 
-bool cmd_type(const Image& image, const DFSContext& ctx,
+bool cmd_type(const StorageConfiguration& config, const DFSContext& ctx,
 	      const std::vector<std::string>& args)
 {
   file_body_logic display_contents =
@@ -23,7 +23,7 @@ bool cmd_type(const Image& image, const DFSContext& ctx,
 	}
       return std::cout.write(reinterpret_cast<const char*>(data.data()), data.size()).good();
     };
-  return body_command(image, ctx, args, display_contents);
+  return body_command(config, ctx, args, display_contents);
 }
 
 }  // namespace DFS

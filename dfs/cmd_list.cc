@@ -11,7 +11,7 @@
 namespace DFS
 {
 
-bool cmd_list(const Image& image, const DFSContext& ctx,
+bool cmd_list(const StorageConfiguration& config, const DFSContext& ctx,
 	      const std::vector<std::string>& args)
 {
   file_body_logic display_numbered_lines =
@@ -41,7 +41,7 @@ bool cmd_list(const Image& image, const DFSContext& ctx,
 	}
       return true;
     };
-  return body_command(image, ctx, args, display_numbered_lines);
+  return body_command(config, ctx, args, display_numbered_lines);
 }
 
 }  // namespace DFS
