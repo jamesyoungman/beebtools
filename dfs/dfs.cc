@@ -236,8 +236,11 @@ bool cmd_extract_all(const StorageConfiguration& config, const DFSContext& ctx,
   if (dest_dir.back() != '/')
     dest_dir.push_back('/');
   const FileSystemImage* image;
-  if (config.select_drive(ctx.current_drive, &image))
+  if (!config.select_drive(ctx.current_drive, &image))
+    {
+      cerr << "failed to select current drive " << ctx.current_drive << "\n";
       return false;
+    }
 
   const int entries = image->catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
