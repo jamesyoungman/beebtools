@@ -97,16 +97,48 @@ bool stdout_write_error()
   return false;
 }
 
+int count(unsigned char needle, const char* haystack, size_t len)
+{
+  int n = 0;
+  const unsigned char *p = (const unsigned char*)haystack;
+  while (len--)
+    {
+      if (*p++ == needle)
+	++n;
+    }
+  return n;
+}
+
 bool decode_line(enum Dialect dialect,
 		 unsigned char line_hi, unsigned char line_lo,
-		 unsigned char len, const char *data,
-		 const char **token_map)
+		 unsigned char orig_len, const char *data,
+		 const char **token_map, int *indent, int listo)
 {
   unsigned const char *p = (unsigned const char*)data;
+  int outdent = 0;
   const unsigned int line_number = (256u * line_hi) + line_lo;
-  // TODO: support LISTO better (e.g. indent FOR loops).
+  unsigned char len = orig_len;
   if (fprintf(stdout, "%5u ", line_number) < 0)
     return false;		/* I/O error */
+  if (listo & 1)
+    putchar(' ');
+  if (listo & 2)		/* for...next loops */
+    {
+      const int next_count = count(0xED, data, orig_len);
+      outdent += 2 * next_count;
+    }
+  if (listo & 4)		/* repeat...until loops */
+    {
+      const int until_count = count(0xFD, data, orig_len);
+      outdent += 2 * until_count;
+    }
+  *indent -= outdent;
+  if (*indent > 0)
+    {
+      if (fprintf(stdout, "%*s", (*indent), "") < 0)
+	return false;		/* I/O error */
+    }
+
   while (len--) 
     {
       unsigned char uch = *p++;
@@ -148,6 +180,16 @@ bool decode_line(enum Dialect dialect,
 	return stdout_write_error();
     }
   putchar('\n');
+  if (listo & 2)		/* for loops */
+    {
+      const int for_count = count(0xE3, data, orig_len);
+      (*indent) += 2 * for_count;
+    }
+  if (listo & 4)
+    {
+      const int repeat_count = count(0xF5, data, orig_len);
+      (*indent) += 2 * repeat_count;
+    }
   return true;
 }
 
@@ -166,6 +208,8 @@ int decode_cr_leading_program(FILE *f, const char *filename,
   // 0x0D 0xFF
   bool warned = false;
   bool empty = true;
+  const int listo = 7;
+  int indent = 0;
   static char buf[1024];
   for (;;)
     {
@@ -240,7 +284,7 @@ int decode_cr_leading_program(FILE *f, const char *filename,
 	      return 1;
 	    }
 	}
-      if (!decode_line(dialect, hi, lo, len, buf, token_map))
+      if (!decode_line(dialect, hi, lo, len, buf, token_map, &indent, listo))
 	return 1;
     }
 }
@@ -248,6 +292,7 @@ int decode_cr_leading_program(FILE *f, const char *filename,
 
 int main() 
 {
+  /*  TODO: control some of these things (and LISTO) with command line options. */
   unsigned dialect = mos6502_32000;
   const char ** token_map = build_mapping(dialect);
   const bool cr_leading = (dialect == mos6502_32000 || dialect == Windows || dialect == ARM);
