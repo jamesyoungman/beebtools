@@ -8,7 +8,7 @@
 #include <string.h>
 
 
-struct multi_mapping 
+struct multi_mapping
 {
   unsigned int token_value;
   const char* dialect_mappings[NUM_DIALECTS];
@@ -272,7 +272,7 @@ static void set_ascii_mappings(const char** out)
 }
 
 
-static const char** build_base_mapping(unsigned dialect) 
+static const char** build_base_mapping(unsigned dialect)
 {
   unsigned int tok, i;
   const char** out = calloc(NUM_TOKENS, sizeof(*out));
@@ -291,7 +291,7 @@ static const char** build_base_mapping(unsigned dialect)
   return out;
 }
 
-const char** build_mapping(unsigned dialect) 
+const char** build_mapping(unsigned dialect)
 {
   /* The Mac mapping is only different in C6 handling. */
   return build_base_mapping(dialect == Mac ? mos6502_32000 : dialect);
@@ -316,7 +316,7 @@ const char *map_c6(enum Dialect d, unsigned char uch)
     }
   /* On ARM we handle 0xC6 0x8E 0xA9 as "SUM" (here) followed by
      0xA9="LEN" which we handle as an ordinary single-byte token.
-     
+
      We do not expect to handle 0xC6 0xA9 here, because on Windows we
      handle 0xC6 as the single-byte token "SUM" and 0xA9 as the
      single-byte token "LEN".  So this function should not see those
@@ -363,3 +363,67 @@ const char *map_c8(enum Dialect d, unsigned char uch)
     return c8_tokens[uch];
 }
 
+struct dialect_mapping
+{
+  const char *name;
+  const char *synonym_for;
+  enum Dialect value;
+};
+
+struct dialect_mapping dialects[] =
+  {
+   { "6502", NULL, mos6502_32000},
+   {"32000", "6502", mos6502_32000},
+   {"Z80", NULL, Z80_80x86},
+   {"8086", "Z80", Z80_80x86},
+   {"ARM", NULL, ARM},
+   {"Windows", NULL, Windows},
+   {"Mac", NULL, Mac},
+   {NULL, NULL, NUM_DIALECTS},
+  };
+
+bool set_dialect(const char* name, enum Dialect* d)
+{
+  const struct dialect_mapping *m;
+  for (m = dialects; m->name != NULL; ++m)
+    {
+      if (0 == strcmp(name, m->name))
+	{
+	  *d = m->value;
+	  return true;
+	}
+    }
+  return false;
+}
+
+
+bool print_dialects(FILE *f, const char *default_dialect_name)
+{
+  const struct dialect_mapping *m;
+  bool first;
+  if (fprintf(f, "Known dialects are: ") < 0)
+    return false;
+  for (first = true, m = dialects; m->name != NULL; ++m, first=false)
+    {
+      if (!first)
+	{
+	  if (fputs(", ", f) < 0)
+	    return false;
+	}
+      if (fprintf(f, "\"%s\"", m->name) < 0)
+	return false;
+      if (0 == strcmp(default_dialect_name, m->name))
+	{
+	  if (fputs(" (this is the default)", f) < 0)
+	    return false;
+	}
+      if (m->synonym_for != NULL)
+	{
+	  if (fprintf(f, " (this is a synonym for \"%s\")", m->synonym_for) < 0)
+	    return false;
+	}
+    }
+  if (fputc('\n', f) == EOF)
+    return false;
+  return true;
+}
