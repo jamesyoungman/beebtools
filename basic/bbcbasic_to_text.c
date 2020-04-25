@@ -114,12 +114,14 @@ int count(unsigned char needle, const char* haystack, size_t len)
 bool decode_line(enum Dialect dialect,
 		 unsigned char line_hi, unsigned char line_lo,
 		 unsigned char orig_len, const char *data,
+		 long file_pos,
 		 const char **token_map, int *indent, int listo)
 {
   unsigned const char *p = (unsigned const char*)data;
   int outdent = 0;
   const unsigned int line_number = (256u * line_hi) + line_lo;
   unsigned char len = orig_len;
+
   if (fprintf(stdout, "%5u", line_number) < 0)
     return false;		/* I/O error */
   if (listo & 1)
@@ -145,6 +147,7 @@ bool decode_line(enum Dialect dialect,
     {
       unsigned char uch = *p++;
       const char *t = token_map[uch];
+
       /* We have "special" tokens which expand to something starting
 	 with an underscore, and we handle those in handle_line_num()
 	 (for 0x8D) or handle_special_token() (for 0xC6, 0xC7, 0xC8).
@@ -155,6 +158,13 @@ bool decode_line(enum Dialect dialect,
       */
       if (t[0] == '_' && uch != 0x5F)
 	{
+	  if (0 == strcmp(t, invalid))
+	    {
+	      fprintf(stderr, "saw unexpected token 0x%02X at file position %ld (0x%02lX), "
+		      "are you sure you specified the right dialect?\n",
+		      (unsigned)uch, file_pos, (unsigned long)file_pos);
+	      return false;
+	    }
 	  if (0 == strcmp(t, line_num))
 	    {
 	      /* This flags an upcoming line number (e.g. in a GOTO
@@ -172,6 +182,7 @@ bool decode_line(enum Dialect dialect,
 		    return false;
 		  p += 3;
 		  len -= 3;
+		  file_pos += 3;
 		  continue;
 		}
 	    }
@@ -180,6 +191,7 @@ bool decode_line(enum Dialect dialect,
 	}
       if (fputs(t, stdout) == EOF)
 	return stdout_write_error();
+      ++file_pos;
     }
   putchar('\n');
   if (listo & 2)		/* for loops */
@@ -195,7 +207,117 @@ bool decode_line(enum Dialect dialect,
   return true;
 }
 
+bool expect_char(FILE *f, unsigned char val_expected)
+{
+  int ch;
+  if ((ch = getc(f)) == EOF)
+    return premature_eof(f);
+  if ((unsigned char)ch != val_expected)
+    {
+      const long int pos = ftell(f);
+      fprintf(stderr, "expected to see a byte with value 0x%02X "
+	      "(instead of 0x%02X) at position %ld, "
+	      "are you sure you specified the right format?\n",
+	      (unsigned)val_expected, (unsigned)ch, pos);
+      return false;
+    }
+  return true;
+}
 
+bool decode_len_leading_program(FILE *f, const char *filename,
+				enum Dialect dialect, const char **token_map, int listo)
+{
+  // In this file format lines look like this:
+  // <len> <lo> <hi> tokens... 0x0D
+  //
+  // End of file looks like this:
+  // 0x00 0xFF 0xFF
+  //
+  // Note that the byte ordering here is different to the 6502 dialect
+  // and different to some descriptions you might find on the web.
+  // However, R.T. Russell's program 6502-Z80.BBC emits the low byte
+  // followed by the high byte, which is what this program expects.
+  int indent = 0;
+  bool empty = true;		/* file is entirely empty */
+  static char buf[1024];
+  long int file_pos;
+  for (;;)
+    {
+      int ch;
+      int hi, lo;
+      size_t nread;
+      unsigned long len;
+      if ((ch = getc(f)) == EOF)
+	{
+	  if (empty)
+	    return true;
+	  else
+	    return premature_eof(f);
+	}
+      empty = false;
+      len = ch;
+      if (0 == len)
+	{
+	  // This is logical EOF.  We still expect to see 0xFF 0xFF though.
+	  expect_char(f, 0xFF);
+	  expect_char(f, 0xFF);
+	  // This should be followed by the physical EOF.
+	  if ((ch = fgetc(f)) != EOF)
+	    {
+	      /* This seems to happen with at least some of the Torch
+		 Z80 example BASIC programs, but I don't know if this
+		 is supposed to happen or not. */
+	      fprintf(stderr, "warning: expected end-of-file at position %ld but "
+		      "instead we reach a byte with value 0x%02X, are you "
+		      "sure you specified the right dialect?\n",
+		      ftell(f), (unsigned)ch);
+	      return true;	/* assume this is (perhaps unusual but) OK. */
+	    }
+	  return true;
+	}
+      if (len < 3)
+	{
+	  fprintf(stderr, "line at position %ld has length %lu "
+		  "which is impossibly short, are you sure you specified the right "
+		  "dialect?\n", ftell(f), len);
+	  return false;
+	}
+      if ((ch = fgetc(f)) == EOF)
+	return premature_eof(f);
+      lo = (unsigned char)ch;
+      if ((ch = fgetc(f)) == EOF)
+	return premature_eof(f);
+      hi = (unsigned char)ch;
+
+      clearerr(f);
+      assert(len < sizeof(buf));
+      file_pos = ftell(f);
+      len -= 3;
+      nread = fread(buf, 1, len, f);
+      if (nread < len)
+	{
+	  if (ferror(f))
+	    {
+	      perror(filename);
+	      return false;
+	    }
+	}
+      if ((len > 0) && buf[len-1] != 0x0D)
+	{
+	  fprintf(stderr, "expected to see character 0x0D at the end of the "
+		  "line at file offset %ld, but saw 0x%02X, are you sure "
+		  "you specified the correct dialect?\n",
+		  file_pos, (unsigned)buf[len-1]);
+	  return false;
+	}
+      /* decode_line already prints a newline at the end of the line, so we don't
+	 want to pass it the final 0x0D, as then the newline would be doubled.
+	 Hence we pass len-1 as the length.
+      */
+      if (!decode_line(dialect, hi, lo, len-1, buf, file_pos, token_map, &indent, listo))
+	return false;
+    }
+}
 
 bool decode_cr_leading_program(FILE *f, const char *filename,
 			       enum Dialect dialect, const char **token_map, int listo)
@@ -211,6 +333,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
   bool warned = false;
   bool empty = true;
   int indent = 0;
+  long int file_pos;
   static char buf[1024];
   for (;;)
     {
@@ -276,6 +399,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
       len -= 4;
       clearerr(f);
       assert(len < sizeof(buf));
+      file_pos = ftell(f);
       nread = fread(buf, 1, len, f);
       if (nread < len)
 	{
@@ -285,7 +409,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
 	      return false;
 	    }
 	}
-      if (!decode_line(dialect, hi, lo, len, buf, token_map, &indent, listo))
+      if (!decode_line(dialect, hi, lo, len, buf, file_pos, token_map, &indent, listo))
 	return false;
     }
 }
@@ -337,6 +461,8 @@ int main(int argc, char *argv[])
   const char **token_map;
   int listo = 7;
   bool cr_leading;
+  bool (*decoder)(FILE *f, const char *filename,
+		  enum Dialect dialect, const char **token_map, int listo);
   int longindex;
   const struct option opts[] =
     {
@@ -385,11 +511,7 @@ int main(int argc, char *argv[])
 	}
     }
   cr_leading = (dialect == mos6502_32000 || dialect == Windows || dialect == ARM);
-  if (!cr_leading)
-    {
-      fprintf(stderr, "This dialect is not yet supported, sorry.\n");
-      return 1;
-    }
+  decoder = cr_leading ? decode_cr_leading_program : decode_len_leading_program;
   token_map = build_mapping(dialect);
   if (NULL == token_map)
     {
@@ -423,7 +545,7 @@ int main(int argc, char *argv[])
 	      continue;
 	    }
 	}
-      if (!decode_cr_leading_program(f, name, dialect, token_map, listo))
+      if (!decoder(f, name, dialect, token_map, listo))
 	{
 	  if (exitval < 1)
 	    exitval = 1;
