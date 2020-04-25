@@ -197,8 +197,8 @@ bool decode_line(enum Dialect dialect,
 
 
 
-int decode_cr_leading_program(FILE *f, const char *filename,
-			      enum Dialect dialect, const char **token_map, int listo)
+bool decode_cr_leading_program(FILE *f, const char *filename,
+			       enum Dialect dialect, const char **token_map, int listo)
 {
   // In this file format lines look like this:
   // 0x0D <hi> <lo> <len> tokens...
@@ -218,7 +218,7 @@ int decode_cr_leading_program(FILE *f, const char *filename,
       int hi, lo;
       size_t nread;
       unsigned long len;
-      if ((ch = getchar()) == EOF)
+      if ((ch = getc(f)) == EOF)
 	{
 	  if (empty)
 	    return true;
@@ -232,7 +232,7 @@ int decode_cr_leading_program(FILE *f, const char *filename,
 	  fprintf(stderr, "line at position %ld did not start with 0x0D "
 		  "(instead 0x%02X) are you sure you specified the right "
 		  "format?\n", pos, (unsigned)ch);
-	  return 1;
+	  return false;
 	}
       if ((ch = fgetc(f)) == EOF)
 	return premature_eof(f);
@@ -240,9 +240,9 @@ int decode_cr_leading_program(FILE *f, const char *filename,
       if (hi == 0xFF)
 	{
 	  /* 0x0D 0xFF signals EOF. */
-	  if ((ch = getchar()) == EOF)
+	  if ((ch = getc(f)) == EOF)
 	    {
-	      return 0;
+	      return true;
 	    }
 	  else
 	    {
@@ -271,7 +271,7 @@ int decode_cr_leading_program(FILE *f, const char *filename,
 	  fprintf(stderr, "line at position %ld has length %lu "
 		  "which is impossibly short, are you sure you specified the right "
 		  "format?\n", ftell(f), len);
-	  return 1;
+	  return false;
 	}
       len -= 4;
       clearerr(f);
@@ -282,11 +282,11 @@ int decode_cr_leading_program(FILE *f, const char *filename,
 	  if (ferror(f))
 	    {
 	      perror(filename);
-	      return 1;
+	      return false;
 	    }
 	}
       if (!decode_line(dialect, hi, lo, len, buf, token_map, &indent, listo))
-	return 1;
+	return false;
     }
 }
 
