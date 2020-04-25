@@ -23,28 +23,39 @@ do
 	goldens_missing=""
 	for listo in 0 1 2 3 4 5 6 7
 	do
-	    g="${in_dir}/golden/${dialect}/${infile}_listo${listo}.txt"
-	    if [ -e "${g}" ]
+	    g_txt="${in_dir}/golden/${dialect}/${infile}_listo${listo}.txt"
+	    g_bin="${in_dir}/golden/${dialect}/${infile}_listo${listo}.bin"
+	    if [ -e "${g_txt}" ]
 	    then
 	        found_golden=true
-		out="$(mktemp)"
-		if "${formatter}" --listo="${listo}" "${infile_path}" >| "${out}"
-		then
-			if diff "${g}" "${out}"
-			then
-				echo "PASS: ${g}"
-			else
-				echo "FAIL: ${g}: wrong output" >&2
-				rv=1
-			fi
-		 else
-				echo "FAIL: ${g}: exit value was $?" >&2
-				rv=1
-		 fi
-		rm -f "${out}"
+		differ=diff
+		g="${g_txt}"
+	    elif [ -e "${g_bin}" ]
+	    then
+		 found_golden=true
+		 differ=cmp
+		 g="${g_bin}"
 	    else
-		goldens_missing="${goldens_missing} ${g}"
+		goldens_missing="${goldens_missing} ${g_txt} ${g_bin}"
+		continue
 	    fi
+	    
+	    out="$(mktemp)"
+	    if "${formatter}" --listo="${listo}" "${infile_path}" >| "${out}"
+	    then
+	    	if "${differ}" "${g}" "${out}"
+	    	then
+	    		echo "PASS: ${g}"
+	    	else
+		        if [ "${differ}" = "cmp" ]; then hexdump -C "${out}" 2>&1; fi
+	    		echo "FAIL: ${g}: wrong output" >&2
+	    		rv=1
+	    	fi
+	     else
+	    		echo "FAIL: ${g}: exit value was $?" >&2
+	    		rv=1
+	     fi
+	    rm -f "${out}"
 	done
 	if ! ${found_golden}
 	then

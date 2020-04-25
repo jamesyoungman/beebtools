@@ -22,7 +22,7 @@ int premature_eof(FILE *f)
 }
 
 bool handle_special_token(enum Dialect dialect, unsigned char tok,
-			  const char **output, const char **input, unsigned char *len)
+			  const char **output, const unsigned char **input, unsigned char *len)
 {
   if (dialect == mos6502_32000 || dialect == Z80_80x86)
     {
@@ -111,6 +111,62 @@ int count(unsigned char needle, const char* haystack, size_t len)
   return n;
 }
 
+bool handle_token(enum Dialect dialect,
+		  unsigned char uch, long file_pos,
+		  const unsigned char **input, unsigned char *len,
+		  const char **token_map)
+
+{
+  const char *t = token_map[uch];
+
+  /* We have "special" tokens which expand to something starting
+     with an underscore, and we handle those in handle_line_num()
+     (for 0x8D) or handle_special_token() (for 0xC6, 0xC7, 0xC8).
+
+     But, the token for 0x5F also begins with _, because it is
+     actually _ itself.  So, don't trigger special token handling
+     for that.
+  */
+  if (t[0] == '_' && uch != 0x5F)
+    {
+      if (0 == strcmp(t, invalid))
+	{
+	  fprintf(stderr, "saw unexpected token 0x%02X at file position %ld (0x%02lX), "
+		  "are you sure you specified the right dialect?\n",
+		  (unsigned)uch, file_pos, (unsigned long)file_pos);
+	  return false;
+	}
+      if (0 == strcmp(t, line_num))
+	{
+	  /* This flags an upcoming line number (e.g. in a GOTO
+	   * statement).  There are three following bytes encoding
+	   * the line number value.
+	   */
+	  if (*len < 3)
+	    {
+	      fprintf(stderr, "end-of-line in the middle of a line number\n");
+	      return false;
+	    }
+	  else
+	    {
+	      const unsigned char* p = (unsigned char*)*input;
+	      if (!print_target_line_number(p[0], p[1], p[2]))
+		return false;
+	      (*input) += 3;
+	      (*len) -= 3;
+	      file_pos += 3;
+	      return true;
+	    }
+	}
+      else if (!handle_special_token(dialect, uch, &t, input, len))
+	return false;
+    }
+  if (fputs(t, stdout) == EOF)
+    return stdout_write_error();
+  return true;
+}
+
+
 bool decode_line(enum Dialect dialect,
 		 unsigned char line_hi, unsigned char line_lo,
 		 unsigned char orig_len, const char *data,
@@ -121,6 +177,7 @@ bool decode_line(enum Dialect dialect,
   int outdent = 0;
   const unsigned int line_number = (256u * line_hi) + line_lo;
   unsigned char len = orig_len;
+  bool in_string = false;
 
   if (fprintf(stdout, "%5u", line_number) < 0)
     return false;		/* I/O error */
@@ -146,51 +203,23 @@ bool decode_line(enum Dialect dialect,
   while (len--)
     {
       unsigned char uch = *p++;
-      const char *t = token_map[uch];
-
-      /* We have "special" tokens which expand to something starting
-	 with an underscore, and we handle those in handle_line_num()
-	 (for 0x8D) or handle_special_token() (for 0xC6, 0xC7, 0xC8).
-
-	 But, the token for 0x5F also begins with _, because it is
-	 actually _ itself.  So, don't trigger special token handling
-	 for that.
-      */
-      if (t[0] == '_' && uch != 0x5F)
+      if (in_string)
 	{
-	  if (0 == strcmp(t, invalid))
-	    {
-	      fprintf(stderr, "saw unexpected token 0x%02X at file position %ld (0x%02lX), "
-		      "are you sure you specified the right dialect?\n",
-		      (unsigned)uch, file_pos, (unsigned long)file_pos);
-	      return false;
-	    }
-	  if (0 == strcmp(t, line_num))
-	    {
-	      /* This flags an upcoming line number (e.g. in a GOTO
-	       * statement).  There are three following bytes encoding
-	       * the line number value.
-	       */
-	      if (len < 3)
-		{
-		  fprintf(stderr, "end-of-line in the middle of a line number\n");
-		  return false;
-		}
-	      else
-		{
-		  if (!print_target_line_number(p[0], p[1], p[2]))
-		    return false;
-		  p += 3;
-		  len -= 3;
-		  file_pos += 3;
-		  continue;
-		}
-	    }
-	  else if (!handle_special_token(dialect, uch, &t, (const char**)&p, &len))
+	  /* We don't expand tokens inside strings.  Some programs, for
+	     example, include Mode 7 control characters inside strings.
+	     So 0x86 (decimal 134) inside a string is passed though literally
+	     (where in mode 7 it would turn text cyan) while outside
+	     a string it would expand to the keyword LINE.
+	  */
+	  putchar(uch);
+	}
+      else
+	{
+	  if (!handle_token(dialect, uch, file_pos, &p, &len, token_map))
 	    return false;
 	}
-      if (fputs(t, stdout) == EOF)
-	return stdout_write_error();
+      if (uch == '"')
+	in_string = !in_string;
       ++file_pos;
     }
   putchar('\n');
