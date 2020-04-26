@@ -521,6 +521,7 @@ int main (int argc, char *argv[])
   commands["help"] = DFS::cmd_help;
   commands["info"] = DFS::cmd_info; // *INFO
   commands["type"] = DFS::cmd_type; // *TYPE
+  commands["type_binary"] = DFS::cmd_type_binary; // *TYPE
   commands["dump"] = DFS::cmd_dump; // *DUMP
   commands["list"] = DFS::cmd_list; // *LIST
   commands["free"] = DFS::cmd_free; // *FREE

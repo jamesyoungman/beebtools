@@ -26,6 +26,7 @@ extern std::map<std::string, Command> commands;
 
 bool cmd_cat(const StorageConfiguration&, const DFSContext&, const std::vector<std::string>&);
 bool cmd_type(const StorageConfiguration&, const DFSContext&, const std::vector<std::string>&);
+bool cmd_type_binary(const StorageConfiguration&, const DFSContext&, const std::vector<std::string>&);
 bool cmd_list(const StorageConfiguration& config, const DFSContext& ctx,
 	      const std::vector<std::string>& args);
 
