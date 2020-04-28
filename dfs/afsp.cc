@@ -193,7 +193,7 @@ namespace DFS
     }
 
   }  // namespace internal
-  
+
 AFSPMatcher::AFSPMatcher(const AFSPMatcher::FactoryKey&,
 			 const DFSContext& ctx, const string& wildcard,
 			 string *error_message)

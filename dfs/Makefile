@@ -4,10 +4,10 @@ CFLAGS = -ggdb -Wall -Wextra
 CPPFLAGS_TESTS = -DVERBOSE_FOR_TESTS=1
 TESTS = test_afsp test_stringutil
 TARGETS = dfs splitimage $(TESTS)
-HEADERS = dfscontext.h afsp.h fsp.h stringutil.h regularexpression.h dfsimage.h storage.h dfstypes.h
+HEADERS = dfscontext.h afsp.h fsp.h stringutil.h regularexpression.h dfsimage.h storage.h dfstypes.h commands.h
 
 COMMON_SOURCES = afsp.cc fsp.cc stringutil.cc dfsimage.cc storage.cc
-DFS_SOURCES = dfs.cc cmd_cat.cc cmd_type.cc cmd_list.cc  $(COMMON_SOURCES)
+DFS_SOURCES = dfs.cc cmd_cat.cc cmd_type.cc cmd_list.cc  commands.cc $(COMMON_SOURCES)
 
 default: $(TARGETS)
 

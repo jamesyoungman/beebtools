@@ -5,7 +5,7 @@
 
 #include <string>
 
-namespace DFS 
+namespace DFS
 {
   class RegularExpression
   {
@@ -141,5 +141,5 @@ namespace DFS
   size_t max_matches_;
   };
 
-}  // namespace DFS  
+}  // namespace DFS
 #endif

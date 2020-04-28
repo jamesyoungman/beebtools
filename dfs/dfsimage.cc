@@ -9,7 +9,7 @@
 
 using std::string;
 
-namespace 
+namespace
 {
   inline char byte_to_ascii7(DFS::byte b)
   {
@@ -27,7 +27,7 @@ namespace
   }
 }  // namespace
 
-namespace DFS 
+namespace DFS
 {
 std::string CatalogEntry::name() const
 {
@@ -38,7 +38,7 @@ char CatalogEntry::directory() const
 {
   return 0x7F & (data_[cat_offset_ + 0x07]);
 }
-  
+
 std::string FileSystemImage::title() const
 {
   std::vector<byte> title_data;
@@ -84,7 +84,7 @@ int FileSystemImage::find_catalog_slot_for_name(const DFSContext& ctx, const std
 #endif
 	  continue;
 	}
-      
+
       return i;
     }
   return -1;

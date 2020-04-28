@@ -12,7 +12,7 @@ using std::vector;
 
 using DFS::DFSContext;
 
-namespace 
+namespace
 {
   bool one_xfrm_test(const DFSContext& ctx,
 		     const string& transform_name,
@@ -217,10 +217,10 @@ namespace
 }
 
 
-int main() 
+int main()
 {
   const int rv = self_test() ? 0 : 1;
-  if (rv != 0) 
+  if (rv != 0)
     {
       std::cerr << "TEST FAILURE\n";
     }

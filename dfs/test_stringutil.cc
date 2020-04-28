@@ -12,9 +12,9 @@ using std::vector;
 
 using DFS::stringutil::rtrim;
 
-namespace 
+namespace
 {
-  
+
   bool test_rtrim()
   {
     bool outcome = true;
@@ -45,10 +45,10 @@ namespace
 }
 
 
-int main() 
+int main()
 {
   const int rv = test_rtrim() ? 0 : 1;
-  if (rv != 0) 
+  if (rv != 0)
     {
       std::cerr << "TEST FAILURE\n";
     }

@@ -36,7 +36,7 @@ using stringutil::case_insensitive_less;
 
 
 std::map<std::string, Command> commands;
-  
+
 namespace
 {
   inline char byte_to_char(byte b)
@@ -358,7 +358,7 @@ bool cmd_free(const StorageConfiguration& storage, const DFSContext& ctx,
       if (!storage.select_drive(ctx.current_drive, &image))
 	return false;
     }
-  else 
+  else
     {
       if (!storage.select_drive_by_number(args[1], &image))
 	return false;
@@ -400,13 +400,41 @@ bool cmd_free(const StorageConfiguration& storage, const DFSContext& ctx,
 
 
 bool cmd_help(const StorageConfiguration&, const DFSContext&,
-	      const vector<string>&)
+	      const vector<string>& args)
 
 {
-  cout << "Known commands:\n";
-  for (const auto& c : commands)
-      cout << "    " << c.first << "\n";
-  return true;
+  if (args.size() < 2)
+    {
+      const char *prefix = "      ";
+      cout << "Known commands:\n";
+      for (const auto& c : commands)
+	cout << prefix << c.first << "\n";
+      return CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
+				       {
+					 cout << prefix << c->name() << "\n";
+					 return cout.good();
+				       }
+	);
+    }
+  else
+    {
+      for (unsigned int i = 1; i < args.size(); ++i)
+	{
+	  auto instance = CIReg::get_command(args[i]);
+	  if (instance)
+	    {
+	      cout << "usage for " << args[i] << ":\n" << instance->usage();
+	      if (!cout.good())
+		return false;
+	    }
+	  else
+	    {
+	      cerr << args[i] << " is not a known command.\n";
+	      return false;
+	    }
+	}
+      return true;
+    }
 }
 
 }  // namespace DFS
@@ -530,6 +558,17 @@ int main (int argc, char *argv[])
   vector<string> extra_args;
   if (optind < argc)
     extra_args.assign(&argv[optind], &argv[argc]);
+
+  auto ci = DFS::CIReg::get_command(cmd_name);
+  if (ci)
+    {
+      std::cerr << "found new-style command registration for " << cmd_name << "\n";
+    }
+  else
+    {
+      std::cerr << "did not find new-style command registration for " << cmd_name << "\n";
+    }
+
   auto selected_command = commands.find(cmd_name);
   if (selected_command == commands.end())
     {

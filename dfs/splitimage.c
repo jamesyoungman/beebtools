@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
-enum 
+enum
   {
    SECTOR_SIZE = 256,
    SECTORS_PER_TRACK = 10,
    INTERLEAVE_SIZE = SECTOR_SIZE * SECTORS_PER_TRACK,
   };
 
-void usage(const char *program) 
+void usage(const char *program)
 {
   fprintf(stderr, "usage: %s input-image.raw "
 	  "output-side0.sdd output-side2.sdd\n",
@@ -54,7 +54,7 @@ void must_write(const char *name, FILE *f, char buf[])
   check_io(name, fwrite(buf, 1, INTERLEAVE_SIZE, f), INTERLEAVE_SIZE);
 }
 
-int main(int argc, char *argv[]) 
+int main(int argc, char *argv[])
 {
   static char buf[SECTOR_SIZE * SECTORS_PER_TRACK];
   FILE *in, *side0, *side2;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
       if (!try_read(argv[1], in, buf))
 	break;
       must_write(argv[2], side0, buf);
-      if (!try_read(argv[1], in, buf)) 
+      if (!try_read(argv[1], in, buf))
 	{
 	  fprintf(stderr, "size of %s should be a multiple of %d bytes\n",
 		  argv[1], INTERLEAVE_SIZE);
@@ -81,12 +81,12 @@ int main(int argc, char *argv[])
       must_write(argv[2], side2, buf);
     }
   fclose(in);
-  if (0 != fclose(side0)) 
+  if (0 != fclose(side0))
     {
       perror(argv[2]);
       return 1;
     }
-  if (0 != fclose(side2)) 
+  if (0 != fclose(side2))
     {
       perror(argv[3]);
       return 1;

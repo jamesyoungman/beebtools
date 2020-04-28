@@ -5,9 +5,9 @@
 
 namespace DFS {
 
-namespace stringutil 
+namespace stringutil
 {
-    
+
 bool case_insensitive_less(const std::string& left, const std::string& right);
 bool case_insensitive_equal(const std::string& left, const std::string& right);
 std::string rtrim(const std::string& input);

@@ -39,7 +39,7 @@ bool case_insensitive_less(const string& left,
 }
 
 bool case_insensitive_equal(const string& left,
-			    const string& right) 
+			    const string& right)
 {
   return !case_insensitive_less(left, right) && !case_insensitive_less(right, left);
 }

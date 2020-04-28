@@ -28,8 +28,8 @@ namespace DFS
 	return false;
       return drives_[drive].get();
     }
-    
-    unsigned int get_num_drives() const 
+
+    unsigned int get_num_drives() const
     {
       return drives_.size();
     }
@@ -37,7 +37,7 @@ namespace DFS
     bool select_drive_by_number(const std::string& drive_arg, const FileSystemImage **pim) const;
     bool select_drive_by_afsp(const std::string& drive_arg, const FileSystemImage **pim, int current) const;
     bool select_drive(unsigned int drive, const FileSystemImage **pim) const;
-    
+
     void show_drive_configuration(std::ostream& os) const
     {
       unsigned drive;

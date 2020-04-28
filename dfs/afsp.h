@@ -3,10 +3,10 @@
 
 #include "dfscontext.h"
 
-namespace DFS 
+namespace DFS
 {
 
-class AFSPMatcher 
+class AFSPMatcher
 {
   class FactoryKey {};		// see the constructor.
 
@@ -26,26 +26,26 @@ class AFSPMatcher
   ~AFSPMatcher();
 
  private:
-  bool valid() const 
+  bool valid() const
   {
     return valid_;
   }
-  
+
   bool valid_;
   DFSContext context_;
   void *implementation_;
 };
 
-  namespace internal 
+  namespace internal
   {
     bool extend_wildcard(const DFSContext& ctx, const std::string& wild,
 			 std::string* out, std::string* error_message);
   }  // namespace DFS::internal
 
-  namespace internal 
+  namespace internal
   {
     bool qualify(const DFSContext& ctx, const std::string& filename, std::string* out, std::string* error_message);
     bool extend_wildcard(const DFSContext& ctx, const std::string& wild, std::string* out, std::string* error_message);
   }
-  
+
 }  // namespace DFS

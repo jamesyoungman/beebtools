@@ -4,7 +4,7 @@
 
 #include "dfscontext.h"
 
-namespace DFS 
+namespace DFS
 {
 
 bool cmd_type_binary(const StorageConfiguration& config, const DFSContext& ctx,
