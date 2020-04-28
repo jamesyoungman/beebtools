@@ -547,10 +547,7 @@ int main (int argc, char *argv[])
   using DFS::commands;
   commands["help"] = DFS::cmd_help;
   commands["info"] = DFS::cmd_info; // *INFO
-  commands["type"] = DFS::cmd_type; // *TYPE
-  commands["type_binary"] = DFS::cmd_type_binary; // *TYPE
   commands["dump"] = DFS::cmd_dump; // *DUMP
-  commands["list"] = DFS::cmd_list; // *LIST
   commands["free"] = DFS::cmd_free; // *FREE
   commands["extract-all"] = DFS::cmd_extract_all;
   const string cmd_name = argv[optind];
@@ -571,13 +568,13 @@ int main (int argc, char *argv[])
   auto selected_command = commands.find(cmd_name);
   if (selected_command != commands.end())
     {
-      storage.show_drive_configuration(std::cout);
+      storage.show_drive_configuration(std::cerr);
       return selected_command->second(storage, ctx, extra_args) ? 1 : 0;
     }
   auto instance = DFS::CIReg::get_command(cmd_name);
   if (instance)
     {
-      storage.show_drive_configuration(std::cout);
+      storage.show_drive_configuration(std::cerr);
       return (*instance)(storage, ctx, extra_args) ? 1 : 0;
     }
   
