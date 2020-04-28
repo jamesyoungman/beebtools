@@ -164,7 +164,7 @@ namespace
     }
   };
 
-  REGISTER_COMMAND(cat,CommandCat);
+  REGISTER_COMMAND(CommandCat);
 }
 
 namespace DFS

@@ -57,6 +57,6 @@ namespace DFS
       return body_command(storage, ctx, args, display_numbered_lines);
     }
   };
-  REGISTER_COMMAND(list,CommandList);
+  REGISTER_COMMAND(CommandList);
 
 }  // namespace DFS

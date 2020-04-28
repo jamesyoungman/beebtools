@@ -35,7 +35,7 @@ namespace DFS
       return body_command(storage, ctx, args, display_contents);
     }
   };
-  REGISTER_COMMAND(type_binary,CommandTypeBinary);
+  REGISTER_COMMAND(CommandTypeBinary);
 
 
   class CommandType : public DFS::CommandInterface
@@ -71,5 +71,5 @@ namespace DFS
       return body_command(storage, ctx, args, display_contents);
     }
   };
-  REGISTER_COMMAND(type,CommandType);
+  REGISTER_COMMAND(CommandType);
 }  // namespace DFS

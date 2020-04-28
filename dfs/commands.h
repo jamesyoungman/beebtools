@@ -30,9 +30,10 @@ namespace DFS
   public:
     using map_type = std::map<std::string, std::unique_ptr<CommandInterface>>;
 
-    CIReg(std::string name, std::unique_ptr<CommandInterface> inst)
+    CIReg(std::unique_ptr<CommandInterface> inst)
     {
       assert(inst != 0);
+      const std::string name(inst->name());
       assert(!name.empty());
       auto m = get_command_map();
       m->insert(m->begin(), std::make_pair(name, std::move(inst)));
@@ -48,9 +49,9 @@ namespace DFS
 
 #define STRINGIFY(n) #n
 #define PASTE(a,b) a##b
-#define REGISTER_COMMAND(name,classname)	\
+#define REGISTER_COMMAND(classname)	\
   static classname PASTE(sole_instance_, classname); \
-  DFS::CIReg PASTE(classname,_reg)(STRINGIFY(name),std::make_unique<classname>())
+  DFS::CIReg PASTE(classname,_reg)(std::make_unique<classname>())
 
 typedef std::function<bool(const StorageConfiguration&,
 			   const DFSContext& ctx,

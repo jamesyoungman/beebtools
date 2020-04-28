@@ -152,27 +152,43 @@ bool hexdump_bytes(size_t pos, size_t len, const byte* data)
   return true;
 }
 
-bool cmd_dump(const StorageConfiguration& config, const DFSContext& ctx,
-	      const vector<string>& args)
+class CommandDump : public CommandInterface // *DUMP
 {
-  return body_command(config, ctx, args,
-		      [](const byte* body_start,
-			 const byte *body_end,
-			 const vector<string>&)
-		      {
-			std::cout << std::hex;
-			assert(body_end > body_start);
-			size_t len = body_end - body_start;
-			for (size_t pos = 0; pos < len; pos += HexdumpStride)
-			  {
-			    auto avail = (pos + HexdumpStride > len) ? (len - pos) : HexdumpStride;
+    const std::string name() const override
+    {
+      return "dump";
+    }
 
-			    if (!hexdump_bytes(pos, avail, body_start))
-			      return false;
-			  }
-			return true;
-		      });
-}
+    const std::string usage() const override
+    {
+      return name() + " filename\n";
+    }
+
+    bool operator()(const DFS::StorageConfiguration& storage,
+		    const DFS::DFSContext& ctx,
+		    const std::vector<std::string>& args) override
+    {
+      return body_command(storage, ctx, args,
+			  [](const byte* body_start,
+			     const byte *body_end,
+			     const vector<string>&)
+			  {
+			    std::cout << std::hex;
+			    assert(body_end > body_start);
+			    size_t len = body_end - body_start;
+			    for (size_t pos = 0; pos < len; pos += HexdumpStride)
+			      {
+				auto avail = (pos + HexdumpStride > len) ? (len - pos) : HexdumpStride;
+
+				if (!hexdump_bytes(pos, avail, body_start))
+				  return false;
+			      }
+			    return true;
+			  });
+    }
+};
+REGISTER_COMMAND(CommandDump);
+
 
 
 bool create_inf_file(const string& name,
@@ -218,117 +234,147 @@ unsigned long compute_crc(const byte* start, const byte *end)
   return crc;
 }
 
-bool cmd_extract_all(const StorageConfiguration& config, const DFSContext& ctx,
-		     const vector<string>& args)
+class CommandExtractAll : public CommandInterface
 {
-  // Use the --drive option to select which drive to extract files from.
-  if (args.size() < 2)
-    {
-      cerr << "extract-all: please specify the destination directory.\n";
-      return false;
-    }
-  if (args.size() > 2)
-    {
-      cerr << "extract-all: just one argument (the destination directory) is needed.\n";
-      return false;
-    }
-  string dest_dir(args[1]);
-  if (dest_dir.back() != '/')
-    dest_dir.push_back('/');
-  const FileSystemImage* image;
-  if (!config.select_drive(ctx.current_drive, &image))
-    {
-      cerr << "failed to select current drive " << ctx.current_drive << "\n";
-      return false;
-    }
+  const std::string name() const override
+  {
+    return "extract-all";
+  }
 
-  const int entries = image->catalog_entry_count();
-  for (int i = 1; i <= entries; ++i)
-    {
-      const auto& entry = image->get_catalog_entry(i);
-      auto [start, end] = image->file_body(i);
+  const std::string usage() const override
+  {
+    return name() + " destination-directory\n";
+  }
 
-      const string output_basename(string(1, entry.directory()) + "." + rtrim(entry.name()));
-      const string output_body_file = dest_dir + output_basename;
+  bool operator()(const DFS::StorageConfiguration& storage,
+		  const DFS::DFSContext& ctx,
+		  const std::vector<std::string>& args) override
+  {
+    // Use the --drive option to select which drive to extract files from.
+    if (args.size() < 2)
+      {
+	cerr << "extract-all: please specify the destination directory.\n";
+	return false;
+      }
+    if (args.size() > 2)
+      {
+	cerr << "extract-all: just one argument (the destination directory) is needed.\n";
+	return false;
+      }
+    string dest_dir(args[1]);
+    if (dest_dir.back() != '/')
+      dest_dir.push_back('/');
+    const FileSystemImage* image;
+    if (!storage.select_drive(ctx.current_drive, &image))
+      {
+	cerr << "failed to select current drive " << ctx.current_drive << "\n";
+	return false;
+      }
 
-      std::ofstream outfile(output_body_file, std::ofstream::out);
-      outfile.write(reinterpret_cast<const char*>(start),
-		    end - start);
-      outfile.close();
-      if (!outfile.good())
-	{
-	  std::cerr << output_body_file << ": " << strerror(errno) << "\n";
-	  return false;
-	}
+    const int entries = image->catalog_entry_count();
+    for (int i = 1; i <= entries; ++i)
+      {
+	const auto& entry = image->get_catalog_entry(i);
+	auto [start, end] = image->file_body(i);
 
-      unsigned long crc = compute_crc(start, end);
-      const string inf_file_name = output_body_file + ".inf";
-      if (!create_inf_file(inf_file_name, crc, entry))
-	{
-	  std::cerr << inf_file_name << ": " << strerror(errno) << "\n";
-	  return false;
-	}
-    }
-  return true;
-}
+	const string output_basename(string(1, entry.directory()) + "." + rtrim(entry.name()));
+	const string output_body_file = dest_dir + output_basename;
+
+	std::ofstream outfile(output_body_file, std::ofstream::out);
+	outfile.write(reinterpret_cast<const char*>(start),
+		      end - start);
+	outfile.close();
+	if (!outfile.good())
+	  {
+	    std::cerr << output_body_file << ": " << strerror(errno) << "\n";
+	    return false;
+	  }
+
+	unsigned long crc = compute_crc(start, end);
+	const string inf_file_name = output_body_file + ".inf";
+	if (!create_inf_file(inf_file_name, crc, entry))
+	  {
+	    std::cerr << inf_file_name << ": " << strerror(errno) << "\n";
+	    return false;
+	  }
+      }
+    return true;
+  }
+};
+REGISTER_COMMAND(CommandExtractAll);
 
 
-bool cmd_info(const StorageConfiguration& storage, const DFSContext& ctx,
-	      const vector<string>& args)
+class CommandInfo : public CommandInterface // *INFO
 {
-  if (args.size() < 2)
-    {
-      cerr << "info: please give a file name or wildcard specifying which files "
-	   << "you want to see information about.\n";
-      return false;
-    }
-  if (args.size() > 2)
-    {
-      cerr << "info: please specify no more than one argument (you specified "
-	   << (args.size() - 1) << ")\n";
-      return false;
-    }
-  const FileSystemImage *image;
-  if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
-    return false;
-  assert(image != 0);
+  const std::string name() const override
+  {
+    return "info";
+  }
 
-  string error_message;
-  std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::make_unique(ctx, args[1], &error_message);
-  if (!matcher)
-    {
-      cerr << "Not a valid pattern (" << error_message << "): " << args[1] << "\n";
-      return false;
-    }
+  const std::string usage() const override
+  {
+    return name() + " filename\n";
+  }
 
-  const int entries = image->catalog_entry_count();
-  cout << std::hex;
-  cout << std::uppercase;
-  using std::setw;
-  using std::setfill;
-  for (int i = 1; i <= entries; ++i)
-    {
-      const auto& entry = image->get_catalog_entry(i);
-      const string full_name = string(1, entry.directory()) + "." + entry.name();
+  bool operator()(const DFS::StorageConfiguration& storage,
+		  const DFS::DFSContext& ctx,
+		  const std::vector<std::string>& args) override
+  {
+    if (args.size() < 2)
+      {
+	cerr << "info: please give a file name or wildcard specifying which files "
+	     << "you want to see information about.\n";
+	return false;
+      }
+    if (args.size() > 2)
+      {
+	cerr << "info: please specify no more than one argument (you specified "
+	     << (args.size() - 1) << ")\n";
+	return false;
+      }
+    const FileSystemImage *image;
+    if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
+      return false;
+    assert(image != 0);
+
+    string error_message;
+    std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::make_unique(ctx, args[1], &error_message);
+    if (!matcher)
+      {
+	cerr << "Not a valid pattern (" << error_message << "): " << args[1] << "\n";
+	return false;
+      }
+
+    const int entries = image->catalog_entry_count();
+    cout << std::hex;
+    cout << std::uppercase;
+    using std::setw;
+    using std::setfill;
+    for (int i = 1; i <= entries; ++i)
+      {
+	const auto& entry = image->get_catalog_entry(i);
+	const string full_name = string(1, entry.directory()) + "." + entry.name();
 #if VERBOSE_FOR_TESTS
-      std::cerr << "info: directory is '" << entry.directory() << "'\n";
-      std::cerr << "info: item is '" << full_name << "'\n";
+	std::cerr << "info: directory is '" << entry.directory() << "'\n";
+	std::cerr << "info: item is '" << full_name << "'\n";
 #endif
-      if (!matcher->matches(full_name))
+	if (!matcher->matches(full_name))
 	  continue;
-      unsigned long load_addr, exec_addr;
-      load_addr = sign_extend(entry.load_address());
-      exec_addr = sign_extend(entry.exec_address());
-      cout << entry.directory() << "." << entry.name() << " "
-	   << (entry.is_locked() ? " L " : "   ")
-	   << setw(6) << setfill('0') << load_addr << " "
-	   << setw(6) << setfill('0') << exec_addr << " "
-	   << setw(6) << setfill('0') << entry.file_length() << " "
-	   << setw(3) << setfill('0') << entry.start_sector()
-	   << "\n";
-    }
-  return true;
-}
+	unsigned long load_addr, exec_addr;
+	load_addr = sign_extend(entry.load_address());
+	exec_addr = sign_extend(entry.exec_address());
+	cout << entry.directory() << "." << entry.name() << " "
+	     << (entry.is_locked() ? " L " : "   ")
+	     << setw(6) << setfill('0') << load_addr << " "
+	     << setw(6) << setfill('0') << exec_addr << " "
+	     << setw(6) << setfill('0') << entry.file_length() << " "
+	     << setw(3) << setfill('0') << entry.start_sector()
+	     << "\n";
+      }
+    return true;
+  }
+};
+REGISTER_COMMAND(CommandInfo);
 
 struct comma_thousands : std::numpunct<char>
 {
@@ -343,99 +389,125 @@ struct comma_thousands : std::numpunct<char>
   }
 };
 
-
-bool cmd_free(const StorageConfiguration& storage, const DFSContext& ctx,
-	      const vector<string>& args)
+class CommandFree : public CommandInterface // *FREE
 {
-  const FileSystemImage *image;
-  if (args.size() > 2)
-    {
-      cerr << "at most one command-line argument is needed.\n";
-      return false;
-    }
-  if (args.size() < 2)
-    {
-      if (!storage.select_drive(ctx.current_drive, &image))
-	return false;
-    }
-  else
-    {
-      if (!storage.select_drive_by_number(args[1], &image))
-	return false;
-    }
-  assert(image != 0);
+  const std::string name() const override
+  {
+    return "free";
+  }
 
-  int sectors_used = 2;
-  const int entries = image->catalog_entry_count();
-  for (int i = 1; i <= entries; ++i)
-    {
-      const auto& entry = image->get_catalog_entry(i);
-      ldiv_t division = ldiv(entry.file_length(), SECTOR_BYTES);
-      const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
-      const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
-      if (last_sector_of_file > sectors_used)
-	{
-	  sectors_used = last_sector_of_file;
-	}
-    }
-  int files_free = image->max_file_count() - image->catalog_entry_count();
-  int sectors_free = image->disc_sector_count() - sectors_used;
-  cout << std::uppercase;
-  auto show = [](int files, int sectors, const string& desc)
+  const std::string usage() const override
+  {
+    return name() + " [drive]\n";
+  }
+
+  bool operator()(const DFS::StorageConfiguration& storage,
+		  const DFS::DFSContext& ctx,
+		  const std::vector<std::string>& args) override
+  {
+    const FileSystemImage *image;
+    if (args.size() > 2)
+      {
+	cerr << "at most one command-line argument is needed.\n";
+	return false;
+      }
+    if (args.size() < 2)
+      {
+	if (!storage.select_drive(ctx.current_drive, &image))
+	  return false;
+      }
+    else
+      {
+	if (!storage.select_drive_by_number(args[1], &image))
+	  return false;
+      }
+    assert(image != 0);
+
+    int sectors_used = 2;
+    const int entries = image->catalog_entry_count();
+    for (int i = 1; i <= entries; ++i)
+      {
+	const auto& entry = image->get_catalog_entry(i);
+	ldiv_t division = ldiv(entry.file_length(), SECTOR_BYTES);
+	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
+	const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
+	if (last_sector_of_file > sectors_used)
+	  {
+	    sectors_used = last_sector_of_file;
+	  }
+      }
+    int files_free = image->max_file_count() - image->catalog_entry_count();
+    int sectors_free = image->disc_sector_count() - sectors_used;
+    cout << std::uppercase;
+    auto show = [](int files, int sectors, const string& desc)
+		{
+		  cout << std::setw(2) << std::dec << files << " Files "
+		       << std::setw(3) << std::hex << sectors << " Sectors "
+		       << std::setw(7) << std::dec << (sectors * SECTOR_BYTES)
+		       << " Bytes " << desc << "\n";
+		};
+
+    auto prevlocale = cout.imbue(std::locale(cout.getloc(),
+					     new comma_thousands)); // takes ownership
+    show(files_free, sectors_free, "Free");
+    show(image->catalog_entry_count(), sectors_used, "Used");
+    cout.imbue(prevlocale);
+    return true;
+  }
+};
+REGISTER_COMMAND(CommandFree);
+
+class CommandHelp : public CommandInterface
+{
+  const std::string name() const override
+  {
+    return "help";
+  }
+
+  const std::string usage() const override
+  {
+    return name() + " [command]...\n";
+  }
+
+  bool operator()(const DFS::StorageConfiguration&,
+		  const DFS::DFSContext&,
+		  const std::vector<std::string>& args) override
+  {
+    if (args.size() < 2)
+      {
+	const char *prefix = "      ";
+	cout << "Known commands:\n";
+	for (const auto& c : commands)
+	  cout << prefix << c.first << "\n";
+	return CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
+					 {
+					   cout << prefix << c->name() << "\n";
+					   return cout.good();
+					 }
+	  );
+      }
+    else
+      {
+	for (unsigned int i = 1; i < args.size(); ++i)
+	  {
+	    auto instance = CIReg::get_command(args[i]);
+	    if (instance)
 	      {
-		cout << std::setw(2) << std::dec << files << " Files "
-		     << std::setw(3) << std::hex << sectors << " Sectors "
-		     << std::setw(7) << std::dec << (sectors * SECTOR_BYTES)
-		     << " Bytes " << desc << "\n";
-	      };
-
-  auto prevlocale = cout.imbue(std::locale(cout.getloc(),
-					   new comma_thousands)); // takes ownership
-  show(files_free, sectors_free, "Free");
- show(image->catalog_entry_count(), sectors_used, "Used");
-  cout.imbue(prevlocale);
-  return true;
-}
-
-
-
-bool cmd_help(const StorageConfiguration&, const DFSContext&,
-	      const vector<string>& args)
-
-{
-  if (args.size() < 2)
-    {
-      const char *prefix = "      ";
-      cout << "Known commands:\n";
-      for (const auto& c : commands)
-	cout << prefix << c.first << "\n";
-      return CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
-				       {
-					 cout << prefix << c->name() << "\n";
-					 return cout.good();
-				       }
-	);
-    }
-  else
-    {
-      for (unsigned int i = 1; i < args.size(); ++i)
-	{
-	  auto instance = CIReg::get_command(args[i]);
-	  if (instance)
-	    {
-	      cout << "usage for " << args[i] << ":\n" << instance->usage();
-	      if (!cout.good())
+		cout << "usage for " << args[i] << ":\n" << instance->usage();
+		if (!cout.good())
+		  return false;
+	      }
+	    else
+	      {
+		cerr << args[i] << " is not a known command.\n";
 		return false;
-	    }
-	  else
-	    {
-	      cerr << args[i] << " is not a known command.\n";
-	      return false;
-	    }
-	}
-      return true;
-    }
-}
+	      }
+	  }
+	return true;
+      }
+  }
+};
+REGISTER_COMMAND(CommandHelp);
 
 }  // namespace DFS
 
@@ -544,12 +616,6 @@ int main (int argc, char *argv[])
       cerr << "Please specify a command (try \"help\")\n";
       return 1;
     }
-  using DFS::commands;
-  commands["help"] = DFS::cmd_help;
-  commands["info"] = DFS::cmd_info; // *INFO
-  commands["dump"] = DFS::cmd_dump; // *DUMP
-  commands["free"] = DFS::cmd_free; // *FREE
-  commands["extract-all"] = DFS::cmd_extract_all;
   const string cmd_name = argv[optind];
   vector<string> extra_args;
   if (optind < argc)
@@ -565,19 +631,13 @@ int main (int argc, char *argv[])
       std::cerr << "did not find new-style command registration for " << cmd_name << "\n";
     }
 
-  auto selected_command = commands.find(cmd_name);
-  if (selected_command != commands.end())
-    {
-      storage.show_drive_configuration(std::cerr);
-      return selected_command->second(storage, ctx, extra_args) ? 1 : 0;
-    }
   auto instance = DFS::CIReg::get_command(cmd_name);
-  if (instance)
+  if (0 == instance)
     {
-      storage.show_drive_configuration(std::cerr);
-      return (*instance)(storage, ctx, extra_args) ? 1 : 0;
+      cerr << "unknown command " << cmd_name << "\n";
+      return 1;
     }
-  
-  cerr << "unknown command " << cmd_name << "\n";
-  return 1;
-}
+  storage.show_drive_configuration(std::cerr);
+  return (*instance)(storage, ctx, extra_args) ? 1 : 0;
+};
+
