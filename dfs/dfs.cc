@@ -164,6 +164,11 @@ class CommandDump : public CommandInterface // *DUMP
       return name() + " filename\n";
     }
 
+    const std::string description() const override
+    {
+      return "displays the contents of a file in both hex and printable characters";
+    }
+
     bool operator()(const DFS::StorageConfiguration& storage,
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
@@ -246,6 +251,11 @@ class CommandExtractAll : public CommandInterface
     return name() + " destination-directory\n";
   }
 
+  const std::string description() const override
+  {
+    return "extract all the files from the disc";
+  }
+
   bool operator()(const DFS::StorageConfiguration& storage,
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
@@ -314,6 +324,11 @@ class CommandInfo : public CommandInterface // *INFO
   const std::string usage() const override
   {
     return name() + " filename\n";
+  }
+
+  const std::string description() const override
+  {
+    return "display information about a file (for example load address)";
   }
 
   bool operator()(const DFS::StorageConfiguration& storage,
@@ -401,6 +416,11 @@ class CommandFree : public CommandInterface // *FREE
     return name() + " [drive]\n";
   }
 
+  const std::string description() const override
+  {
+    return "display information about a disc's free space";
+  }
+
   bool operator()(const DFS::StorageConfiguration& storage,
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
@@ -469,10 +489,17 @@ class CommandHelp : public CommandInterface
     return name() + " [command]...\n";
   }
 
+  const std::string description() const override
+  {
+    return "explain how to use one or more commands";
+  }
+
   bool operator()(const DFS::StorageConfiguration&,
 		  const DFS::DFSContext&,
 		  const std::vector<std::string>& args) override
   {
+    const int max_command_name_len = 11;
+
     if (args.size() < 2)
       {
 	const char *prefix = "      ";
@@ -481,7 +508,9 @@ class CommandHelp : public CommandInterface
 	  cout << prefix << c.first << "\n";
 	auto ok = CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
 					 {
-					   cout << prefix << c->name() << "\n";
+					   cout << prefix << std::setw(max_command_name_len)
+						<< std::left << c->name() << ": "
+						<< c->description() << "\n";
 					   return cout.good();
 					 }
 	  );
@@ -495,7 +524,10 @@ class CommandHelp : public CommandInterface
 	    auto instance = CIReg::get_command(args[i]);
 	    if (instance)
 	      {
-		cout << "usage for " << args[i] << ":\n" << instance->usage();
+		cout << std::setw(args.size() > 2 ? max_command_name_len : 0)
+		     << std::left << args[i]
+		     << ": " << instance->description()
+		     << "\n" << instance->usage() << "\n";
 		if (!cout.good())
 		  return false;
 	      }
@@ -622,16 +654,6 @@ int main (int argc, char *argv[])
   vector<string> extra_args;
   if (optind < argc)
     extra_args.assign(&argv[optind], &argv[argc]);
-
-  auto ci = DFS::CIReg::get_command(cmd_name);
-  if (ci)
-    {
-      std::cerr << "found new-style command registration for " << cmd_name << "\n";
-    }
-  else
-    {
-      std::cerr << "did not find new-style command registration for " << cmd_name << "\n";
-    }
 
   auto instance = DFS::CIReg::get_command(cmd_name);
   if (0 == instance)

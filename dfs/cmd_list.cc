@@ -23,7 +23,12 @@ namespace DFS
       return "list filename\n";
     }
 
-        bool operator()(const DFS::StorageConfiguration& storage,
+    const std::string description() const override
+    {
+      return "display the contents of a file as text, with line numbers";
+    }
+
+    bool operator()(const DFS::StorageConfiguration& storage,
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
     {

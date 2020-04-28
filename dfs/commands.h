@@ -20,6 +20,7 @@ namespace DFS
   public:
     virtual const std::string name() const = 0;
     virtual const std::string usage() const = 0;
+    virtual const std::string description() const = 0;
     virtual bool operator()(const StorageConfiguration&,
 			    const DFSContext&,
 			    const std::vector<std::string>& args) = 0;

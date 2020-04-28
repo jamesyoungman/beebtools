@@ -19,6 +19,11 @@ namespace DFS
       return "type_binary filename\n";
     }
 
+    const std::string description() const override
+    {
+      return "print the contents of a file, without end-of-line translation";
+    }
+
     bool operator()(const DFS::StorageConfiguration& storage,
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
@@ -48,6 +53,11 @@ namespace DFS
     const std::string usage() const override
     {
       return "type filename\n";
+    }
+
+    const std::string description() const override
+    {
+      return "display the contents of a file as text";
     }
 
     bool operator()(const DFS::StorageConfiguration& storage,

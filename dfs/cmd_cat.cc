@@ -50,6 +50,11 @@ namespace
       return "cat [drive-number]\n";
     }
 
+    const std::string description() const override
+    {
+      return "display the disc catalogue";
+    }
+
     bool operator()(const DFS::StorageConfiguration& storage,
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
