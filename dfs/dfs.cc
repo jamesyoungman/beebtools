@@ -479,12 +479,14 @@ class CommandHelp : public CommandInterface
 	cout << "Known commands:\n";
 	for (const auto& c : commands)
 	  cout << prefix << c.first << "\n";
-	return CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
+	auto ok = CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
 					 {
 					   cout << prefix << c->name() << "\n";
 					   return cout.good();
 					 }
 	  );
+	cout << "For help on any individual command, use \"help command-name\"\n";
+	return ok && cout.good();
       }
     else
       {
