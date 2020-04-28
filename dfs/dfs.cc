@@ -545,7 +545,6 @@ int main (int argc, char *argv[])
       return 1;
     }
   using DFS::commands;
-  commands["cat"] =  DFS::cmd_cat;  // *CAT
   commands["help"] = DFS::cmd_help;
   commands["info"] = DFS::cmd_info; // *INFO
   commands["type"] = DFS::cmd_type; // *TYPE
@@ -570,12 +569,18 @@ int main (int argc, char *argv[])
     }
 
   auto selected_command = commands.find(cmd_name);
-  if (selected_command == commands.end())
+  if (selected_command != commands.end())
     {
-      cerr << "unknown command " << cmd_name << "\n";
-      return 1;
+      storage.show_drive_configuration(std::cout);
+      return selected_command->second(storage, ctx, extra_args) ? 1 : 0;
     }
-
-  storage.show_drive_configuration(std::cout);
-  return selected_command->second(storage, ctx, extra_args) ? 1 : 0;
+  auto instance = DFS::CIReg::get_command(cmd_name);
+  if (instance)
+    {
+      storage.show_drive_configuration(std::cout);
+      return (*instance)(storage, ctx, extra_args) ? 1 : 0;
+    }
+  
+  cerr << "unknown command " << cmd_name << "\n";
+  return 1;
 }
