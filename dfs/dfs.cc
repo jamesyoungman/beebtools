@@ -39,6 +39,8 @@ std::map<std::string, Command> commands;
 
 namespace
 {
+  const int max_command_name_len = 11;
+
   inline char byte_to_char(byte b)
   {
     return char(b);
@@ -499,21 +501,20 @@ class CommandHelp : public CommandInterface
 		  const std::vector<std::string>& args) override
   {
     const int max_command_name_len = 11;
-
     if (args.size() < 2)
       {
-	const char *prefix = "      ";
+	const string prefix = "      ";
 	cout << "Known commands:\n";
 	for (const auto& c : commands)
 	  cout << prefix << c.first << "\n";
-	auto ok = CIReg::visit_all_commands([prefix](CommandInterface* c) -> bool
-					 {
-					   cout << prefix << std::setw(max_command_name_len)
-						<< std::left << c->name() << ": "
-						<< c->description() << "\n";
-					   return cout.good();
-					 }
-	  );
+	auto show = [prefix, max_command_name_len](CommandInterface* c) -> bool
+		    {
+		      cout << prefix << std::setw(max_command_name_len)
+			   << std::left << c->name() << ": "
+			   << c->description() << "\n";
+		      return cout.good();
+		    };
+	auto ok = CIReg::visit_all_commands(show);
 	cout << "For help on any individual command, use \"help command-name\"\n";
 	return ok && cout.good();
       }
