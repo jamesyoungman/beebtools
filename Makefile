@@ -40,7 +40,8 @@ dfs-check: $(DFS_TESTS)
 
 
 basic-clean:
-	$(RM) $(BASIC_TARGETS) basic/bbcbasic_to_text.o basic/tokens.o basic/tokens_test.o
+	$(RM) $(BASIC_TARGETS) $(BASIC_TESTS)
+	$(RM) basic/bbcbasic_to_text.o basic/tokens.o basic/tokens_test.o
 
 basic-check: basic-check_tokens basic-check_golden
 
