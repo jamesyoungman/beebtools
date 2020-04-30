@@ -21,7 +21,7 @@ namespace DFS
 
     const std::string usage() const override
     {
-      return "list filename\n";
+      return "usage: list filename\n";
     }
 
     const std::string description() const override

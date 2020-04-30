@@ -47,7 +47,9 @@ namespace
 
     const std::string usage() const override
     {
-      return "cat [drive-number]\n";
+      return "usage: cat [drive-number]\n"
+	"If drive-number is not specified use the value from the --drive "
+	"global option.\n";
     }
 
     const std::string description() const override

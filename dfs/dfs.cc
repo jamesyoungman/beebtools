@@ -13,6 +13,7 @@
 #include <iostream>
 #include <locale>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "afsp.h"
@@ -47,17 +48,24 @@ namespace
   // struct option fields: name, has_arg, *flag, val
   const struct option global_opts[] =
     {
-     // --file controls which disk image file we open
+     // --file controls which disc image file we open
      { "file", 1, NULL, OPT_IMAGE_FILE },
      // --dir controls which directory the program should believe is
      // current (as for *DIR).
      { "dir", 1, NULL, OPT_CWD },
      // --drive controls which drive the program should believe is
-     // associated with the disk image specified in --file (as for
+     // associated with the disc image specified in --file (as for
      // *DRIVE).
      { "drive", 1, NULL, OPT_DRIVE },
-     { "help", 1, NULL, OPT_HELP },
+     { "help", 0, NULL, OPT_HELP },
      { 0, 0, 0, 0 },
+    };
+  const std::map<string,string> option_help =
+    {
+     {"file", "the name of the DFS image file to read"},
+     {"dir", "the default directory (if unspecified, use $)"},
+     {"drive", "the default drive (if unspecified, use 0)"},
+     {"help", "print a brief explanation of how to use the program"},
     };
 
   inline char byte_to_char(byte b)
@@ -262,7 +270,7 @@ public:
 
     const std::string usage() const override
     {
-      return name() + " filename\n";
+      return "usage: dump filename\n";
     }
 
     const std::string description() const override
@@ -305,7 +313,11 @@ public:
 
   const std::string usage() const override
   {
-    return name() + " destination-directory\n";
+    return "usage: " + name() + " destination-directory\n"
+      "All files from the selected drive (see the --drive global option)\n"
+      "are extracted into the destination directory.\n"
+      "The destination directory must exist already.\n"
+      "An archive .inf file is generated for each file.\n";
   }
 
   const std::string description() const override
@@ -381,7 +393,26 @@ public:
 
   const std::string usage() const override
   {
-    return name() + " filename\n";
+    return "usage: " + name() + " wildcard\n"
+      "The wildcard specifies which files information should be shown for.\n"
+      "To specify all files, use the wildcard #.*\n"
+      "Numeric values are shown in hexadecimal (base 16).\n"
+      "\n"
+      "The output fields are:\n"
+      "  file name\n"
+      "  'L' if the file is locked, otherwise spaces\n"
+      "  load address (in hex)\n"
+      "  execution address (in hex)\n"
+      "  file length (in hex)\n"
+      "  sector within the disc at which the file is stored (in hex)\n"
+      "\n"
+      "Load and execution addresses are sign-extended from their actual\n"
+      "18 bit length (as stored in the disc catalogue) to 24 bits.\n"
+      "For example, 3F1900 becomes FF1900.\n"
+      "We do this for consistency with the Acorn DFS implementation.\n"
+      "When the top bits (i.e. 30000) are set, this signifies that the\n"
+      "file was saved from the Tube co-processor rather than the I/O\n"
+      "processor.\n";
   }
 
   const std::string description() const override
@@ -472,7 +503,9 @@ public:
 
   const std::string usage() const override
   {
-    return name() + " [drive]\n";
+    return name() + " [drive]\n"
+      "The used/free space shown reflects the position of the last file on the disc.\n"
+      "Using *COMPACT or a similar tool on the disc may free up additional space.\n";
   }
 
   const std::string description() const override
@@ -554,6 +587,37 @@ public:
     return "explain how to use one or more commands";
   }
 
+  static bool check_consistency()
+  {
+    bool ok = true;
+    std::set<string> global_opt_names;
+    // Check that all global options have a help string.
+    for (const auto& opt : global_opts)
+      {
+	if (opt.name == 0)
+	  break;
+	global_opt_names.insert(opt.name);
+	auto it = option_help.find(opt.name);
+	if (it == option_help.end())
+	  {
+	    std::cerr << "option_help lacks entry for --" << opt.name << "\n";
+	    ok = false;
+	  }
+      }
+    // Check that all option help strings match a global option.
+    for (const auto& h : option_help)
+      {
+	if (global_opt_names.find(h.first) == global_opt_names.end())
+	  {
+	    std::cerr << "option_help has entry for "
+		      << h.first << " but that's not an actual option "
+		      << "in global_opts.\n";
+	    ok = false;
+	  }
+      }
+    return ok;
+  }
+
   bool operator()(const DFS::StorageConfiguration&,
 		  const DFS::DFSContext&,
 		  const std::vector<std::string>& args) override
@@ -561,8 +625,32 @@ public:
     const int max_command_name_len = 11;
     if (args.size() < 2)
       {
+	cout << "usage: dfs [global-options] command [command-options] [command-arguments]\n"
+	     << "\n"
+	     << "This is a program for extracting information from Acorn DFS disc images.\n"
+	     << "\n"
+	     << "The global options affect almost all commands.  See below for details.\n"
+	     << "The command is a single word (for example dump, info) specifying what\n"
+	     << "action should be performed on one or more of the files within the DFS\n"
+	     << "disc image.  The command options modify the way the command works.\n"
+	     << "Most commands take no options.  The command-arguments typically specify\n"
+	     << "which files within the disc image will be selected.\n"
+	     << "\n"
+	     << "Global options:\n";
+	string::size_type max_option_len = 0;
+	for (const auto& h : option_help)
+	  {
+	    max_option_len = std::max(max_option_len, h.first.size());
+	  }
+	for (const auto& h : option_help)
+	  {
+	    cout << "--" << std::left << std::setw(max_option_len)
+		 << h.first << ": " << h.second << "\n";
+	  }
+	cout << "\n";
+
 	const string prefix = "      ";
-	cout << "Known commands:\n";
+	cout << "Commands:\n";
 	auto show = [prefix, max_command_name_len](CommandInterface* c) -> bool
 		    {
 		      cout << prefix << std::setw(max_command_name_len)
@@ -604,6 +692,8 @@ REGISTER_COMMAND(CommandHelp);
 
 int main (int argc, char *argv[])
 {
+  if (!DFS::CommandHelp::check_consistency())
+    return 2;
   DFS::DFSContext ctx('$', 0);
   int longindex;
   vector<string> extra_args;
