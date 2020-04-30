@@ -34,6 +34,32 @@ namespace
 {
   const long int HexdumpStride = 8;
 
+  enum OptSignifier
+    {
+     OPT_IMAGE_FILE = SCHAR_MIN,
+     OPT_CWD,
+     OPT_DRIVE,
+     OPT_HELP,
+    };
+
+  const int max_command_name_len = 11;
+
+  // struct option fields: name, has_arg, *flag, val
+  const struct option global_opts[] =
+    {
+     // --file controls which disk image file we open
+     { "file", 1, NULL, OPT_IMAGE_FILE },
+     // --dir controls which directory the program should believe is
+     // current (as for *DIR).
+     { "dir", 1, NULL, OPT_CWD },
+     // --drive controls which drive the program should believe is
+     // associated with the disk image specified in --file (as for
+     // *DRIVE).
+     { "drive", 1, NULL, OPT_DRIVE },
+     { "help", 1, NULL, OPT_HELP },
+     { 0, 0, 0, 0 },
+    };
+
   inline char byte_to_char(byte b)
   {
     return char(b);
@@ -152,7 +178,41 @@ namespace
     return crc;
   }
 
-}
+  std::pair<bool, int> get_drive_number(const char *s)
+  {
+    long v = 0;
+    bool ok = [s, &v]() {
+		char *end;
+		errno = 0;
+		v = strtol(optarg, &end, 10);
+		if ((v == LONG_MIN || v == LONG_MAX) && errno)
+		  {
+		    cerr << "Value " << optarg << " is out of range.\n";
+		    return false;
+		  }
+		if (v == 0 && end == optarg)
+		  {
+		    // No digit at optarg[0].
+		    cerr << "Please specify a decimal number as"
+			 << "the argument for --drive\n";
+		    return false;
+		  }
+		if (*end)
+		  {
+		    cerr << "Unexpected non-decimal suffix after "
+			 << "argument to --drive: " << end << "\n";
+		    return false;
+		  }
+		if (v < 0 || v > 2)
+		  {
+		    cerr << "Drive number should be between 0 and 2.\n ";
+		    return false;
+		  }
+		return true;
+	      }();
+    return std::make_pair(ok, static_cast<int>(v));
+  }
+}  // namespace
 
 namespace DFS
 {
@@ -541,72 +601,6 @@ public:
 REGISTER_COMMAND(CommandHelp);
 
 }  // namespace DFS
-
-
-namespace {
-
-  enum OptSignifier
-    {
-     OPT_IMAGE_FILE = SCHAR_MIN,
-     OPT_CWD,
-     OPT_DRIVE,
-     OPT_HELP,
-    };
-
-  const int max_command_name_len = 11;
-
-  // struct option fields: name, has_arg, *flag, val
-  const struct option global_opts[] =
-    {
-     // --file controls which disk image file we open
-     { "file", 1, NULL, OPT_IMAGE_FILE },
-     // --dir controls which directory the program should believe is
-     // current (as for *DIR).
-     { "dir", 1, NULL, OPT_CWD },
-     // --drive controls which drive the program should believe is
-     // associated with the disk image specified in --file (as for
-     // *DRIVE).
-     { "drive", 1, NULL, OPT_DRIVE },
-     { "help", 1, NULL, OPT_HELP },
-     { 0, 0, 0, 0 },
-    };
-
-std::pair<bool, int> get_drive_number(const char *s)
-{
-  long v = 0;
-  bool ok = [s, &v]() {
-	      char *end;
-	      errno = 0;
-	      v = strtol(optarg, &end, 10);
-	      if ((v == LONG_MIN || v == LONG_MAX) && errno)
-		{
-		  cerr << "Value " << optarg << " is out of range.\n";
-		  return false;
-		}
-	      if (v == 0 && end == optarg)
-		{
-		  // No digit at optarg[0].
-		  cerr << "Please specify a decimal number as"
-		       << "the argument for --drive\n";
-		  return false;
-		}
-	      if (*end)
-		{
-		  cerr << "Unexpected non-decimal suffix after "
-		       << "argument to --drive: " << end << "\n";
-		  return false;
-		}
-	      if (v < 0 || v > 2)
-		{
-		  cerr << "Drive number should be between 0 and 2.\n ";
-		  return false;
-		}
-	      return true;
-	    }();
-  return std::make_pair(ok, static_cast<int>(v));
-}
-}  // namespace
-
 
 int main (int argc, char *argv[])
 {
