@@ -1,6 +1,8 @@
 CFLAGS = -Wall -Wextra -ggdb
+TARGETS = tokens_test bbcbasic_to_text
+RM = rm -f
 
-all: tokens_test bbcbasic_to_text
+all: $(TARGETS)
 
 tokens.o: tokens.c tokens.h
 tokens_test.o: tokens_test.c tokens.h
@@ -16,3 +18,6 @@ check_golden: bbcbasic_to_text run_golden_tests.sh
 
 bbcbasic_to_text: bbcbasic_to_text.o tokens.o
 	$(CC) $(CFLAGS) -o $@ bbcbasic_to_text.o tokens.o
+
+clean:
+	$(RM) $(TARGETS) bbcbasic_to_text.o tokens.o tokens_test.o
