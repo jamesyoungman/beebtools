@@ -55,6 +55,7 @@ namespace DFS
 {
   class CommandType : public DFS::CommandInterface
   {
+  public:
     const std::string name() const override
     {
       return "type";

@@ -13,6 +13,7 @@ namespace DFS
 
   class CommandList : public DFS::CommandInterface
   {
+  public:
     const std::string name() const override
     {
       return "list";

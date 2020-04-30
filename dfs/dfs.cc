@@ -27,19 +27,12 @@ using std::cout;
 using std::string;
 using std::vector;
 
-namespace DFS
-{
-
-using stringutil::rtrim;
-using stringutil::case_insensitive_equal;
-using stringutil::case_insensitive_less;
-
-
-std::map<std::string, Command> commands;
+using DFS::byte;
+using DFS::offset;
 
 namespace
 {
-  const int max_command_name_len = 11;
+  const long int HexdumpStride = 8;
 
   inline char byte_to_char(byte b)
   {
@@ -57,42 +50,115 @@ namespace
 
   inline offset sector(int sector_num)
   {
-    return SECTOR_BYTES * sector_num;
+    return DFS::SECTOR_BYTES * sector_num;
   }
+
+  bool hexdump_bytes(size_t pos, size_t len, const byte* data)
+  {
+    cout << std::setw(6) << std::setfill('0') << pos;
+    for (size_t i = 0; i < HexdumpStride; ++i)
+      {
+	if (i < len)
+	  cout << ' ' << std::setw(2) << std::setfill('0') << unsigned(data[pos + i]);
+	else
+	  cout << std::setw(3) << std::setfill(' ') << ' ';
+      }
+    cout << ' ';
+    for (size_t i = 0; i < len; ++i)
+      {
+	const char ch = data[pos + i];
+	if (isgraph(ch))
+	  cout << ch;
+	else
+	  cout << '.';
+      }
+    cout << '\n';
+    return true;
+  }
+
+  unsigned long sign_extend(unsigned long address)
+  {
+    /*
+      The load and execute addresses are 18 bits.  The largest unsigned
+      18-bit value is 0x3FFFF (or &3FFFF if you prefer).  However, the
+      DFS *INFO command prints the address &3F1900 as FF1900.  This is
+      because, per pages K.3-1 to K.3-2 of the BBC Master Reference
+      manual part 2,
+
+      > BASIC sets the high-order bits of the load address to the
+      > high-order address of the processor it is running on.  This
+      > enables you to tell if a file was saved from the I/O processor
+      > or a co-processor.  For example if there was a BASIC file
+      > called prog1, its information might look like this:
+      >
+      > prog1 FFFF0E00 FFFF8023 00000777 000023
+      >
+      > This indicates that prog1 was saved on an I/O processor-only
+      > machine with PAGE set to &E00.  The execution address
+      > (FFFF8023) is not significant for BASIC programs.
+    */
+    if (address & 0x20000)
+      {
+	// We sign-extend just two digits (unlike the example above) ,
+	// as this is what the BBC model B DFS does.
+	return 0xFF0000 | address;
+      }
+    else
+      {
+	return address;
+      }
+  }
+
+  bool create_inf_file(const string& name,
+		       unsigned long crc,
+		       const DFS::CatalogEntry& entry)
+  {
+    unsigned long load_addr = sign_extend(entry.load_address());
+    unsigned long exec_addr = sign_extend(entry.exec_address());
+    std::ofstream inf_file(name, std::ofstream::out);
+    inf_file << std::hex << std::uppercase;
+    // The NEXT field is missing because our source is not tape.
+    using std::setw;
+    using std::setfill;
+    inf_file << entry.directory() << '.' << entry.name()
+	     << setw(6) << setfill('0') << load_addr << " "
+	     << setw(6) << setfill('0') << exec_addr << " "
+	     << setw(6) << setfill('0') << entry.file_length() << " " // no sign-extend
+	     << (entry.is_locked() ? "Locked " : "")
+	     << "CRC=" << setw(4) << crc
+	     << "\n";
+    inf_file.close();
+    return inf_file.good();
+  }
+
+  inline unsigned long cycle(unsigned long crc)
+  {
+    if (crc & 32768)
+      return  (((crc ^ 0x0810) & 32767) << 1) + 1;
+    else
+      return crc << 1;
+  }
+
+  unsigned long compute_crc(const byte* start, const byte *end)
+  {
+    unsigned long crc = 0;
+    for (const byte* p = start; p < end; ++p)
+      {
+	crc ^= *p++ << 8;
+	for(int k = 0; k < 8; k++)
+	  crc = cycle(crc);
+	assert((crc & ~0xFFFF) == 0);
+      }
+    return crc;
+  }
+
 }
 
-unsigned long sign_extend(unsigned long address)
+namespace DFS
 {
-  /*
-   The load and execute addresses are 18 bits.  The largest unsigned
-   18-bit value is 0x3FFFF (or &3FFFF if you prefer).  However, the
-   DFS *INFO command prints the address &3F1900 as FF1900.  This is
-   because, per pages K.3-1 to K.3-2 of the BBC Master Reference
-   manual part 2,
-
-   > BASIC sets the high-order bits of the load address to the
-   > high-order address of the processor it is running on.  This
-   > enables you to tell if a file was saved from the I/O processor
-   > or a co-processor.  For example if there was a BASIC file
-   > called prog1, its information might look like this:
-   >
-   > prog1 FFFF0E00 FFFF8023 00000777 000023
-   >
-   > This indicates that prog1 was saved on an I/O processor-only
-   > machine with PAGE set to &E00.  The execution address
-   > (FFFF8023) is not significant for BASIC programs.
-  */
-  if (address & 0x20000)
-    {
-      // We sign-extend just two digits (unlike the example above) ,
-      // as this is what the BBC model B DFS does.
-      return 0xFF0000 | address;
-    }
-  else
-    {
-      return address;
-    }
-}
+using stringutil::rtrim;
+using stringutil::case_insensitive_equal;
+using stringutil::case_insensitive_less;
 
 bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
 		  const vector<string>& args,
@@ -126,37 +192,10 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
 
 
 
-namespace {
-  const long int HexdumpStride = 8;
-}
-
-
-bool hexdump_bytes(size_t pos, size_t len, const byte* data)
-{
-  cout << std::setw(6) << std::setfill('0') << pos;
-  for (size_t i = 0; i < HexdumpStride; ++i)
-    {
-      if (i < len)
-	cout << ' ' << std::setw(2) << std::setfill('0') << unsigned(data[pos + i]);
-      else
-	cout << std::setw(3) << std::setfill(' ') << ' ';
-    }
-  cout << ' ';
-  for (size_t i = 0; i < len; ++i)
-    {
-      const char ch = data[pos + i];
-      if (isgraph(ch))
-	cout << ch;
-      else
-	cout << '.';
-    }
-  cout << '\n';
-  return true;
-}
-
 class CommandDump : public CommandInterface // *DUMP
 {
-    const std::string name() const override
+public:
+  const std::string name() const override
     {
       return "dump";
     }
@@ -196,53 +235,9 @@ class CommandDump : public CommandInterface // *DUMP
 };
 REGISTER_COMMAND(CommandDump);
 
-
-
-bool create_inf_file(const string& name,
-		     unsigned long crc,
-		     const CatalogEntry& entry)
-{
-  unsigned long load_addr = sign_extend(entry.load_address());
-  unsigned long exec_addr = sign_extend(entry.exec_address());
-  std::ofstream inf_file(name, std::ofstream::out);
-  inf_file << std::hex << std::uppercase;
-  // The NEXT field is missing because our source is not tape.
-  using std::setw;
-  using std::setfill;
-  inf_file << entry.directory() << '.' << entry.name()
-	   << setw(6) << setfill('0') << load_addr << " "
-	   << setw(6) << setfill('0') << exec_addr << " "
-	   << setw(6) << setfill('0') << entry.file_length() << " " // no sign-extend
-	   << (entry.is_locked() ? "Locked " : "")
-	   << "CRC=" << setw(4) << crc
-	   << "\n";
-  inf_file.close();
-  return inf_file.good();
-}
-
-inline unsigned long cycle(unsigned long crc)
-{
-  if (crc & 32768)
-    return  (((crc ^ 0x0810) & 32767) << 1) + 1;
-  else
-    return crc << 1;
-}
-
-unsigned long compute_crc(const byte* start, const byte *end)
-{
-  unsigned long crc = 0;
-  for (const byte* p = start; p < end; ++p)
-    {
-      crc ^= *p++ << 8;
-      for(int k = 0; k < 8; k++)
-	crc = cycle(crc);
-      assert((crc & ~0xFFFF) == 0);
-    }
-  return crc;
-}
-
 class CommandExtractAll : public CommandInterface
 {
+public:
   const std::string name() const override
   {
     return "extract-all";
@@ -318,6 +313,7 @@ REGISTER_COMMAND(CommandExtractAll);
 
 class CommandInfo : public CommandInterface // *INFO
 {
+public:
   const std::string name() const override
   {
     return "info";
@@ -408,6 +404,7 @@ struct comma_thousands : std::numpunct<char>
 
 class CommandFree : public CommandInterface // *FREE
 {
+public:
   const std::string name() const override
   {
     return "free";
@@ -450,7 +447,7 @@ class CommandFree : public CommandInterface // *FREE
     for (int i = 1; i <= entries; ++i)
       {
 	const auto& entry = image->get_catalog_entry(i);
-	ldiv_t division = ldiv(entry.file_length(), SECTOR_BYTES);
+	ldiv_t division = ldiv(entry.file_length(), DFS::SECTOR_BYTES);
 	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
 	const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
 	if (last_sector_of_file > sectors_used)
@@ -481,6 +478,7 @@ REGISTER_COMMAND(CommandFree);
 
 class CommandHelp : public CommandInterface
 {
+public:
   const std::string name() const override
   {
     return "help";
@@ -505,8 +503,6 @@ class CommandHelp : public CommandInterface
       {
 	const string prefix = "      ";
 	cout << "Known commands:\n";
-	for (const auto& c : commands)
-	  cout << prefix << c.first << "\n";
 	auto show = [prefix, max_command_name_len](CommandInterface* c) -> bool
 		    {
 		      cout << prefix << std::setw(max_command_name_len)
@@ -549,6 +545,32 @@ REGISTER_COMMAND(CommandHelp);
 
 namespace {
 
+  enum OptSignifier
+    {
+     OPT_IMAGE_FILE = SCHAR_MIN,
+     OPT_CWD,
+     OPT_DRIVE,
+     OPT_HELP,
+    };
+
+  const int max_command_name_len = 11;
+
+  // struct option fields: name, has_arg, *flag, val
+  const struct option global_opts[] =
+    {
+     // --file controls which disk image file we open
+     { "file", 1, NULL, OPT_IMAGE_FILE },
+     // --dir controls which directory the program should believe is
+     // current (as for *DIR).
+     { "dir", 1, NULL, OPT_CWD },
+     // --drive controls which drive the program should believe is
+     // associated with the disk image specified in --file (as for
+     // *DRIVE).
+     { "drive", 1, NULL, OPT_DRIVE },
+     { "help", 1, NULL, OPT_HELP },
+     { 0, 0, 0, 0 },
+    };
+
 std::pair<bool, int> get_drive_number(const char *s)
 {
   long v = 0;
@@ -583,14 +605,6 @@ std::pair<bool, int> get_drive_number(const char *s)
 	    }();
   return std::make_pair(ok, static_cast<int>(v));
 }
-
-enum OptSignifier
-  {
-   OPT_IMAGE_FILE = SCHAR_MIN,
-   OPT_CWD,
-   OPT_DRIVE,
-  };
-
 }  // namespace
 
 
@@ -598,24 +612,10 @@ int main (int argc, char *argv[])
 {
   DFS::DFSContext ctx('$', 0);
   int longindex;
-  // struct option fields: name, has_arg, *flag, val
-  static const struct option opts[] =
-    {
-     // --file controls which disk image file we open
-     { "file", 1, NULL, OPT_IMAGE_FILE },
-     // --dir controls which directory the program should believe is
-     // current (as for *DIR).
-     { "dir", 1, NULL, OPT_CWD },
-     // --drive controls which drive the program should believe is
-     // associated with the disk image specified in --file (as for
-     // *DRIVE).
-     { "drive", 1, NULL, OPT_DRIVE },
-     { 0, 0, 0, 0 },
-    };
-
+  vector<string> extra_args;
   DFS::StorageConfiguration storage;
   int opt;
-  while ((opt=getopt_long(argc, argv, "+", opts, &longindex)) != -1)
+  while ((opt=getopt_long(argc, argv, "+", global_opts, &longindex)) != -1)
     {
       switch (opt)
 	{
@@ -630,12 +630,13 @@ int main (int argc, char *argv[])
 	case OPT_CWD:
 	  if (strlen(optarg) != 1)
 	    {
-	      cerr << "Argument to --" << opts[longindex].name
+	      cerr << "Argument to --" << global_opts[longindex].name
 		   << " should have one character only.\n";
 	      return 1;
 	    }
 	  ctx.current_directory = optarg[0];
 	  break;
+
 	case OPT_DRIVE:
 	  {
 	    bool ok;
@@ -644,6 +645,12 @@ int main (int argc, char *argv[])
 	      return 1;
 	  }
 	  break;
+
+	case OPT_HELP:
+	  {
+	    DFS::CommandHelp help;
+	    return help(storage, ctx, extra_args) ? 0 : 1;
+	  }
 	}
     }
   if (optind == argc)
@@ -652,7 +659,6 @@ int main (int argc, char *argv[])
       return 1;
     }
   const string cmd_name = argv[optind];
-  vector<string> extra_args;
   if (optind < argc)
     extra_args.assign(&argv[optind], &argv[argc]);
 
