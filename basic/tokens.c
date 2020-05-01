@@ -380,7 +380,7 @@ struct dialect_mapping
   enum Dialect value;
 };
 
-struct dialect_mapping dialects[] =
+static struct dialect_mapping dialects[] =
   {
    { "6502", NULL, mos6502_32000},
    {"32000", "6502", mos6502_32000},

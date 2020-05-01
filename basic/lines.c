@@ -159,7 +159,7 @@ static int count(unsigned char needle, const char* haystack, size_t len)
   return n;
 }
 
-bool decode_line(enum Dialect dialect,
+static bool decode_line(enum Dialect dialect,
 		 unsigned char line_hi, unsigned char line_lo,
 		 unsigned char orig_len, const char *data,
 		 long file_pos,
@@ -228,14 +228,14 @@ bool decode_line(enum Dialect dialect,
   return true;
 }
 
-int premature_eof(FILE *f)
+static int premature_eof(FILE *f)
 {
   fprintf(stderr, "premature end-of-file at position %ld, "
 	  "are you sure you specified the right format?\n", ftell(f));
   return 1;
 }
 
-bool expect_char(FILE *f, unsigned char val_expected)
+static bool expect_char(FILE *f, unsigned char val_expected)
 {
   int ch;
   if ((ch = getc(f)) == EOF)
