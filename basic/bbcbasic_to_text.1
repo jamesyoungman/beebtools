@@ -21,6 +21,8 @@ BASIC command
 The following options are undersood:
 .IP "\-d \fID\fR, \-\-dialect \fID\fR"
 Specify which BBC BASIC dialect to assume the input file uses.
+The default is
+.BR 6502 .
 See
 .B BBC BASIC DIALECTS
 for a list.
@@ -37,7 +39,9 @@ See
 .B LIST OPTION BITS
 for an explanation of how
 .I N
-is interpreted.
+is interpreted.  The default value for
+.I N
+is 7 (though this may change in the future).
 
 .SH "BBC BASIC DIALECTS"
 The following dialect keywords can be used for
@@ -53,13 +57,13 @@ lb lb lb
 l l
 l l.
 Dialect Keyword   | What is it?
-6502              | BBC Microcomputer
+6502              | BBC Microcomputer.
 32000             | Same as 6502.  BBC Microcomputer 32016 Tube.
 Z80               | BBC BASIC Z80 (as in e.g. the Sinclair Z88).
 8086              | Same as Z80.  BBC BASIC for DOS.
-ARM               | Acorn RiscOS
-Windows           | Microsoft Windows
-Mac               | Apple MacOS
+ARM               | Acorn RiscOS.
+Windows           | Microsoft Windows.
+Mac               | Apple MacOS.
 .TE
 
 .SH "LIST OPTION BITS"
@@ -70,7 +74,7 @@ option bits are specified as a decimal number, just as in the BBC
 BASIC command
 .BR LISTO .
 With bit 0 as the least-significant, they have the following
-significance:
+meanings:
 
 .TS
 tab(|);
