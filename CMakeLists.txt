@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10)
+project(beebtools)
+enable_testing()
+add_subdirectory(basic)
+add_subdirectory(dfs)
