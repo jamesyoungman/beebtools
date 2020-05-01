@@ -260,7 +260,7 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 */
 
 
-static void set_ascii_mappings(const char** out)
+static void set_ascii_mappings(char** out)
 {
   unsigned i;
   for (i = 0x11; i < 0x80; ++i)
@@ -272,10 +272,10 @@ static void set_ascii_mappings(const char** out)
 }
 
 
-static const char** build_base_mapping(unsigned dialect)
+static char** build_base_mapping(unsigned dialect)
 {
   unsigned int tok, i;
-  const char** out = calloc(NUM_TOKENS, sizeof(*out));
+  char** out = calloc(NUM_TOKENS, sizeof(*out));
   assert(dialect < NUM_DIALECTS);
   for (i = 0; i < NUM_TOKENS; ++i)
     {
@@ -284,17 +284,27 @@ static const char** build_base_mapping(unsigned dialect)
       tok = base_map[i].token_value;
       assert(tok < NUM_TOKENS);
       const char *s = base_map[i].dialect_mappings[dialect];
-      out[tok] = (s && s[0]) ? s : NULL;
+      out[tok] = (s && s[0]) ? strdup(s) : NULL;
     }
   set_ascii_mappings(out);
   out[0x0D] = strdup("\n");
   return out;
 }
 
-const char** build_mapping(unsigned dialect)
+char** build_mapping(unsigned dialect)
 {
   /* The Mac mapping is only different in C6 handling. */
   return build_base_mapping(dialect == Mac ? mos6502_32000 : dialect);
+}
+
+void destroy_mapping(char** p)
+{
+  int i;
+  for (i = 0; i < NUM_TOKENS; ++i)
+    {
+      free(p[i]);
+    }
+  free(p);
 }
 
 const char *map_c6(enum Dialect d, unsigned char uch)
