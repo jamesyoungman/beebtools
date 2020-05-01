@@ -314,10 +314,19 @@ public:
   const std::string usage() const override
   {
     return "usage: " + name() + " destination-directory\n"
-      "All files from the selected drive (see the --drive global option)\n"
-      "are extracted into the destination directory.\n"
-      "The destination directory must exist already.\n"
-      "An archive .inf file is generated for each file.\n";
+      "All files from the selected drive (see the --drive global option) are\n"
+      "extracted into the destination directory.\n"
+      "\n"
+      "If the DFS directory of the file is not the same as the current\n"
+      "directory (selected with --dir) then the output file has a prefix\n"
+      "D. where D is the file's DFS directory.  Either way, the DFS directory\n"
+      "is given in the .inf file.  If you want the generated files to always\n"
+      "contain a the DFS directory prefix, use --dir=. (this works because\n"
+      ". is not a valid DFS directory name, so none of the DFS files will\n"
+      "have that as their directory.\n"
+      "\n"
+      "The destination directory must exist already.  An archive .inf file is\n"
+      "generated for each file.\n";
   }
 
   const std::string description() const override
@@ -356,7 +365,16 @@ public:
 	const auto& entry = image->get_catalog_entry(i);
 	auto [start, end] = image->file_body(i);
 
-	const string output_basename(string(1, entry.directory()) + "." + rtrim(entry.name()));
+	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
+	string output_basename;
+	if (entry.directory() == ctx.current_directory)
+	  {
+	    output_basename = rtrim(entry.name());
+	  }
+	else
+	  {
+	    output_basename = string(1, entry.directory()) + "." + rtrim(entry.name());
+	  }
 	const string output_body_file = dest_dir + output_basename;
 
 	std::ofstream outfile(output_body_file, std::ofstream::out);
