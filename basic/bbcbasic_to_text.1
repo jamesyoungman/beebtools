@@ -1,0 +1,155 @@
+'\" t
+.TH BBCBASIC_TO_TEXT 1 \" -*- nroff -*-
+
+.SH NAME
+bbcbasic_to_text \- convert a saved BBC BASIC program to text
+
+.SH SYNOPSIS
+.B bbcbasic_to_text
+[\--dialect D] [\-\-listo L]
+.B bbcbasic_to_text
+[\--help]
+.SH DESCRIPTION
+The
+.B bbcbasic_to_text
+program reads a saved BBC BASIC file (in any of several dialects)
+and writes the text of the program, as if by the use of the
+BASIC command
+.BR LIST .
+
+.SH OPTIONS
+The following options are undersood:
+.IP "\-d \fID\fR, \-\-dialect \fID\fR"
+Specify which BBC BASIC dialect to assume the input file uses.
+See
+.B BBC BASIC DIALECTS
+for a list.
+
+.IP \-\-help
+Show a message explaining how to use the program.
+
+.IP "\-l \fIN\fR, --listo \fIN\fR"
+Set the
+.B LIST
+option bits to the value
+.IR N .
+See
+.B LIST OPTION BITS
+for an explanation of how
+.I N
+is interpreted.
+
+.SH "BBC BASIC DIALECTS"
+The following dialect keywords can be used for
+.I D
+in the
+.B --dialect
+.I D
+option.
+
+.TS
+tab(|);
+lb lb lb
+l l
+l l.
+Dialect Keyword   | What is it?
+6502              | BBC Microcomputer
+32000             | Same as 6502.  BBC Microcomputer 32016 Tube.
+Z80               | BBC BASIC Z80 (as in e.g. the Sinclair Z88).
+8086              | Same as Z80.  BBC BASIC for DOS.
+ARM               | Acorn RiscOS
+Windows           | Microsoft Windows
+Mac               | Apple MacOS
+.TE
+
+.SH "LIST OPTION BITS"
+
+The
+.B LIST
+option bits are specified as a decimal number, just as in the BBC
+BASIC command
+.BR LISTO .
+With bit 0 as the least-significant, they have the following
+significance:
+
+.TS
+tab(|);
+lb lb
+n l.
+Bit | Meaning
+0   | When set, insert a space after the line number
+1   | When set, indent the body of \fBFOR\fR ... \fBNEXT\fR loops.
+2   | When set, indent the body of \fBREPEAT\fR ... \fBUNTIL\fR loops.
+.TE
+Commonly used values are 0 (no spaces), 1 (just insert a space after
+the line number) and 7 (insert spaces for all the situations in the
+table above).
+
+There appears to be some variation in
+how the
+.B NEXT
+or
+.B UNTIL
+is handled in  the implementation of bits 1 and 2.
+On some versions of BBC BASIC, the
+.B NEXT
+or
+.B UNTIL
+has the same indentation as the loop body.  On otherd
+it has the same indentation as the matching
+.B FOR
+or
+.BR REPEAT .
+This program takes the second approach.
+Using
+.B \-\-listo 7
+might give the following result:
+.EX
+   10 FOR I = 1 TO 10
+   20   PRINT I
+   30 NEXT
+.EE
+.P
+The same program listed with
+.B \-\-listo 0
+looks like this:
+.EX
+   10FOR I = 1 TO 10
+   20PRINT I
+   30NEXT
+.EE
+.P
+There is currently no way to get this program to produce a listing
+like this:
+.EX
+   10 FOR I = 1 TO 10
+   20   PRINT I
+   30   NEXT
+.EE
+.P
+It is possible for the on-disc program to include spaces too, so even
+with
+.B \-\-listo 0
+a program might still look like this:
+.EX
+   10FOR I = 1 TO 10
+   20PRINT I
+   30NEXT
+   40FOR J = 1 TO 10
+   50  PRINT J
+   60 NEXT
+.EE
+This can be confusing.
+
+.SH "EXIT STATUS"
+The exit status is zero when everything has gone well and non-zero
+when there was a problem.  Problems might inclue that the input file
+is not encoded as a BBC BASIC program, its actual dialect doesn't
+match what was specified, or that the command-line inclued a usage
+error.
+
+.SH "SEE ALSO"
+\fBdfs\fP(1), \fBenscript\fP(1)
+
+.SH BUGS
+Please report bugs to james@youngman.org.
