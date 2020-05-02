@@ -245,6 +245,13 @@ Byte|All Dialects
 0x9D|"DEG"
 0x9E|"ERL"
 0x9F|"ERR"
+.TE
+
+.TS
+tab(|) allbox;
+lb lb
+l  l.
+Byte|All Dialects
 0xA0|"EVAL"
 0xA1|"EXP"
 0xA2|"EXT"
@@ -261,6 +268,13 @@ Byte|All Dialects
 0xAD|"OPENUP"
 0xAE|"OPENOUT"
 0xAF|"PI"
+.TE
+
+.TS
+tab(|) allbox;
+lb lb
+l  l.
+Byte|All Dialects
 0xB0|"POINT("
 0xB1|"POS"
 0xB2|"RAD"
@@ -306,7 +320,7 @@ string as follows:
 tab(|) allbox;
 lb lb lb
 l  l  l.
-Second Byte|ARM|Mac
+Second Byte after 0xC6|ARM|Mac
 0x8E|"SUM"|\fIinvalid\fP
 0x8F|"BEAT"|\fIinvalid\fP
 0x90|\fIinvalid\fP|"ASK"
@@ -350,7 +364,7 @@ For ARM, the next byte identifies the expansion:
 tab(|) allbox;
 lb lb
 l  l .
-Second Byte|ARM
+Second Byte after 0xC7|ARM
 0x8E|"APPEND"
 0x8F|"AUTO"
 0x90|"CRUNCH"
@@ -392,7 +406,7 @@ tab(|) allbox;
 lb lb lb lb lb
 l  c  s  b  l.
 Byte| 6502|Z80|ARM|Windows
-0xC7|"LOAD"|\fIExtension\fP|"CASE"
+0xC8|"LOAD"|\fIExtension\fP|"CASE"
 .TE
 
 For ARM, the next byte identifies the expansion:
@@ -401,7 +415,7 @@ For ARM, the next byte identifies the expansion:
 tab(|) allbox;
 lb lb
 l  l .
-Second Byte|ARM
+Second Byte after 0xC8|ARM
 0x8E|"CASE"
 0x8F|"CIRCLE"
 0x90|"FILL"
@@ -531,7 +545,8 @@ is encoded as 0xF6 ("REPORT") followed by 0x24 (ASCII $).
 
 Line numbers at the start of a line are encoded as exactly two bytes.
 Within a file, they are consistently represented high byte first
-(6502, 32016, Windows, ARM) or low byte first (Z80, 8086).
+(6502, 32016, Windows, ARM and probably Mac) or low byte first (Z80,
+8086).
 
 Within the rest of the line, they are represented differently. They
 are introduced by the byte value 0x8D and (counting the 0x8D) always
