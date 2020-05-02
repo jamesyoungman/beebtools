@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void verify_mapping(enum Dialect d, const char **m)
+void verify_mapping(enum Dialect d, char **m)
 {
   bool missing = false;
   unsigned i;
@@ -27,7 +27,7 @@ void verify_all_mappings()
   unsigned int d;
   for (d = MIN_DIALECT; d < NUM_DIALECTS; ++d)
     {
-      const char **m = build_mapping(d);
+      char **m = build_mapping(d);
       assert(m != NULL);
       verify_mapping(d, m);
       free(m);
