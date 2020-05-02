@@ -171,8 +171,19 @@ static bool decode_line(enum Dialect dialect,
   unsigned char len = orig_len;
   bool in_string = false;
 
-  if (fprintf(stdout, "%5u", line_number) < 0)
-    return false;		/* I/O error */
+  // Print the line number as a space-padded right-aligned
+  // decimal number.  If there is no line number, just print
+  // five spaces.
+  if (line_number != 0)
+    {
+      if (fprintf(stdout, "%5u", line_number) < 0)
+	return false;		/* I/O error */
+    }
+  else
+    {
+      if (fprintf(stdout, "%5s", "") < 0)
+	return false;		/* I/O error */
+    }
   if (listo & 1)
     putchar(' ');
   if (listo & 2)		/* for...next loops */
@@ -382,7 +393,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
 	  long pos = ftell(f);
 	  fprintf(stderr, "line at position %ld did not start with 0x0D "
 		  "(instead 0x%02X) are you sure you specified the right "
-		  "format?\n", pos, (unsigned)ch);
+		  "format?\n", pos-1, (unsigned)ch);
 	  return false;
 	}
       if ((ch = fgetc(f)) == EOF)
@@ -402,7 +413,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
 		{
 		  fprintf(stderr, "Saw 0xFF at position %ld as the high byte "
 			  "of a line number; this is unusual, are you sure "
-			  "you specified the right format?\n", ftell(f));
+			  "you specified the right format?\n", ftell(f)-1);
 		  warned = true;
 		}
 	    }

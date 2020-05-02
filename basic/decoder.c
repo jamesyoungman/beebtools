@@ -11,6 +11,7 @@ struct decoder* new_decoder(enum Dialect d, int listo)
   if (NULL == result)
     return NULL;
   result->listo = listo;
+  result->dialect = d;
   result->token_map = build_mapping(d);
   if (NULL == result->token_map)
     return NULL;
@@ -25,7 +26,7 @@ void destroy_decoder(struct decoder* p)
 
 static bool dialect_has_leading_cr(enum Dialect d)
 {
-  return (d == mos6502_32000 || d == Windows || d == ARM);
+  return (d == mos6502_32000 || d == ARM);
 }
 
 

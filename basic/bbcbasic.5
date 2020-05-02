@@ -46,8 +46,8 @@ format of these lines varies between implementations.
 tab(|) allbox;
 l l l.
 Type|Dialects|Line Format
-CR-first|6502, 32016, Windows, ARM |0x0D <hi> <lo> <len> tokens...
-Length-first|Z80, 8086 |<len> <lo> <hi> tokens... 0x0D
+CR-first|6502, 32016, ARM |0x0D <hi> <lo> <len> tokens...
+Length-first|Z80, 8086, Windows |<len> <lo> <hi> tokens... 0x0D
 .TE
 
 Both line-encoding systems use the same general scheme for
@@ -545,8 +545,8 @@ is encoded as 0xF6 ("REPORT") followed by 0x24 (ASCII $).
 
 Line numbers at the start of a line are encoded as exactly two bytes.
 Within a file, they are consistently represented high byte first
-(6502, 32016, Windows, ARM and probably Mac) or low byte first (Z80,
-8086).
+(6502, 32016, ARM and probably Mac) or low byte first (Z80,
+8086, Windows).
 
 Within the rest of the line, they are represented differently. They
 are introduced by the byte value 0x8D and (counting the 0x8D) always
@@ -558,6 +558,10 @@ b3 are the three unsigned bytes of the line number which follow the
 .EX
 (((b3 ^  (b1 << 4)) & 0xFF) << 8) | (b2 ^ ((b1 << 2)  & 0xC0));
 .EE
+
+Some dialects allow line numbers to be omitted.  When this is the case
+they are encoded as line number 0.
+
 
 .SH "MAC DIALECT"
 This document leans heavily on http://mdfs.net/Docs/Comp/BBCBasic/Tokens
