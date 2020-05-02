@@ -8,6 +8,9 @@ target_sources(dfsbase
   stringutil.h)
   
 add_executable(dfs)
+install(TARGETS dfs
+  RUNTIME
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 set(HEADERS
   dfscontext.h
