@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "failed to initialise decoder\n");
       return 1;
     }
-  
+
   if (optind == argc)
     {
       /* no input files listed. */

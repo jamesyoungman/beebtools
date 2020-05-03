@@ -16,7 +16,7 @@ void verify_mapping(enum Dialect d, char **m)
 	  fprintf(stderr, "missing mapping for token 0x%02X in dialect %u\n", i, d);
 	}
     }
-  if (missing) 
+  if (missing)
     {
       abort();
     }
@@ -35,7 +35,7 @@ void verify_all_mappings()
 }
 
 
-int main () 
+int main ()
 {
   verify_all_mappings();
   return 0;

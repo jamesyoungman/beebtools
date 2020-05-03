@@ -31,7 +31,7 @@ Dialect|Line Encoding|Tokenisation
 6502|CR first|No extension codes
 ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
 Windows|CR first|No extension codes, bytes <= 0x10 different
-Mac|CR first|Single extension code, 0xC6
+Mac|CR first|Extension codes 0xC6, 0xC8
 Z80|Length first|No extension codes
 32016|Identical to 6502
 8086|Identical to Z80
@@ -354,9 +354,16 @@ mechanism:
 tab(|) allbox;
 lb lb lb lb lb
 l  c  s  b  l.
-Byte| 6502|Z80|ARM|Windows
-0xC7|"DELETE"|\fIExtension\fP|"WHILE"
+Byte| 6502|Z80|ARM|Mac|Windows
+0xC7|"DELETE"|\fIExtension\fP|\fIuncertain\fP|"WHILE"
 .TE
+
+I'm not sure whether the Mac dialect also uses 0xC7 as an extension
+byte, or whether it maps to a keyword directly.  The
+.BR bbcbasic_to_text (1)
+program currently produces
+.B DELETE
+for this token.
 
 For ARM, the next byte identifies the expansion:
 
@@ -398,18 +405,18 @@ Bytes|Tokens|Keyword
 
 .SS Token 0xC8
 
-In the ARM dialect only, the 0xC8 byte introduces an extension
+In the ARM and Mac dialects, the 0xC8 byte introduces an extension
 mechanism:
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb
-l  c  s  b  l.
-Byte| 6502|Z80|ARM|Windows
+lb lb lb lb lb lb
+l  c  s  c  s  l.
+Byte| 6502|Z80|ARM|Mac|Windows
 0xC8|"LOAD"|\fIExtension\fP|"CASE"
 .TE
 
-For ARM, the next byte identifies the expansion:
+For ARM and Mac, the next byte identifies the expansion:
 
 .TS
 tab(|) allbox;
@@ -566,15 +573,19 @@ they are encoded as line number 0.
 .SH "MAC DIALECT"
 This document leans heavily on http://mdfs.net/Docs/Comp/BBCBasic/Tokens
 as source material, but that document is not very explicit about how
-the Mac implementation of BBC BASIC is tokenised.  The 
+the Mac implementation of BBC BASIC is tokenised.
+
+The Mac dialect described in this document is the 1987 implementation
+by Human-Computer Interface Ltd.  There is also an SDL version for Mac
+OS X implemented by R. T. Russel, but I have no specific information
+about its file format.
+
+On the basis of examination of some sample programs, the
 .BR bbcbasic_to_text (1)
-program currently assumes that the Mac dialect is identical to the
-6502 dialect, except for 0xC6 (which is an extension byte) and 0xC7
-and 0xC8 (which map to
-.B DELETE
-and
-.B LOAD
-respectively).
+program currently assumes that the Mac dialect is similar to the ARM
+dialect, using 0xC6 and 0xC8 as extension bytes but with the
+difference that it maps 0xC7 to
+.BR DELETE .
 
 If you have additional information or corrections relating to the Mac
 implementation of BBC BASIC, please use the contact information given

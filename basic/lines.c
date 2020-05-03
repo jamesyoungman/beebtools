@@ -6,12 +6,20 @@
 
 #include "tokens.h"
 
+static bool stdout_write_error()
+{
+  perror("stdout");
+  return false;
+}
+
 static bool print_target_line_number(unsigned char b1, unsigned char b2, unsigned char b3)
 {
   unsigned char lo = b2 ^ ((b1 * 4) & 0xC0);
   unsigned char hi = b3 ^ (b1 * 16);
   unsigned int n = (hi*256) + lo;
-  return fprintf(stdout, "%u", n) >= 0;
+  if (fprintf(stdout, "%u", n) < 0)
+    return stdout_write_error();
+  return true;
 }
 
 static bool premature_eol(unsigned int tok)
@@ -49,15 +57,43 @@ static bool handle_special_token(enum Dialect dialect, unsigned char tok,
 	      }
 	    else
 	      {
+		bool ok;
 		unsigned char uch = **input;
 		++*input;
-		*output = map_c6(dialect, uch);
+		--*len;
+		ok = map_c6(dialect, uch, output);
+		if (ok)
+		  {
+		    assert(*output != NULL);
+		    return true;
+		  }
+		else
+		  {
+		    fprintf(stderr, "Saw sequence 0xC6 0x%02X in Mac dialect, "
+			    "are you sure you specified the right dialect?\n",
+			    (unsigned)uch);
+		    return false;
+		  }
 	      }
 	    break;
 	  }
 
 	case 0xC7: *output = "DELETE"; break;
-	case 0xC8: *output = "LOAD"; break;
+	case 0xC8:
+	  {
+	    if (!*len)
+	      {
+		return premature_eol(tok);
+	      }
+	    else
+	      {
+		unsigned char uch = **input;
+		--*len;
+		++*input;
+		return map_c8(dialect, uch, output);
+	      }
+	  }
+	  break;
 	}
       return true;
     }
@@ -69,27 +105,41 @@ static bool handle_special_token(enum Dialect dialect, unsigned char tok,
 	}
       else
 	{
+	  bool ok;
 	  unsigned char uch = **input;
 	  ++*input;
+	  --*len;
 	  switch (tok)
 	    {
-	    case 0xC6: *output = map_c6(dialect, uch); break;
-	    case 0xC7: *output = map_c7(dialect, uch); break;
-	    case 0xC8: *output = map_c8(dialect, uch); break;
+	    case 0xC6:
+	      ok = map_c6(dialect, uch, output);
+	      if (ok)
+		{
+		  assert(*output != NULL);
+		}
+	      break;
+	    case 0xC7:
+	      ok = map_c7(dialect, uch, output);
+	      if (ok)
+		{
+		  assert(*output != NULL);
+		}
+	      break;
+	    case 0xC8:
+	      ok = map_c8(dialect, uch, output);
+	      if (ok)
+		{
+		  assert(*output != NULL);
+		}
+	      break;
 	    default:
 	      fprintf(stderr, "Token 0x%02X is marked for special handling, "
 		      "but there is no defined handler.  This is a bug.\n", tok);
 	      return false;
 	    }
-	  return true;
+	  return ok;
 	}
     }
-}
-
-static bool stdout_write_error()
-{
-  perror("stdout");
-  return false;
 }
 
 static bool handle_token(enum Dialect dialect,
@@ -99,6 +149,13 @@ static bool handle_token(enum Dialect dialect,
 
 {
   const char *t = token_map[uch];
+  if (NULL == t)
+    {
+      fprintf(stderr, "The entry in the token map for byte 0x%02X is NULL.\n",
+	      (unsigned)uch);
+      please_submit_bug_report();
+      return false;
+    }
 
   /* We have "special" tokens which expand to something starting
      with an underscore, and we handle those in handle_line_num()
@@ -134,13 +191,19 @@ static bool handle_token(enum Dialect dialect,
 	      if (!print_target_line_number(p[0], p[1], p[2]))
 		return false;
 	      (*input) += 3;
+	      assert((*len) >= 3);
 	      (*len) -= 3;
 	      file_pos += 3;
 	      return true;
 	    }
 	}
       else if (!handle_special_token(dialect, uch, &t, input, len))
-	return false;
+	{
+	  fprintf(stderr, "Failed to handle token sequence beginning with 0x%02X, "
+		  "are you sure you specified the right dialect?\n",
+		  (unsigned)uch);
+	  return false;
+	}
     }
   if (fputs(t, stdout) == EOF)
     return stdout_write_error();
@@ -162,9 +225,10 @@ static int count(unsigned char needle, const char* haystack, size_t len)
 static bool decode_line(enum Dialect dialect,
 		 unsigned char line_hi, unsigned char line_lo,
 		 unsigned char orig_len, const char *data,
-		 long file_pos,
+		 long orig_file_pos,
 		 char **token_map, int *indent, int listo)
 {
+  long file_pos = orig_file_pos;
   unsigned const char *p = (unsigned const char*)data;
   int outdent = 0;
   const unsigned int line_number = (256u * line_hi) + line_lo;
@@ -176,13 +240,13 @@ static bool decode_line(enum Dialect dialect,
   // five spaces.
   if (line_number != 0)
     {
-      if (fprintf(stdout, "%5u", line_number) < 0)
-	return false;		/* I/O error */
+      if (printf("%5u", line_number) < 0)
+	return stdout_write_error();
     }
   else
     {
-      if (fprintf(stdout, "%5s", "") < 0)
-	return false;		/* I/O error */
+      if (printf("%5s", "") < 0)
+	return stdout_write_error();
     }
   if (listo & 1)
     putchar(' ');
@@ -199,18 +263,25 @@ static bool decode_line(enum Dialect dialect,
   *indent -= outdent;
   if (*indent > 0)
     {
-      if (fprintf(stdout, "%*s", (*indent), "") < 0)
-	return false;		/* I/O error */
+      if (printf("%*s", (*indent), "") < 0)
+	return stdout_write_error();
     }
 
   while (len--)
     {
       unsigned char uch = *p++;
+      if (uch == 0)
+	{
+	  /* Probably we had incremented *p without decremenring *len. */
+	  fprintf(stderr, "It looks like decode_line ran over the end of the input.\n");
+	  please_submit_bug_report();
+	  return false;
+	}
       if (in_string)
 	{
 	  /* We don't expand tokens inside strings.  Some programs, for
 	     example, include Mode 7 control characters inside strings.
-	     So 0x86 (decimal 134) inside a string is passed though literally
+	     So 0x86 (decimal 134) inside a string is passed through literally
 	     (where in mode 7 it would turn text cyan) while outside
 	     a string it would expand to the keyword LINE.
 	  */
@@ -278,7 +349,8 @@ bool decode_len_leading_program(FILE *f, const char *filename,
   // followed by the high byte, which is what this program expects.
   int indent = 0;
   bool empty = true;		/* file is entirely empty */
-  static char buf[1024];
+  enum { BufSize = 1024 };
+  static char buf[BufSize];
   long int file_pos;
   for (;;)
     {
@@ -295,6 +367,7 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 	}
       empty = false;
       len = ch;
+      assert(len < BufSize);
       if (0 == len)
 	{
 	  // This is logical EOF.  We still expect to see 0xFF 0xFF though.
@@ -329,9 +402,9 @@ bool decode_len_leading_program(FILE *f, const char *filename,
       hi = (unsigned char)ch;
 
       clearerr(f);
-      assert(len < sizeof(buf));
       file_pos = ftell(f);
-      len -= 3;
+      len -= 3;  /* len is unsigned so a wrap here generates a large value. */
+      assert(len < sizeof(buf));
       nread = fread(buf, 1, len, f);
       if (nread < len)
 	{

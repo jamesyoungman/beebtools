@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define ARRAYSIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
 struct multi_mapping
 {
@@ -259,6 +260,14 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 0xC8 A6:BAD,                "              |   EXIT                             |
 */
 
+void please_submit_bug_report()
+{
+  fprintf(stderr,
+	  "We think this is a bug in this program.\n"
+	  "Please submit a bug report, and include both the input file\n"
+	  "and a correct ASCII listing of the program if you can get it.\n"
+	  "Please email your bug report to james@youngman.org.\n");
+}
 
 static void set_ascii_mappings(char** out)
 {
@@ -272,11 +281,18 @@ static void set_ascii_mappings(char** out)
 }
 
 
-static char** build_base_mapping(unsigned dialect)
+char** build_mapping(unsigned dialect)
 {
   unsigned int tok, i;
   char** out = calloc(NUM_TOKENS, sizeof(*out));
   assert(dialect < NUM_DIALECTS);
+  if (dialect == Mac)
+    {
+      /* On Mac, 0xC8 0x93 appears to encode RECTANGLE and not
+	 CASEHIMEM.  Hence it's likely to be more similar to ARM BBC
+	 BASIC than Windows BBC BASIC.*/
+      dialect = ARM;
+    }
   for (i = 0; i < NUM_TOKENS; ++i)
     {
       if (0 == strcmp(base_map[i].dialect_mappings[dialect], END))
@@ -291,12 +307,6 @@ static char** build_base_mapping(unsigned dialect)
   return out;
 }
 
-char** build_mapping(unsigned dialect)
-{
-  /* The Mac mapping is only different in C6 handling. */
-  return build_base_mapping(dialect == Mac ? mos6502_32000 : dialect);
-}
-
 void destroy_mapping(char** p)
 {
   int i;
@@ -307,23 +317,26 @@ void destroy_mapping(char** p)
   free(p);
 }
 
-const char *map_c6(enum Dialect d, unsigned char uch)
+bool map_c6(enum Dialect d, unsigned char uch, const char **output)
 {
   assert(d != mos6502_32000);	/* should have already been handled */
+  assert(d != Z80_80x86);	/* should have already been handled */
   assert(d != Windows);		/* 0xC6 (SUM) 0xA9 (LEN) handled as separate tokens. */
   if (d == Mac)
     {
       switch (uch)
 	{
-	case 0x90: return "ASK";
-	case 0x92: return "ANSWER";
-	case 0x93: return "SFOPENIN";
-	case 0x94: return "SFOPENOUT";
-	case 0x95: return "SFOPENUP";
-	case 0x06: return "MENU";
-	default: return BAD;
+	case 0x90: *output = "ASK"; return true;
+	case 0x91: *output = "ANSWER"; return true;
+	case 0x92: *output = "SFOPENIN"; return true;
+	case 0x93: *output = "SFOPENOUT"; return true;
+	case 0x94: *output = "SFOPENUP"; return true;
+	case 0x95: *output = "SFNAME$"; return true;
+	case 0x96: *output = "MENU"; return true;
+	default: return false;
 	}
     }
+  assert(ARM == d);
   /* On ARM we handle 0xC6 0x8E 0xA9 as "SUM" (here) followed by
      0xA9="LEN" which we handle as an ordinary single-byte token.
 
@@ -335,30 +348,63 @@ const char *map_c6(enum Dialect d, unsigned char uch)
    */
   switch (uch)
     {
-    case 0xA9: return BAD;	/* see above. */
-    case 0x8E: return (d == ARM) ? "SUM" : BAD;
-    case 0x8F: return (d == ARM) ? "BEAT" : BAD;
-    default: return BAD;
+    case 0xA9:
+      return false;		/* see above. */
+    case 0x8E:
+      if (d == ARM || d == Mac)
+	{
+	*output = "SUM";
+	return true;
+      }
+      else
+	{
+	  return false;
+	}
+    case 0x8F:
+      if (d == ARM || d == Mac)
+	{
+	  *output = "BEAT";
+	  return true;
+	}
+      else
+	{
+	  return false;
+	}
+    default:
+      return false;
     }
 }
 
-const char *map_c7(enum Dialect d, unsigned char uch)
+bool map_c7(enum Dialect d, unsigned char uch, const char **output)
 {
-  assert(d == ARM);
-  static const char* c7_tokens[1+0x9F-0x8E] =
-    {"APPEND", "AUTO", "CRUNCH", "DELETE", "EDIT", "HELP",
-     "LIST", "LOAD", "LVAR", "NEW", "OLD", "RENUMBER",
-     "SAVE", "TEXTLOAD", "TEXTSAVE", "TWIN", "TWINO", "INSTALL",
-    };
-  if (uch < 0x8E || uch > 0x9F)
-    return BAD;
-  else
-    return c7_tokens[uch];
+  assert(d == ARM || d == Mac);
+  switch (uch)
+    {
+    case 0x8E: *output = "APPEND";   return true;
+    case 0x8F: *output = "AUTO";     return true;
+    case 0x90: *output = "CRUNCH";   return true;
+    case 0x91: *output = "DELETE";   return true;
+    case 0x92: *output = "EDIT";     return true;
+    case 0x93: *output = "HELP";     return true;
+    case 0x94: *output = "LIST";     return true;
+    case 0x95: *output = "LOAD";     return true;
+    case 0x96: *output = "LVAR";     return true;
+    case 0x97: *output = "NEW";      return true;
+    case 0x98: *output = "OLD";      return true;
+    case 0x99: *output = "RENUMBER"; return true;
+    case 0x9A: *output = "SAVE";     return true;
+    case 0x9B: *output = "TEXTLOAD"; return true;
+    case 0x9C: *output = "TEXTSAVE"; return true;
+    case 0x9D: *output = "TWIN";     return true;
+    case 0x9E: *output = "TWINO";    return true;
+    case 0x9F: *output = "INSTALL";  return true;
+    default: return false;
+    }
 }
 
-const char *map_c8(enum Dialect d, unsigned char uch)
+bool map_c8(enum Dialect d, unsigned char uch, const char **output)
 {
-  assert(d == ARM);
+  assert(d == ARM || d == Mac);
   static const char* c8_tokens[1+0xA6-0x8E] =
     {
      "CASE", "CIRCLE", "FILL", "ORIGIN", "POINT",
@@ -368,9 +414,16 @@ const char *map_c8(enum Dialect d, unsigned char uch)
      "PRIVATE", "EXIT"
     };
   if (uch < 0x8E || uch > 0xA6)
-    return BAD;
+    {
+      return false;
+    }
   else
-    return c8_tokens[uch];
+    {
+      unsigned int index = uch - 0x8E;
+      assert(index < ARRAYSIZE(c8_tokens));
+      *output = c8_tokens[index];
+      return true;
+    }
 }
 
 struct dialect_mapping
