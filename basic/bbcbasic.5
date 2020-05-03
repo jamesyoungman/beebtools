@@ -1,4 +1,4 @@
-.TH "BBC BASIC" 5 2020-05-02 \" -*- nroff -*-
+.TH "BBC BASIC" 5 2020-05-03 \" -*- nroff -*-
 
 .SH SYNOPSIS
 Implementations of BBC BASIC store saved programs in a tokenised
@@ -66,7 +66,7 @@ as 0x64 (decimal 100) followed by 0x0A (decimal 10).  The <len> value
 counts from <hi>, so for example this line
 
 .EX
-0x0D 0x00 0x00A 0xF1
+0x0D 0x00 0x00A 0x04 0xF1
 .EE
 
 has a line number of 10 and includes just the token 0x0F1 representing "PRINT":
@@ -352,9 +352,9 @@ mechanism:
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb
-l  c  s  b  l.
-Byte| 6502|Z80|ARM|Mac|Windows
+lb   lb   lb  lb  lb  lb
+l    c    s   l   l   l.
+Byte|6502|Z80|ARM|Mac|Windows
 0xC7|"DELETE"|\fIExtension\fP|\fIuncertain\fP|"WHILE"
 .TE
 
@@ -563,7 +563,7 @@ b3 are the three unsigned bytes of the line number which follow the
 0x8D marker byte):
 
 .EX
-(((b3 ^  (b1 << 4)) & 0xFF) << 8) | (b2 ^ ((b1 << 2)  & 0xC0));
+(((b3 ^  (b1 << 4)) & 0xFF) << 8) | (b2 ^ ((b1 << 2)  & 0xC0))
 .EE
 
 Some dialects allow line numbers to be omitted.  When this is the case

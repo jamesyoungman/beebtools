@@ -32,6 +32,9 @@ const char line_num[] = LINE_NUM;
 #define END "__end__"
 
 static const struct multi_mapping base_map[NUM_TOKENS] = {
+/*
+        6502                   Z80               ARM                 Windows
+*/
 { 0x00, {BAD,                  BAD,              BAD,                BAD              }},
 { 0x01, {BAD,                  BAD,              BAD,                "CIRCLE"         }},
 { 0x02, {BAD,                  BAD,              BAD,                "ELLIPSE"        }},
@@ -269,14 +272,30 @@ void please_submit_bug_report()
 	  "Please email your bug report to james@youngman.org.\n");
 }
 
-static void set_ascii_mappings(char** out)
+static void set_ascii_mappings(enum Dialect dialect, char** out)
 {
+  /* In ARM/Mac, 0x7F is the token "OTHERWISE", not ASCII DEL. */
+  int limit;
+  switch (dialect)
+    {
+    case ARM:
+    case Mac:
+      limit = 0x7F;
+      break;
+    default:
+      limit = 0x80;
+      break;
+    };
   unsigned i;
-  for (i = 0x11; i < 0x80; ++i)
+  for (i = 0x11; i < limit; ++i)
     {
       char *p = calloc(2, 1);
       p[0] = i;			/* the character itself */
       out[i] = p;
+    }
+  if (ARM == dialect || Mac == dialect)
+    {
+      out[0x7F] = strdup("OTHERWISE");
     }
 }
 
@@ -302,7 +321,7 @@ char** build_mapping(unsigned dialect)
       const char *s = base_map[i].dialect_mappings[dialect];
       out[tok] = (s && s[0]) ? strdup(s) : NULL;
     }
-  set_ascii_mappings(out);
+  set_ascii_mappings(dialect, out);
   out[0x0D] = strdup("\n");
   return out;
 }

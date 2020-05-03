@@ -41,7 +41,7 @@ do
 	    fi
 	    
 	    out="$(mktemp)"
-	    if "${formatter}" --listo="${listo}" "${infile_path}" >| "${out}"
+	    if "${formatter}" --listo="${listo}" --dialect="${dialect}" "${infile_path}" >| "${out}"
 	    then
 	    	if "${differ}" "${g}" "${out}"
 	    	then
