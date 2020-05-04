@@ -10,19 +10,25 @@ enum Dialect
    Z80_80x86 = 1,
    ARM = 2,
    Windows = 3,
+   // The intiialisation of base_map
+   // relies on Mac being last.
    Mac = 4,
    NUM_DIALECTS,
   };
 
 enum { NUM_TOKENS = 0x100 };
 
-/* expansion_map maps an input byte either to a token, or
- * to a special string (beginning with underscore) which
- * tells us we need to perform a lookup in a second map.
- */
 struct expansion_map
 {
-  char *mapping[NUM_TOKENS];
+  /* base maps a byte to either a token, or to a special string
+     (beginning with underscore) which tells us we need to perform a
+     lookup in a second map (c6, c7 or c8).
+  */
+  char ascii[0x80][2];
+  const char *base[NUM_TOKENS];
+  const char *c6[NUM_TOKENS];
+  const char *c7[NUM_TOKENS];
+  const char *c8[NUM_TOKENS];
 };
 
 struct decoder

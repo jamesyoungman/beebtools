@@ -28,118 +28,52 @@ static bool premature_eol(unsigned int tok)
   return false;
 }
 
-static bool handle_special_token(enum Dialect dialect, unsigned char tok,
+
+static bool is_invalid(const char *s)
+{
+  return s[0] == '_' && s[1] != 0;
+}
+
+static bool handle_special_token(enum Dialect dialect, unsigned char intro,
 				 const char **output,
 				 const unsigned char **input,
-				 unsigned char *len)
+				 unsigned char *len,
+				 const struct expansion_map *m)
 {
-  if (dialect == mos6502_32000 || dialect == Z80_80x86)
-    {
-      switch (tok)
-	{
-	case 0xC6: *output = "AUTO";  return true;
-	case 0xC7: *output = "DELETE"; return true;
-	case 0xC8: *output = "LOAD"; return true;
-	default:
-	  abort();
-	}
-      return true;
-    }
-  else if (dialect == Mac)
-    {
-      switch (tok)
-	{
-	case 0xC6:
-	  {
-	    if (!*len)
-	      {
-		return premature_eol(tok);
-	      }
-	    else
-	      {
-		bool ok;
-		unsigned char uch = **input;
-		++*input;
-		--*len;
-		ok = map_c6(dialect, uch, output);
-		if (ok)
-		  {
-		    assert(*output != NULL);
-		    return true;
-		  }
-		else
-		  {
-		    fprintf(stderr, "Saw sequence 0xC6 0x%02X in Mac dialect, "
-			    "are you sure you specified the right dialect?\n",
-			    (unsigned)uch);
-		    return false;
-		  }
-	      }
-	    break;
-	  }
+  const char * const *extension_map = NULL;
+  unsigned char uch;
 
-	case 0xC7: *output = "DELETE"; break;
-	case 0xC8:
-	  {
-	    if (!*len)
-	      {
-		return premature_eol(tok);
-	      }
-	    else
-	      {
-		unsigned char uch = **input;
-		--*len;
-		++*input;
-		return map_c8(dialect, uch, output);
-	      }
-	  }
-	  break;
-	}
-      return true;
-    }
-  else
+  switch (intro)
     {
-      if (!*len)
-	{
-	  return premature_eol(tok);
-	}
-      else
-	{
-	  bool ok;
-	  unsigned char uch = **input;
-	  ++*input;
-	  --*len;
-	  switch (tok)
-	    {
-	    case 0xC6:
-	      ok = map_c6(dialect, uch, output);
-	      if (ok)
-		{
-		  assert(*output != NULL);
-		}
-	      break;
-	    case 0xC7:
-	      ok = map_c7(dialect, uch, output);
-	      if (ok)
-		{
-		  assert(*output != NULL);
-		}
-	      break;
-	    case 0xC8:
-	      ok = map_c8(dialect, uch, output);
-	      if (ok)
-		{
-		  assert(*output != NULL);
-		}
-	      break;
-	    default:
-	      fprintf(stderr, "Token 0x%02X is marked for special handling, "
-		      "but there is no defined handler.  This is a bug.\n", tok);
-	      return false;
-	    }
-	  return ok;
-	}
+    case 0XC6: extension_map = m->c6; break;
+    case 0xC7: extension_map = m->c7; break;
+    case 0XC8: extension_map = m->c8; break;
+    default:
+      fprintf(stderr, "Token 0x%02X is marked for special handling, "
+	      "but there is no defined handler.  This is a bug.\n",
+	      intro);
+      please_submit_bug_report();
+      return false;
     }
+  if (!*len)
+    {
+      return premature_eol(intro);
+    }
+  uch = **input;
+  ++*input;
+  --*len;
+
+  bool ok;
+  assert(extension_map[uch] != NULL);
+  if (is_invalid(extension_map[uch]))
+    {
+      fprintf(stderr, "Saw sequence 0x%02X 0x%02X, "
+	      "are you sure you specified the right dialect?\n",
+	      (unsigned)intro, (unsigned)uch);
+      return false;
+    }
+  *output = extension_map[uch];
+  return true;
 }
 
 static bool handle_token(enum Dialect dialect,
@@ -148,10 +82,10 @@ static bool handle_token(enum Dialect dialect,
 			 const struct expansion_map *m)
 
 {
-  const char *t = m->mapping[uch];
+  const char *t = m->base[uch];
   if (NULL == t)
     {
-      fprintf(stderr, "The entry in the token map for byte 0x%02X is NULL.\n",
+      fprintf(stderr, "The entry in the token base map for byte 0x%02X is NULL.\n",
 	      (unsigned)uch);
       please_submit_bug_report();
       return false;
@@ -197,7 +131,7 @@ static bool handle_token(enum Dialect dialect,
 	      return true;
 	    }
 	}
-      else if (!handle_special_token(dialect, uch, &t, input, len))
+      else if (!handle_special_token(dialect, uch, &t, input, len, m))
 	{
 	  fprintf(stderr, "Failed to handle token sequence beginning with 0x%02X, "
 		  "are you sure you specified the right dialect?\n",

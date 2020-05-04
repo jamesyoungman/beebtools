@@ -31,11 +31,14 @@ Dialect|Line Encoding|Tokenisation
 6502|CR first|No extension codes
 ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
 Windows|CR first|No extension codes, bytes <= 0x10 different
-Mac|CR first|Extension codes 0xC6, 0xC8
+Mac|CR first|Extension codes 0xC6, 0xC7, 0xC8
 Z80|Length first|No extension codes
 32016|Identical to 6502
 8086|Identical to Z80
 .TE
+
+Although both ARM and Mac use extension codes, the keywords encoded
+with them are not always the same.
 
 .SH FILE FORMAT
 
@@ -299,6 +302,10 @@ Byte|All Dialects
 0xC5|"EOF"
 .TE
 
+The keyword
+.B TOP
+is encoded as 0xB8 ("TO") followed by 0x50 (ASCII P).
+
 .SS Token 0xC6
 
 In the ARM and Mac dialects the 0xC6 byte introduces an extension
@@ -306,10 +313,10 @@ mechanism:
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb lb
-l  c  s  b  l  l.
-Byte| 6502|Z80|ARM|Windows|Mac
-0xC6|"AUTO"|\fIExtension\fP|"SUM"|\fIExtension\fP
+lb   lb   lb  lb  lb  lb
+l    c    s   c   s   l.
+Byte|6502|Z80|ARM|Mac|Windows
+0xC6|"AUTO"|\fIExtension\fP|"SUM"
 .TE
 
 In dialects where 0xC6 is an extension mechanism, the token is two
@@ -319,10 +326,12 @@ string as follows:
 .TS
 tab(|) allbox;
 lb lb lb
+l  c  s
+l  c  s
 l  l  l.
 Second Byte after 0xC6|ARM|Mac
-0x8E|"SUM"|\fIinvalid\fP
-0x8F|"BEAT"|\fIinvalid\fP
+0x8E|"SUM"
+0x8F|"BEAT"
 0x90|\fIinvalid\fP|"ASK"
 0x91|\fIinvalid\fP|"ANSWER"
 0x92|\fIinvalid\fP|"SFOPENIN"
@@ -347,60 +356,69 @@ followed by 0xA9 (which encodes
 
 .SS Token 0xC7
 
-In the ARM dialect only, the 0xC7 byte introduces an extension
+In the ARM and Mac dialects, the 0xC7 byte introduces an extension
 mechanism:
 
 .TS
 tab(|) allbox;
 lb   lb   lb  lb  lb  lb
-l    c    s   l   l   l.
+l    c    s   c   s   l.
 Byte|6502|Z80|ARM|Mac|Windows
-0xC7|"DELETE"|\fIExtension\fP|\fIuncertain\fP|"WHILE"
+0xC7|"DELETE"|\fIExtension\fP|"WHILE"
 .TE
 
-I'm not sure whether the Mac dialect also uses 0xC7 as an extension
-byte, or whether it maps to a keyword directly.  The
-.BR bbcbasic_to_text (1)
-program currently produces
-.B DELETE
-for this token.
-
-For ARM, the next byte identifies the expansion:
+The next byte identifies the expansion:
 
 .TS
 tab(|) allbox;
-lb lb
-l  l .
-Second Byte after 0xC7|ARM
+lb lb lb
+l  c  s
+l  c  s
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  l
+l  l  ^.
+Second Byte after 0xC7|ARM|Mac
 0x8E|"APPEND"
 0x8F|"AUTO"
-0x90|"CRUNCH"
-0x91|"DELETE"
-0x92|"EDIT"
-0x93|"HELP"
-0x94|"LIST"
-0x95|"LOAD"
-0x96|"LVAR"
-0x97|"NEW"
-0x98|"OLD"
-0x99|"RENUMBER"
-0x9A|"SAVE"
-0x9B|"TEXTLOAD"
-0x9C|"TEXTSAVE"
+0x90|"CRUNCH"|"DELETE"
+0x91|"DELETE"|"EDIT"
+0x92|"EDIT"|"HELP"
+0x93|"HELP"|"LIST"
+0x94|"LIST"|"LOAD"
+0x95|"LOAD"|"LVAR"
+0x96|"LVAR"|"NEW"
+0x97|"NEW"|"OLD"
+0x98|"OLD"|"RENUMBER"
+0x99|"RENUMBER"|"SAVE"
+0x9A|"SAVE"|"TWIN"
+0x9B|"TEXTLOAD"|"TWINO"
+0x9C|"TEXTSAVE"|\fIinvalid\f
 0x9D|"TWIN"
 0x9E|"TWINO"
 0x9f|"INSTALL"
 .TE
 
-Some ARM keywords are encoded using this prefix ands an ASCII suffix:
+Some keywords are encoded using this prefix and an ASCII suffix:
 
 .TS
 tab(|) allbox;
-lb lb lb
-l  l  l.
-Bytes|Tokens|Keyword
-0xC7 0x92 0x4F|"EDIT" O|"EDITO"
-0xC7 0x94 0x4F|"LIST" O|"LISTO"
+lb lb lb lb
+l  lb l  l.
+Bytes|Dialect|Tokens|Keyword
+0xC7 0x92 0x4F|ARM|"EDIT" O|"EDITO"
+0xC7 0x93 0x24|Mac|"LIST" $|"LIST$"
+0xC7 0x94 0x4F|ARM|"LIST" O|"LISTO"
 .TE
 
 .SS Token 0xC8
@@ -501,13 +519,47 @@ Byte:All Dialects
 0xDF:"DRAW"   
 .TE
 
+The keyword
+.B PTR#
+is encoded as 0xCF ("PTR") 0x23 (0x23 being ASCII #).
+
+
 .\" There is a break between tables here just to ensure it fits on one page.
 
 .TS
 tab(:) allbox;
 lb lb
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+l  l
+^  l
 l  l.
-Byte:All Dialects
+assertByte:All Dialects
 0xE0:"END"
 0xE1:"ENDPROC"
 0xE2:"ENVELOPE"
@@ -543,6 +595,12 @@ Byte:All Dialects
 0xFF:"OSCLI"
 .TE
 
+The byte value 0xFB encodes the keyword
+.BR  COLOUR .
+Some dialects (for example Mac) also accept
+.B COLOR
+when a program is being entered but this is "corrected" to
+.BR COLOUR .
 The keyword
 .B REPORT$
 is encoded as 0xF6 ("REPORT") followed by 0x24 (ASCII $).
@@ -576,16 +634,13 @@ as source material, but that document is not very explicit about how
 the Mac implementation of BBC BASIC is tokenised.
 
 The Mac dialect described in this document is the 1987 implementation
-by Human-Computer Interface Ltd.  There is also an SDL version for Mac
-OS X implemented by R. T. Russel, but I have no specific information
-about its file format.
+by Human-Computer Interface Ltd.  On the basis of examination of some
+sample programs, I see that the Mac dialect is similar to the ARM
+dialect, but some of the extension code mappings are different.
 
-On the basis of examination of some sample programs, the
-.BR bbcbasic_to_text (1)
-program currently assumes that the Mac dialect is similar to the ARM
-dialect, using 0xC6 and 0xC8 as extension bytes but with the
-difference that it maps 0xC7 to
-.BR DELETE .
+There is also an SDL version for Mac OS X implemented by
+R. T. Russell, but I have no specific information about its file
+format.
 
 If you have additional information or corrections relating to the Mac
 implementation of BBC BASIC, please use the contact information given

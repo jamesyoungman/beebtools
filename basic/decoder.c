@@ -19,7 +19,6 @@ struct decoder* new_decoder(enum Dialect d, int listo)
 
 void destroy_decoder(struct decoder* p)
 {
-  destroy_mapping(&p->xmap);
   free(p);
 }
 

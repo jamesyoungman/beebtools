@@ -25,16 +25,21 @@ const char line_num[] = LINE_NUM;
 #define DO_C8 "__c8__"
 #define END "__end__"
 
-
 /* multi_mapping describes the mapping from input byte to
  * expanded token in a form that's convenient to maintain.
  * It is used as the source data to create an instance of
  * expansion_map.
  */
+enum
+  {
+   /* -1 since Mac is missing. */
+   NUM_EXPLICIT_BASE_MAPPINGS = NUM_DIALECTS-1
+  };
+
 struct multi_mapping 
 {
   unsigned int token_value;
-  const char* dialect_mappings[NUM_DIALECTS];
+  const char* dialect_mappings[NUM_EXPLICIT_BASE_MAPPINGS]; 
 };
   
 static const struct multi_mapping base_map[NUM_TOKENS] = {
@@ -128,7 +133,7 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0xC3, {"STR$",               "STR$",           "STR$",             "STR$"           }},
 { 0xC4, {"STRING$(",           "STRING$(",       "STRING$(",         "STRING$("       }},
 { 0xC5, {"EOF",                "EOF",            "EOF",              "EOF"            }},
-{ 0xC6, {DO_C6,                DO_C6,            DO_C6,              "SUM"            }},
+{ 0xC6, {"AUTO",               "AUTO",           DO_C6,              "SUM"            }},
 { 0xC7, {"DELETE",             "DELETE",         DO_C7,              "WHILE"          }},
 { 0xC8, {"LOAD",               "LOAD",           DO_C8,              "CASE"           }},
 { 0xC9, {"LIST",               "LIST",           "WHEN",             "WHEN"           }},
@@ -278,174 +283,159 @@ void please_submit_bug_report()
 	  "Please email your bug report to james@youngman.org.\n");
 }
 
-static void set_ascii_mappings(enum Dialect dialect, char** out)
+static char* char_to_string(char ch)
 {
-  /* In ARM/Mac, 0x7F is the token "OTHERWISE", not ASCII DEL. */
-  int limit;
-  switch (dialect)
-    {
-    case ARM:
-    case Mac:
-      limit = 0x7F;
-      break;
-    default:
-      limit = 0x80;
-      break;
-    };
-  unsigned i;
-  for (i = 0x11; i < limit; ++i)
-    {
-      char *p = calloc(2, 1);
-      p[0] = i;			/* the character itself */
-      out[i] = p;
-    }
-  if (ARM == dialect || Mac == dialect)
-    {
-      out[0x7F] = strdup("OTHERWISE");
-    }
+  char *p = calloc(2, 1);
+  if (p == NULL)
+    abort();
+  p[0] = ch;
+  return p;
 }
-
 
 bool build_mapping(unsigned dialect, struct expansion_map *m)
 {
   unsigned int tok, i;
+  enum Dialect base_dialect = dialect;
   assert(dialect < NUM_DIALECTS);
   if (dialect == Mac)
     {
       /* On Mac, 0xC8 0x93 appears to encode RECTANGLE and not
 	 CASEHIMEM.  Hence it's likely to be more similar to ARM BBC
 	 BASIC than Windows BBC BASIC.*/
-      dialect = ARM;
+      base_dialect = ARM;
     }
+  assert(base_dialect < NUM_EXPLICIT_BASE_MAPPINGS);
+
   for (i = 0; i < NUM_TOKENS; ++i)
     {
-      if (0 == strcmp(base_map[i].dialect_mappings[dialect], END))
+      if (0 == strcmp(base_map[i].dialect_mappings[base_dialect], END))
 	break;
       tok = base_map[i].token_value;
       assert(tok < NUM_TOKENS);
-      const char *s = base_map[i].dialect_mappings[dialect];
-      m->mapping[tok] = (s && s[0]) ? strdup(s) : NULL;
+      const char *s = base_map[i].dialect_mappings[base_dialect];
+      assert(s != NULL);
+      assert(s[0]);		/* empty mappings not allowed */
+      m->base[tok] = s;
     }
-  set_ascii_mappings(dialect, m->mapping);
-  m->mapping[0x0D] = strdup("\n");
+
+  for (i = 0; i <= 0x80; ++i)
+    {
+      m->ascii[i][0] = i;
+      m->ascii[i][1] = 0;
+    }
+  for (i = 0x11; i < 0x7F; ++i)
+    {
+      m->base[i] = m->ascii[i];
+    }
+  m->base[0x7F] = (ARM == dialect || Mac == dialect) ? "OTHERWISE" : m->ascii[0x7F];
+  m->base[0x0D] = m->ascii[0x0D];
+  build_map_c6(dialect, m->c6);
+  build_map_c7(dialect, m->c7);
+  build_map_c8(dialect, m->c8);
   return true;
 }
 
-void destroy_mapping(struct expansion_map *m)
+static void build_invalid_map(const char **output)
 {
-  int i;
-  for (i = 0; i < NUM_TOKENS; ++i)
-    {
-      free(m->mapping[i]);
-    }
+  unsigned int i;
+  for (i = 0u; i < NUM_TOKENS; ++i)
+    output[i] = invalid;
 }
 
-bool map_c6(enum Dialect d, unsigned char uch, const char **output)
+void build_map_c6(enum Dialect d, const char **output)
 {
-  assert(d != mos6502_32000);	/* should have already been handled */
-  assert(d != Z80_80x86);	/* should have already been handled */
-  assert(d != Windows);		/* 0xC6 (SUM) 0xA9 (LEN) handled as separate tokens. */
+  build_invalid_map(output);
+  if (d == mos6502_32000 || d == Z80_80x86 || d == Windows)
+    {
+      return;
+    }
+
+  if (ARM == d || Mac == d)
+    {
+      /* On ARM we handle 0xC6 0x8E 0xA9 as "SUM" (here) followed by
+	 0xA9="LEN" which we handle as an ordinary single-byte token.
+
+	 We do not expect to handle 0xC6 0xA9 here, because on Windows
+	 we handle 0xC6 as the single-byte token "SUM" and 0xA9 as
+	 the single-byte token "LEN".  So on Windows we shouldn't
+	 be looking at an extension map at all in that case.
+      */
+      output[0x8E] = "SUM";
+      output[0x8F] = "BEAT";
+    }
   if (d == Mac)
     {
-      switch (uch)
-	{
-	case 0x90: *output = "ASK"; return true;
-	case 0x91: *output = "ANSWER"; return true;
-	case 0x92: *output = "SFOPENIN"; return true;
-	case 0x93: *output = "SFOPENOUT"; return true;
-	case 0x94: *output = "SFOPENUP"; return true;
-	case 0x95: *output = "SFNAME$"; return true;
-	case 0x96: *output = "MENU"; return true;
-	default: return false;
-	}
-    }
-  assert(ARM == d);
-  /* On ARM we handle 0xC6 0x8E 0xA9 as "SUM" (here) followed by
-     0xA9="LEN" which we handle as an ordinary single-byte token.
-
-     We do not expect to handle 0xC6 0xA9 here, because on Windows we
-     handle 0xC6 as the single-byte token "SUM" and 0xA9 as the
-     single-byte token "LEN".  So this function should not see those
-     token sequenes except when the dialect is not Windows (in which
-     case that token sequence is invalid).
-   */
-  switch (uch)
-    {
-    case 0xA9:
-      return false;		/* see above. */
-    case 0x8E:
-      if (d == ARM || d == Mac)
-	{
-	*output = "SUM";
-	return true;
-      }
-      else
-	{
-	  return false;
-	}
-    case 0x8F:
-      if (d == ARM || d == Mac)
-	{
-	  *output = "BEAT";
-	  return true;
-	}
-      else
-	{
-	  return false;
-	}
-    default:
-      return false;
+      output[0x90] = "ASK";
+      output[0x91] = "ANSWER";
+      output[0x92] = "SFOPENIN";
+      output[0x93] = "SFOPENOUT";
+      output[0x94] = "SFOPENUP";
+      output[0x95] = "SFNAME$";
+      output[0x96] = "MENU";
     }
 }
 
-bool map_c7(enum Dialect d, unsigned char uch, const char **output)
+void build_map_c7(enum Dialect d, const char **output)
 {
-  assert(d == ARM || d == Mac);
-  switch (uch)
+  bool arm = (d == ARM);
+  build_invalid_map(output);
+  if (d == ARM || d == Mac) 
     {
-    case 0x8E: *output = "APPEND";   return true;
-    case 0x8F: *output = "AUTO";     return true;
-    case 0x90: *output = "CRUNCH";   return true;
-    case 0x91: *output = "DELETE";   return true;
-    case 0x92: *output = "EDIT";     return true;
-    case 0x93: *output = "HELP";     return true;
-    case 0x94: *output = "LIST";     return true;
-    case 0x95: *output = "LOAD";     return true;
-    case 0x96: *output = "LVAR";     return true;
-    case 0x97: *output = "NEW";      return true;
-    case 0x98: *output = "OLD";      return true;
-    case 0x99: *output = "RENUMBER"; return true;
-    case 0x9A: *output = "SAVE";     return true;
-    case 0x9B: *output = "TEXTLOAD"; return true;
-    case 0x9C: *output = "TEXTSAVE"; return true;
-    case 0x9D: *output = "TWIN";     return true;
-    case 0x9E: *output = "TWINO";    return true;
-    case 0x9F: *output = "INSTALL";  return true;
-    default: return false;
+      output[0x8E] = "APPEND";
+      output[0x8F] = "AUTO";
+      /*                    ARM          Mac */
+      output[0x90] = arm ? "CRUNCH"   : "DELETE";
+      output[0x91] = arm ? "DELETE"   : "EDIT";
+      output[0x92] = arm ? "EDIT"     : "HELP";
+      output[0x93] = arm ? "HELP"     : "LIST";
+      output[0x94] = arm ? "LIST"     : "LOAD";
+      output[0x95] = arm ? "LOAD"     : "LVAR";     
+      output[0x96] = arm ? "LVAR"     : "NEW";
+      output[0x97] = arm ? "NEW"      : "OLD";
+      output[0x98] = arm ? "OLD"      : "RENUMBER";
+      output[0x99] = arm ? "RENUMBER" : "SAVE";
+      output[0x9A] = arm ? "SAVE"     : "TWIN";
+      output[0x9B] = arm ? "TEXTLOAD" : "TWINO";
+      output[0x9C] = arm ? "TEXTSAVE" : invalid;
+      output[0x9D] = arm ? "TWIN"     : invalid;
+      output[0x9E] = arm ? "TWINO"    : invalid;
+      output[0x9F] = arm ? "INSTALL"  : invalid;
     }
 }
 
-bool map_c8(enum Dialect d, unsigned char uch, const char **output)
+void build_map_c8(enum Dialect d, const char **output)
 {
-  assert(d == ARM || d == Mac);
-  static const char* c8_tokens[1+0xA6-0x8E] =
+  build_invalid_map(output);
+  if (d == ARM || d == Mac)
     {
-     "CASE", "CIRCLE", "FILL", "ORIGIN", "POINT",
-     "RECTANGLE", "SWAP", "WHILE", "WAIT", "MOUSE", "QUIT",
-     "SYS", "INSTALL", "LIBRARY", "TINT", "ELLIPSE", "BEATS",
-     "TEMPO", "VOICES", "VOICE", "STEREO", "OVERLAY", "MANDEL",
-     "PRIVATE", "EXIT"
-    };
-  if (uch < 0x8E || uch > 0xA6)
-    {
-      return false;
+      output[0x8E] = "CASE";
+      output[0x8F] = "CIRCLE";
+      output[0x90] = "FILL";
+      output[0x91] = "ORIGIN";
+      output[0x92] = "POINT";
+      output[0x93] = "RECTANGLE";
+      output[0x94] = "SWAP";
+      output[0x95] = "WHILE";
+      output[0x96] = "WAIT";
+      output[0x97] = "MOUSE";
+      output[0x98] = "QUIT";
     }
-  else
+  if (d == ARM)			/* but not Mac */
     {
-      unsigned int index = uch - 0x8E;
-      assert(index < ARRAYSIZE(c8_tokens));
-      *output = c8_tokens[index];
-      return true;
+      output[0x99] = "SYS";
+      output[0x9A] = "INSTALL";
+      output[0x9B] = "LIBRARY";
+      output[0x9C] = "TINT";
+      output[0x9D] = "ELLIPSE";
+      output[0x9E] = "BEATS";
+      output[0x9F] = "TEMPO";
+      output[0xA0] = "VOICES";
+      output[0xA1] = "VOICE";
+      output[0xA2] = "STEREO";
+      output[0xA3] = "OVERLAY";
+      output[0xA4] = "MANDEL";
+      output[0xA5] = "PRIVATE";
+      output[0xA6] = "EXIT";
     }
 }
 
@@ -513,3 +503,7 @@ bool print_dialects(FILE *f, const char *default_dialect_name)
     return false;
   return true;
 }
+
+/* Local Variables: */
+/* fill-column: 200 */
+/* End: */
