@@ -102,12 +102,6 @@ int main(int argc, char *argv[])
 	  break;
 	}
     }
-  struct decoder *dec = new_decoder(dialect, listo);
-  if (0 == dec)
-    {
-      fprintf(stderr, "failed to initialise decoder\n");
-      return 1;
-    }
 
   if (optind == argc)
     {
@@ -136,11 +130,22 @@ int main(int argc, char *argv[])
 	      continue;
 	    }
 	}
+      struct decoder *dec = new_decoder(dialect, listo);
+      if (0 == dec)
+	{
+	  fprintf(stderr, "failed to initialise decoder\n");
+	  return 1;
+	}
+
       if (!decode_file(dec, name, f))
 	{
 	  if (exitval < 1)
 	    exitval = 1;
 	}
+
+      destroy_decoder(dec);
+      dec = NULL;
+
       if (EOF == fclose(f))
 	{
 	  perror(name);
