@@ -14,10 +14,21 @@ enum Dialect
    NUM_DIALECTS,
   };
 
+enum { NUM_TOKENS = 0x100 };
+
+/* expansion_map maps an input byte either to a token, or
+ * to a special string (beginning with underscore) which
+ * tells us we need to perform a lookup in a second map.
+ */
+struct expansion_map
+{
+  char *mapping[NUM_TOKENS];
+};
+
 struct decoder
 {
   enum Dialect dialect;
-  char **token_map;
+  struct expansion_map xmap;
   int listo;
 };
 

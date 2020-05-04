@@ -145,10 +145,10 @@ static bool handle_special_token(enum Dialect dialect, unsigned char tok,
 static bool handle_token(enum Dialect dialect,
 			 unsigned char uch, long file_pos,
 			 const unsigned char **input, unsigned char *len,
-			 char **token_map)
+			 const struct expansion_map *m)
 
 {
-  const char *t = token_map[uch];
+  const char *t = m->mapping[uch];
   if (NULL == t)
     {
       fprintf(stderr, "The entry in the token map for byte 0x%02X is NULL.\n",
@@ -223,10 +223,10 @@ static int count(unsigned char needle, const char* haystack, size_t len)
 }
 
 static bool decode_line(enum Dialect dialect,
-		 unsigned char line_hi, unsigned char line_lo,
-		 unsigned char orig_len, const char *data,
-		 long orig_file_pos,
-		 char **token_map, int *indent, int listo)
+			unsigned char line_hi, unsigned char line_lo,
+			unsigned char orig_len, const char *data,
+			long orig_file_pos,
+			const struct expansion_map *m, int *indent, int listo)
 {
   long file_pos = orig_file_pos;
   unsigned const char *p = (unsigned const char*)data;
@@ -289,7 +289,7 @@ static bool decode_line(enum Dialect dialect,
 	}
       else
 	{
-	  if (!handle_token(dialect, uch, file_pos, &p, &len, token_map))
+	  if (!handle_token(dialect, uch, file_pos, &p, &len, m))
 	    return false;
 	}
       if (uch == '"')
@@ -335,7 +335,7 @@ static bool expect_char(FILE *f, unsigned char val_expected)
 }
 
 bool decode_len_leading_program(FILE *f, const char *filename,
-				enum Dialect dialect, char **token_map, int listo)
+				enum Dialect dialect, const struct expansion_map *m, int listo)
 {
   // In this file format lines look like this:
   // <len> <lo> <hi> tokens... 0x0D
@@ -426,13 +426,13 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 	 want to pass it the final 0x0D, as then the newline would be doubled.
 	 Hence we pass len-1 as the length.
       */
-      if (!decode_line(dialect, hi, lo, len-1, buf, file_pos, token_map, &indent, listo))
+      if (!decode_line(dialect, hi, lo, len-1, buf, file_pos, m, &indent, listo))
 	return false;
     }
 }
 
 bool decode_cr_leading_program(FILE *f, const char *filename,
-			       enum Dialect dialect, char **token_map, int listo)
+			       enum Dialect dialect, const struct expansion_map *m, int listo)
 {
   // In this file format lines look like this:
   // 0x0D <hi> <lo> <len> tokens...
@@ -521,7 +521,7 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
 	      return false;
 	    }
 	}
-      if (!decode_line(dialect, hi, lo, len, buf, file_pos, token_map, &indent, listo))
+      if (!decode_line(dialect, hi, lo, len, buf, file_pos, m, &indent, listo))
 	return false;
     }
 }

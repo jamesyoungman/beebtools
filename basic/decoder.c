@@ -12,15 +12,14 @@ struct decoder* new_decoder(enum Dialect d, int listo)
     return NULL;
   result->listo = listo;
   result->dialect = d;
-  result->token_map = build_mapping(d);
-  if (NULL == result->token_map)
+  if (!build_mapping(d, &result->xmap))
     return NULL;
   return result;
 }
 
 void destroy_decoder(struct decoder* p)
 {
-  destroy_mapping(p->token_map);
+  destroy_mapping(&p->xmap);
   free(p);
 }
 
@@ -34,9 +33,9 @@ static bool dialect_has_leading_cr(enum Dialect d)
 bool decode_file(struct decoder*dec, const char *filename, FILE* f)
 {
   bool (*line_decoder)(FILE *f, const char *filename,
-		       enum Dialect dialect, char **token_map,
+		       enum Dialect dialect, const struct expansion_map* m,
 		       int listo) = dialect_has_leading_cr(dec->dialect)
     ? decode_cr_leading_program : decode_len_leading_program;
-  return line_decoder(f, filename, dec->dialect, dec->token_map, dec->listo);
+  return line_decoder(f, filename, dec->dialect, &dec->xmap, dec->listo);
 }
 

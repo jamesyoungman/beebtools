@@ -9,12 +9,6 @@
 
 #define ARRAYSIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 
-struct multi_mapping
-{
-  unsigned int token_value;
-  const char* dialect_mappings[NUM_DIALECTS];
-};
-
 /* We use the initializer BAD to signal that a dialect has no mapping
  * for this token value.  We interpret NULL to mean that the data
  * structure is incomplete, that is, we wrote a bug.
@@ -31,6 +25,18 @@ const char line_num[] = LINE_NUM;
 #define DO_C8 "__c8__"
 #define END "__end__"
 
+
+/* multi_mapping describes the mapping from input byte to
+ * expanded token in a form that's convenient to maintain.
+ * It is used as the source data to create an instance of
+ * expansion_map.
+ */
+struct multi_mapping 
+{
+  unsigned int token_value;
+  const char* dialect_mappings[NUM_DIALECTS];
+};
+  
 static const struct multi_mapping base_map[NUM_TOKENS] = {
 /*
         6502                   Z80               ARM                 Windows
@@ -300,10 +306,9 @@ static void set_ascii_mappings(enum Dialect dialect, char** out)
 }
 
 
-char** build_mapping(unsigned dialect)
+bool build_mapping(unsigned dialect, struct expansion_map *m)
 {
   unsigned int tok, i;
-  char** out = calloc(NUM_TOKENS, sizeof(*out));
   assert(dialect < NUM_DIALECTS);
   if (dialect == Mac)
     {
@@ -319,21 +324,20 @@ char** build_mapping(unsigned dialect)
       tok = base_map[i].token_value;
       assert(tok < NUM_TOKENS);
       const char *s = base_map[i].dialect_mappings[dialect];
-      out[tok] = (s && s[0]) ? strdup(s) : NULL;
+      m->mapping[tok] = (s && s[0]) ? strdup(s) : NULL;
     }
-  set_ascii_mappings(dialect, out);
-  out[0x0D] = strdup("\n");
-  return out;
+  set_ascii_mappings(dialect, m->mapping);
+  m->mapping[0x0D] = strdup("\n");
+  return true;
 }
 
-void destroy_mapping(char** p)
+void destroy_mapping(struct expansion_map *m)
 {
   int i;
   for (i = 0; i < NUM_TOKENS; ++i)
     {
-      free(p[i]);
+      free(m->mapping[i]);
     }
-  free(p);
 }
 
 bool map_c6(enum Dialect d, unsigned char uch, const char **output)
