@@ -73,17 +73,47 @@ token representation.
 
 .TS
 tab(|) allbox;
-l l l l.
+lb lb lb lb
+l  l  l  l.
 Type|Dialects|Line Format|EOF marker
 Big-endian|6502, 32016, ARM, Mac|0x0D <hi> <lo> <len> data...|0x0D 0xFF
 Little-endian|Z80, 8086, Windows|<len> <lo> <hi> data... 0x0D|0x00 0xFF
 .TE
 
+The length byte encodes the total number of bytes in the line,
+including the 0x0D.
+
 Both line-encoding systems use the same general scheme for
 tokenization, though the various dialects support a slightly different
-set of tokens.  Each line is a sequence of tokens (see
-.BR TOKENISATION
-for a list).
+set of tokens.  Each line is a sequence of zero or more of the
+following:
+
+.TP
+\(bu
+Single-byte tokens
+.TP
+\(bu
+Double-byte "extension" tokens (ARM and Mac only) where the first byte
+is 0xC6, 0xC7 or 0xC8 and the following byte identifies the token.
+.TP
+\(bu
+"Fast Variables" (Windows and SDL only) consisting of a byte
+between 0x11 and 0x1F inclusive, followed by two additional "index" bytes.
+.TP
+\(bu
+Characters within strings (enclosed by 0x22, ASCII double quote)
+.TP
+\(bu
+Non-string characters (such as colons, characters which make up
+variable names, and so forth).  These simply represent themselves.
+
+Some keywords are represented by "compound tokens"; see
+.BR "COMPOUND TOKENS" .
+Some compound tokens (for example
+.BR LISTO )
+occupy three bytes but are represented as a two-byte extension token
+(in this case 0xC7 0c95) followed by a byte representing an ASCII
+character (here, 0x4F).
 
 .SS "Big-endian Line Format"
 
@@ -95,7 +125,7 @@ as 0x64 (decimal 100) followed by 0x0A (decimal 10).  The <len> value
 counts from <hi>, so for example this line
 
 .EX
-0x0D 0x00 0x00A 0x04 0xF1
+0x0D 0x00 0x0A 0x05 0xF1
 .EE
 
 has a line number of 10 and includes just the token 0x0F1 representing "PRINT":
@@ -111,11 +141,10 @@ followed by two bytes of line number (low byte first), the line length
 followed by a number of token bytes implied by the line length.  After
 that, the following byte must be the 0x0D marking the end of the line.
 
-The length byte encodes the total number of bytes in the line,
-including the final 0x0D.  The line
+The line
 
 .EX
-0x05 0x00 0x05 0xF5 0x0D
+0x05 0x00 0x0A 0xF5 0x0D
 .EE
 
 has a line number of 10 and includes just the token 0xF5 representing "REPEAT":
@@ -123,6 +152,34 @@ has a line number of 10 and includes just the token 0xF5 representing "REPEAT":
 .EX
 10 REPEAT
 .EE
+
+
+.SS "Alternative Interpretation"
+
+Another way to visualize the file format is to consider the big-endian
+format to use Carriage-Return as an initial file marker, leaving all
+the rest of the lines
+.I terminated
+by Carriage-Return:
+
+.TS
+tab(|) allbox;
+lb lb lb s  lb
+^  ^  lb lb ^
+l l l l l.
+Type|T{
+File Head
+.br
+Marker Byte
+T}|File body is a sequence of:|T{
+EOF
+.br
+Marker
+T}
+||Length/Line Number|Line Content
+Big-endian|0x0D|<hi><lo><len>|data... 0x0D|0xFF
+Little-endian||<len><lo><hi>|data... 0x0D|0x00 0xFF
+.TE
 
 
 .SH END OF FILE
@@ -137,7 +194,7 @@ decimal.
 In little-endian files, end-of-file is encoded as the line 0x00 0xFF
 0xFF.  Normally the length byte would include the line number bytes,
 but not in this case. The highest representable line number would be
-65534 decimal.
+65535 decimal.
 
 Nothing should be read after the end-of-file marker (even though some
 files do include additional bytes).
@@ -154,6 +211,14 @@ Instead it should be understood to the literal byte 0x85.  Programs
 sometimes contain such bytes in strings because when printed they have
 an effect in Mode 7 (in this case,
 .IR "alpha magenta" ).
+Some implementations support UTF-8 in strings. No change to the
+file format is needed for this.
+
+
+Within a string, a double-quote (ASCII 0x22) can be escaped by
+doubling it.  This makes a difference for parsing, but not for simple
+deserialisation (as a quoted double-quote looks exactly like two
+double-quotes in a row, since that's what it is).
 
 Outside strings, bytes are either tokens or part of a line number
 (see
@@ -204,10 +269,37 @@ Byte|6502|Z80|ARM|Mac|Windows
 0x10|\fIall invalid\fP|"EXIT"
 .TE
 
-.SS Single-Byte Tokens 0x11 ... 0x7E
+.SS Single-Byte Tokens 0x11 ... 0x17: Fast Variables
 
-Outside a string, bytes between 0x11 and 0x7E inclusive represent
-themselves.  Within a string, all bytes represent themselves.  
+These bytes represent themselves (within a string or not).
+
+.SS Single-Byte Tokens 0x18 ... 0x1f: Windows/SDL Fast Variables
+
+In dialects other than Windows (or its synonym, SDL), these bytes
+represent themseleves, within a string or not.  In Windows/SDL these
+bytes represent "fast variables":
+
+.TS
+tab(|) allbox;
+lb lb lb
+l  l  l.
+Bytes|Expansion|Significance
+0x18 xx yy|FN/PROC|
+0x19 xx yy|v&|unsigned integer 8 bits
+0x1A xx yy|v%|signed integer 32 bits
+0x1B xx yy|v#|double 64 bits
+0x1C xx yy|v|variant numeric 80 bits
+0x1D xx yy|v{}|structure
+0x1E xx yy|v%%|signed integer 64 bits
+0x1F xx yy|v$|string
+.TE
+
+Each of these byte values is followed by a two-byte "index" value
+(represented by "xx yy" above).
+
+.SS Single-Byte Tokens 0x20 ... 0x7E
+
+These bytes just represent themselves.
 
 .SS Single-Byte Tokens 0x7f ... 0x8C
 
@@ -241,7 +333,7 @@ Byte|6502|Z80|ARM|Mac|Windows
 This token introduces a line number; see
 .BR "LINE NUMBERS" .
 
-.SS Tokens 0x8E ... 0xC5
+.SS "Token 0x8E"
 
 .TS
 tab(|) allbox;
@@ -251,11 +343,38 @@ l  c  s  s  s  s.
 Byte|All Dialects Identical
 |6502|Z80|ARM|Mac|Windows
 0x8E|"OPENIN"
+.TE
+
+
+.SS Tokens 0x8F..0x93: Pseudo-Variable Right Tokens
+
+These tokens represent pseudo-variables in contexts wheir their value
+is being used (as opposed to contexts where they are the target of an
+assignment).
+
+.TS
+tab(|) allbox;
+lb cb s  s  s  s
+^  lb lb lb lb lb
+l  c  s  s  s  s.
+Byte|All Dialects Identical
+|6502|Z80|ARM|Mac|Windows
 0x8F|"PTR"
 0x90|"PAGE"
 0x91|"TIME"
 0x92|"LOMEM"
 0x93|"HIMEM"
+.TE
+
+.SS Tokens 0x94..0x9F
+
+.TS
+tab(|) allbox;
+lb cb s  s  s  s
+^  lb lb lb lb lb
+l  c  s  s  s  s.
+Byte|All Dialects Identical
+|6502|Z80|ARM|Mac|Windows
 0x94|"ABS"
 0x95|"ACS"
 0x96|"ADVAL"
@@ -270,6 +389,7 @@ Byte|All Dialects Identical
 0x9F|"ERR"
 .TE
 
+.SS Tokens 0xA0..0xC5
 .TS
 tab(|) allbox;
 lb cb s  s  s  s
@@ -492,17 +612,33 @@ Byte|6502|Z80|ARM|Mac|Windows
 0xCE|"EDIT"|"PUT"|"ENDWHILE"
 .TE
 
-.SS Single-Byte Tokens 0xCF ... 0xFF
+.SS Single-Byte Tokens 0xCF ... 0xD3: Pseudo-Variable left tokens
+
+These tokens represent pseudo-variables when they are being assigned
+to (i.e. are on the left of an equals sign).
+
 .TS
 tab(:) allbox;
-lb cb cb  cb  cb  cb
+lb cb s   s   s   s
+^ cb cb  cb  cb  cb
 l  c  s   s   s   s.
-Byte:6502:Z80:ARM:Mac:Windows
+Byte:All Dialects Identical
+:6502:Z80:ARM:Mac:Windows
 0xCF:"PTR"
 0xD0:"PAGE"
 0xD1:"TIME"
 0xD2:"LOMEM"
 0xD3:"HIMEM"
+.TE
+
+.SS Single-Byte Tokens 0xD4 ... 0xDF
+.TS
+tab(:) allbox;
+lb cb s  s  s  s
+^ cb cb  cb  cb  cb
+l  c  s   s   s   s.
+Byte:All Dialects Identical
+:6502:Z80:ARM:Mac:Windows
 0xD4:"SOUND"
 0xD5:"BPUT"
 0xD6:"CALL"
