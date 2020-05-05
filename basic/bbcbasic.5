@@ -1,9 +1,11 @@
 .TH "BBC BASIC" 5 2020-05-03 \" -*- nroff -*-
 
 .SH SYNOPSIS
-Implementations of BBC BASIC store saved programs in a tokenised
-format.  This is similar to (or, perhaps, the same as) the in-memory
-representation of the program once loaded.
+Some implementations of BBC BASIC store saved programs in a tokenised
+format.  In some cases, notably the MOS 6502 implementation by Acorn
+used on the original BBC Microcomputer, this is similar to (or,
+perhaps, the same as) the in-memory representation of the program once
+loaded.
 
 .SH "BBC BASIC DIALECTS"
 
@@ -33,7 +35,9 @@ Dialect|Line Encoding|Tokenisation
 32016|Identical to 6502
 ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
 Mac|CR first|Extension codes 0xC6, 0xC7, 0xC8
-Windows|Length first|No extension codes, bytes <= 0x10 different
+Windows|Length first|T{
+No extension codes, bytes <= 0x10 different
+T}
 Z80|Length first|No extension codes
 8086|Identical to Z80
 .TE
@@ -44,7 +48,10 @@ with them are not always the same.
 There are also some other implementations of BBC BASIC.  R. T
 Russell's Windows implementation and his BBC BASIC for SDL 2.0 (which
 runs on many platforms, including Linux and Mac OS X) use the same
-encoding.
+encoding.  Brandy BASIC can read BBC BASIC programs in the 6502
+format, but it saves programs as text files.  Matrix Brady BASIC also
+supports the Z80 format, but likewise saves its BASIC program files as
+text.
 
 .SH FILE FORMAT
 
@@ -55,8 +62,8 @@ format of these lines varies between implementations.
 tab(|) allbox;
 l l l.
 Type|Dialects|Line Format
-CR-first|6502, 32016, ARM |0x0D <hi> <lo> <len> tokens...
-Length-first|Z80, 8086, Windows |<len> <lo> <hi> tokens... 0x0D
+CR-first|6502, 32016, ARM, Mac|0x0D <hi> <lo> <len> tokens...
+Length-first|Z80, 8086, Windows|<len> <lo> <hi> tokens... 0x0D
 .TE
 
 Both line-encoding systems use the same general scheme for
@@ -602,7 +609,7 @@ Byte:All Dialects
 .TE
 
 The byte value 0xFB encodes the keyword
-.BR  COLOUR .
+.BR COLOUR .
 Some dialects (for example Mac) also accept
 .B COLOR
 when a program is being entered but this is "corrected" to
@@ -653,7 +660,14 @@ contact information given in the
 .B BUGS
 section.
 
-.SH CORNER CASES
+.SH "OTHER DIALECTS"
+
+This document describes all the formats I have been able to find
+documentation for or find a usable implementation of.  There are also
+BBC BASIC implementations for the PDP-11 and the 6809 CPU which I have
+not obtainted, and so these are not documented here.
+
+.SH "CORNER CASES"
 
 There are a number of possible inputs which don't match this
 description.  I don't know whether in any cases, any BBC BASIC
@@ -685,7 +699,7 @@ Out-of-order line numbers
 It's possible that not all implementations support the full range of
 theoretically-representable line numbers.
 
-.SH SEE ALSO
+.SH "SEE ALSO"
 \fBbbcbasic_to_text\fP(1)
 
 http://www.rtrussell.co.uk/
