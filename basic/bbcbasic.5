@@ -166,42 +166,42 @@ unusual column order in the table below):
 
 .TS
 tab(|) allbox;
-lb ab lb
-l  c  s  
-l  l  c
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  l  ^  
-l  c  s  
-l  l  c  
-l  l  ^  
-l  l  ^. 
-Byte |Windows       | 6502 / Z80 / ARM 
-0x00 |\fIinvalid\fP
-0x01 |"CIRCLE"|\fIall invalid\fP
-0x02 |"ELLIPSE"|
-0x03 |"FILL"|
-0x04 |"MOUSE"|
-0x05 |"ORIGIN"|
-0x06 |"QUIT"|
-0x07 |"RECTANGLE"|
-0x08 |"SWAP"|
-0x09 |"SYS"|
-0x0A |"TINT"|
-0x0B |"WAIT"|
-0x0C |"INSTALL"|
-0x0D | Line start/end depending on dialect|
-0x0E |"PRIVATE"| \fIall invalid\fP
-0x0F |"BY"|
-0x10 |"EXIT"|
+lb ab lb lb lb lb
+l  c  s  s  s  s  
+l  c  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l
+l  cb s  s  s  s
+l  c  s  s  s  l
+l  ^  s  s  s  l
+l  ^  s  s  s  l.
+Byte|6502|Z80|ARM|Mac|Windows
+0x00|\fIinvalid\fP
+0x01|\fIall invalid\fP|"CIRCLE"
+0x02|\fIall invalid\fP|"ELLIPSE"
+0x03|\fIall invalid\fP|"FILL"
+0x04|\fIall invalid\fP|"MOUSE"
+0x05|\fIall invalid\fP|"ORIGIN"
+0x06|\fIall invalid\fP|"QUIT"
+0x07|\fIall invalid\fP|"RECTANGLE"
+0x08|\fIall invalid\fP|"SWAP"
+0x09|\fIall invalid\fP|"SYS"
+0x0A|\fIall invalid\fP|"TINT"
+0x0B|\fIall invalid\fP|"WAIT"
+0x0C|\fIall invalid\fP|"INSTALL"
+0x0D|Line start or end depending on dialect
+0x0E|\fIall invalid\fP|"PRIVATE"
+0x0F|\fIall invalid\fP|"BY"
+0x10|\fIall invalid\fP|"EXIT"
 .TE
 
 .SS Single-Byte Tokens 0x11 ... 0x7E
@@ -209,26 +209,18 @@ Byte |Windows       | 6502 / Z80 / ARM
 Outside a string, bytes between 0x11 and 0x7E inclusive represent
 themselves.  Within a string, all bytes represent themselves.  
 
-.SS Token 0x7F
+.SS Single-Byte Tokens 0x7f ... 0x8C
 
-This token is valid only on ARM:
+The token 0x7F is valid only on ARM and Mac, where if expands to
+"OTHERWISE".
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb
-l  c  s  l  l.
-Byte|6502|Z80|ARM|Windows
+lb lb lb lb lb lb
+l  c  s  c  s  l
+l  c  s  s  s  s.
+Byte|6502|Z80|ARM|Mac|Windows
 0x7F|\fIinvalid\fP|"OTHERWISE"|\fIinvalid\fP
-.TE
-
-
-.SS Single-Byte Tokens 0x80 ... 0x8C
-
-.TS
-tab(|) allbox;
-lb lb
-l  c.
-Byte|All Dialects
 0x80|"AND"
 0x81|"DIV"
 0x82|"EOR"
@@ -253,9 +245,11 @@ This token introduces a line number; see
 
 .TS
 tab(|) allbox;
-lb lb
-l  l.
-Byte|All Dialects
+lb cb s  s  s  s
+^  lb lb lb lb lb
+l  c  s  s  s  s.
+Byte|All Dialects Identical
+|6502|Z80|ARM|Mac|Windows
 0x8E|"OPENIN"
 0x8F|"PTR"
 0x90|"PAGE"
@@ -278,9 +272,11 @@ Byte|All Dialects
 
 .TS
 tab(|) allbox;
-lb lb
-l  l.
-Byte|All Dialects
+lb cb s  s  s  s
+^  lb lb lb lb lb
+l  c  s  s  s  s.
+Byte|All Dialects Identical
+|6502|Z80|ARM|Mac|Windows
 0xA0|"EVAL"
 0xA1|"EXP"
 0xA2|"EXT"
@@ -301,9 +297,11 @@ Byte|All Dialects
 
 .TS
 tab(|) allbox;
-lb lb
-l  l.
-Byte|All Dialects
+lb cb s  s  s  s
+^  lb lb lb lb lb
+l  c  s  s  s  s.
+Byte|All Dialects Identical
+|6502|Z80|ARM|Mac|Windows
 0xB0|"POINT("
 0xB1|"POS"
 0xB2|"RAD"
@@ -478,14 +476,14 @@ Bytes in this range are interpreted as follows:
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb
-l  c  s  c  s
-l  c  s  c  s
-l  c  s  c  s
-l  c  s  l  l
-l  c  s  c  s
-l  l  l  c  s.
-Byte|6502|Z80|ARM|Windows
+lb cb cb cb cb cb
+l  c  s  c  s  s
+l  c  s  c  s  s
+l  c  s  c  s  s
+l  c  s  c  s  c
+l  c  s  c  s  s
+l  c  c  c  s  s.
+Byte|6502|Z80|ARM|Mac|Windows
 0xC9|"LIST"|"WHEN"
 0xCA|"NEW"|"OF"
 0xCB|"OLD"|"ENDCASE"
@@ -497,9 +495,9 @@ Byte|6502|Z80|ARM|Windows
 .SS Single-Byte Tokens 0xCF ... 0xFF
 .TS
 tab(:) allbox;
-lb lb
-l  l.
-Byte:All Dialects
+lb cb cb  cb  cb  cb
+l  c  s   s   s   s.
+Byte:6502:Z80:ARM:Mac:Windows
 0xCF:"PTR"
 0xD0:"PAGE"
 0xD1:"TIME"
@@ -523,38 +521,38 @@ Byte:All Dialects
 
 .TS
 tab(:) allbox;
-lb lb
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-l  l
-^  l
-l  l.
-Byte:All Dialects
+lb cb cb  cb  cb  cb
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+l  c  s   s   s   s
+^  c  c   c   c   c
+l  c  s   s   s   s.
+Byte:6502:Z80:ARM:Mac:Windows
 0xE0:"END"
 0xE1:"ENDPROC"
 0xE2:"ENVELOPE"
@@ -583,7 +581,7 @@ Byte:All Dialects
 0xF9:"RUN"
 0xFA:"STOP"
 0xFB:"COLOUR"
-0xFB:"COLOR"
+0xFB:-:-:-:"COLOR":-
 0xFC:"TRACE"
 0xFD:"UNTIL"
 0xFE:"WIDTH"
@@ -619,8 +617,8 @@ ARM|0xC7 0x92 0x4F|"EDITO"|"EDIT" O
 .TE
 
 In implementations where the saved format is the same as the in-memory
-format, leading context is needed to correctly interpret tokens, for
-example to distinguish the variable
+format, leading context is needed to correctly interpret the byte
+stream, for example to distinguish the variable
 .B TOP
 from
 .B TO P
