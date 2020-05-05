@@ -22,23 +22,29 @@ The dialects described in this document are
 tab(|) allbox;
 lb lb lb
 l l l
+l l s
 l l l
 l l l
 l l l
 l l l
-l c s.
+l l s.
 Dialect|Line Encoding|Tokenisation
 6502|CR first|No extension codes
-ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
-Windows|CR first|No extension codes, bytes <= 0x10 different
-Mac|CR first|Extension codes 0xC6, 0xC7, 0xC8
-Z80|Length first|No extension codes
 32016|Identical to 6502
+ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
+Mac|CR first|Extension codes 0xC6, 0xC7, 0xC8
+Windows|Length first|No extension codes, bytes <= 0x10 different
+Z80|Length first|No extension codes
 8086|Identical to Z80
 .TE
 
 Although both ARM and Mac use extension codes, the keywords encoded
 with them are not always the same.
+
+There are also some other implementations of BBC BASIC.  R. T
+Russell's Windows implementation and his BBC BASIC for SDL 2.0 (which
+runs on many platforms, including Linux and Mac OS X) use the same
+encoding.
 
 .SH FILE FORMAT
 
@@ -639,12 +645,11 @@ sample programs, I see that the Mac dialect is similar to the ARM
 dialect, but some of the extension code mappings are different.
 
 There is also an SDL version for Mac OS X implemented by
-R. T. Russell, but I have no specific information about its file
-format.
+R. T. Russell, but it uses the same dialect as his Windows
+implementation.
 
-If you have additional information or corrections relating to the Mac
-implementation of BBC BASIC, please use the contact information given
-in the
+If you have additional information or corrections, please use the
+contact information given in the
 .B BUGS
 section.
 
@@ -682,6 +687,8 @@ theoretically-representable line numbers.
 
 .SH SEE ALSO
 \fBbbcbasic_to_text\fP(1)
+
+http://www.rtrussell.co.uk/
 
 http://mdfs.net/Docs/Comp/BBCBasic/Tokens
 
