@@ -34,6 +34,34 @@ static bool is_invalid(const char *s)
   return s[0] == '_' && s[1] != 0;
 }
 
+static bool handle_fastvar(enum Dialect dialect, unsigned char intro,
+			   const unsigned char **input,
+			   unsigned char *len)
+{
+  static const char * suffixes[] = {"", "&", "%", "#", "", "{}", "%%", "$"};
+  unsigned char lo, hi;
+  unsigned int fast_index;
+  const char *suffix;
+  assert(dialect == Windows);
+  assert(intro >= 0x18 && intro <= 0x1F);
+  if (!*len)
+    return premature_eol(intro);
+  lo = **input;
+  ++*input;
+  --*len;
+  if (!*len)
+    return premature_eol(intro);
+  hi = **input;
+  ++*input;
+  --*len;
+  fast_index = (hi << 8) | lo;
+  suffix = suffixes[intro - 0x18];
+  if (printf("__fast_%04x%s", fast_index, suffix) < 0)
+    return false;
+  return true;
+}
+
+
 static bool handle_special_token(enum Dialect dialect, unsigned char intro,
 				 const char **output,
 				 const unsigned char **input,
@@ -45,7 +73,7 @@ static bool handle_special_token(enum Dialect dialect, unsigned char intro,
 
   switch (intro)
     {
-    case 0XC6: extension_map = m->c6; break;
+    case 0xC6: extension_map = m->c6; break;
     case 0xC7: extension_map = m->c7; break;
     case 0XC8: extension_map = m->c8; break;
     default:
@@ -131,6 +159,14 @@ static bool handle_token(enum Dialect dialect,
 	      return true;
 	    }
 	}
+      else if (dialect == Windows && is_fastvar(uch))
+	{
+	  /* We have to handle this here, because handle_fastvar
+	   * needs to produce its output itself instead of assigning to t,
+	   * because its output is dynamic.
+	   */
+	  return handle_fastvar(dialect, uch, input, len);
+	}
       else if (!handle_special_token(dialect, uch, &t, input, len, m))
 	{
 	  fprintf(stderr, "Failed to handle token sequence beginning with 0x%02X, "
@@ -201,12 +237,15 @@ static bool decode_line(enum Dialect dialect,
 	return stdout_write_error();
     }
 
-  while (len--)
+  assert(((unsigned const char*)data + orig_len) == (p + len));
+  while (len)
     {
       unsigned char uch = *p++;
+      --len;
+      assert(((unsigned const char*)data + orig_len) == (p + len));
       if (uch == 0)
 	{
-	  /* Probably we had incremented *p without decremenring *len. */
+	  /* Probably we had incremented p without decrementing len. */
 	  fprintf(stderr, "It looks like decode_line ran over the end of the input.\n");
 	  please_submit_bug_report();
 	  return false;
@@ -358,10 +397,18 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 	}
       /* decode_line already prints a newline at the end of the line, so we don't
 	 want to pass it the final 0x0D, as then the newline would be doubled.
-	 Hence we pass len-1 as the length.
+	 Hence we pass len-1 as the length.   But if len is already zero, subtracting
+	 1 would cause an unsigned arithmetic wrap, and besides it seems pointless
+	 to call decode_line when the line is empty.
+
+	 We see examples where len==0 in the .bbc file in the (zipfile) compiler output
+	 of R. T. Russell's BBC BASIC for SDL.
       */
-      if (!decode_line(dialect, hi, lo, len-1, buf, file_pos, m, &indent, listo))
-	return false;
+      if (len)
+	{
+	  if (!decode_line(dialect, hi, lo, len-1, buf, file_pos, m, &indent, listo))
+	    return false;
+	}
     }
 }
 

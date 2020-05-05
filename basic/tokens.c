@@ -18,17 +18,24 @@
 
 const char invalid[] = BAD;
 const char line_num[] = LINE_NUM;
+const char fastvar[] = "__fastvar__";
+const char identity[] = "__identity__";
+const char end_marker[] = "__end__";
 
 /* There are a number of other special tokens. */
 #define DO_C6 "__c6__"
 #define DO_C7 "__c7__"
 #define DO_C8 "__c8__"
-#define END "__end__"
+
 
 /* multi_mapping describes the mapping from input byte to
  * expanded token in a form that's convenient to maintain.
  * It is used as the source data to create an instance of
  * expansion_map.
+ *
+ * Some of the entries in the table below are initialised
+ * to |identity|. This tells the intialisation code to use
+ * a value from ascii[] instead of the value in base_map.
  */
 enum
   {
@@ -62,6 +69,14 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0x0E, {BAD,                  BAD,              BAD,                "PRIVATE"        }},
 { 0x0F, {BAD,                  BAD,              BAD,                "BY"             }},
 { 0x10, {BAD,                  BAD,              BAD,                "EXIT"           }},
+{ 0x18, {identity,             identity,         identity,           fastvar          }},
+{ 0x19, {identity,             identity,         identity,           fastvar          }},
+{ 0x1A, {identity,             identity,         identity,           fastvar          }},
+{ 0x1B, {identity,             identity,         identity,           fastvar          }},
+{ 0x1C, {identity,             identity,         identity,           fastvar          }},
+{ 0x1D, {identity,             identity,         identity,           fastvar          }},
+{ 0x1E, {identity,             identity,         identity,           fastvar          }},
+{ 0x1F, {identity,             identity,         identity,           fastvar          }},
 { 0x7F, {BAD,                  BAD,              "OTHERWISE",        BAD              }},
 { 0x80, {"AND",                "AND",            "AND",              "AND"            }},
 { 0x81, {"DIV",                "DIV",            "DIV",              "DIV"            }},
@@ -192,7 +207,7 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0xFD, {"UNTIL",              "UNTIL",          "UNTIL",            "UNTIL"          }},
 { 0xFE, {"WIDTH",              "WIDTH",          "WIDTH",            "WIDTH"          }},
 { 0xFF, {"OSCLI",              "OSCLI",          "OSCLI",            "OSCLI"          }},
-{ 0x100,{END,                  END,              END,                END              }},
+{ 0x100,{end_marker,           end_marker,       end_marker,         end_marker       }},
 };
 
 
@@ -283,6 +298,28 @@ void please_submit_bug_report()
 	  "Please email your bug report to james@youngman.org.\n");
 }
 
+/* is_fastvar returns true if this is a byte used by
+ * BBC BASIC for SDL (or Windows) 2.0 to represent
+ * a fast (REM!Fast) variable/FN/PROC.
+ */
+bool is_fastvar(unsigned int i)
+{
+  switch (i)
+    {
+    case 0x18:
+    case 0x19:
+    case 0x1A:
+    case 0x1B:
+    case 0x1C:
+    case 0x1D:
+    case 0x1E:
+    case 0x1F:
+      return true;
+    default:
+      return false;
+    }
+}
+
 static char* char_to_string(char ch)
 {
   char *p = calloc(2, 1);
@@ -299,34 +336,53 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
   assert(dialect < NUM_DIALECTS);
   if (dialect == Mac)
     {
-      /* On Mac, 0xC8 0x93 appears to encode RECTANGLE and not
-	 CASEHIMEM.  Hence it's likely to be more similar to ARM BBC
-	 BASIC than Windows BBC BASIC.*/
+      /* We have no entries in base_map for Mac, but it is
+       * similar to ARM except for the extension mappings 
+       * which are not in base_map anyway.
+       */
       base_dialect = ARM;
     }
   assert(base_dialect < NUM_EXPLICIT_BASE_MAPPINGS);
-
-  for (i = 0; i < NUM_TOKENS; ++i)
-    {
-      if (0 == strcmp(base_map[i].dialect_mappings[base_dialect], END))
-	break;
-      tok = base_map[i].token_value;
-      assert(tok < NUM_TOKENS);
-      const char *s = base_map[i].dialect_mappings[base_dialect];
-      assert(s != NULL);
-      assert(s[0]);		/* empty mappings not allowed */
-      m->base[tok] = s;
-    }
 
   for (i = 0; i <= 0x80; ++i)
     {
       m->ascii[i][0] = i;
       m->ascii[i][1] = 0;
     }
+  /* Set up ASCII identity mappings. */
   for (i = 0x11; i < 0x7F; ++i)
     {
-      m->base[i] = m->ascii[i];
+      m->base[i] = m->ascii[i];	/* some of these values will be overwritten. */
     }
+
+  for (i = 0; i < NUM_TOKENS; ++i)
+    {
+      tok = base_map[i].token_value;
+      const char *s = base_map[i].dialect_mappings[base_dialect];
+      assert(s != NULL);
+      if (s == end_marker)
+	{
+	  break;
+	}
+      assert(tok < NUM_TOKENS);
+      if (s == identity)
+	{
+	  /* This tells us we want an identity mapping for this input byte,
+	   * but the identity mapping should have already been set up by
+	   * the loop above.  If this assertion fails, you probably need to
+	   * change the loop bounds on the ASCII identity mapping setup,
+	   * above.
+	   */
+	  assert(m->base[tok][0] == m->ascii[tok][0]);
+	  assert(m->base[tok][1] == 0);
+	}
+      else
+	{
+	  assert(s[0]);		/* empty mappings not allowed */
+	  m->base[tok] = s;
+	}
+    }
+
   m->base[0x7F] = (ARM == dialect || Mac == dialect) ? "OTHERWISE" : m->ascii[0x7F];
   m->base[0x0D] = m->ascii[0x0D];
   build_map_c6(dialect, m->c6);
