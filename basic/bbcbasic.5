@@ -13,10 +13,6 @@ There are a number of variants of the BBC BASIC language.  These vary
 in both the facilities offered (the ARM version has a richer set of
 keywords for example) and in how the programs are represented (there
 are differences in both tokenisation and how lines are recorded).
-Some dialects record lines of code with a leading ASCII Carriage
-Return, others with a length byte first.  Some dialects also use some
-byte values as "extension codes" which introduce a multi-byte token
-representation.
 
 The dialects described in this document are
 
@@ -30,15 +26,15 @@ l l l
 l l l
 l l l
 l l s.
-Dialect|Line Encoding|Tokenisation
-6502|CR first|No extension codes
+Dialect|Line Number|Tokenisation
+6502|Big-endian|No extension codes
 32016|Identical to 6502
-ARM|CR first|Extension codes 0xC6, 0xC7, 0xC8
-Mac|CR first|Extension codes 0xC6, 0xC7, 0xC8
-Windows|Length first|T{
+ARM|Big-endian|Extension codes 0xC6, 0xC7, 0xC8
+Mac|Big-endian|Extension codes 0xC6, 0xC7, 0xC8
+Windows|Little-endian|T{
 No extension codes, bytes <= 0x10 different
 T}
-Z80|Length first|No extension codes
+Z80|Little-endian|No extension codes
 8086|Identical to Z80
 .TE
 
@@ -53,17 +49,34 @@ format, but it saves programs as text files.  Matrix Brady BASIC also
 supports the Z80 format, but likewise saves its BASIC program files as
 text.
 
+This document deals mainly with how the BBC BASIC language is
+represented in its saved form.  This is somewhat separate from
+the question of which keywords are supported.  For example, BBC BASIC
+IV was introduced with the BBC Master and introduced the
+.B TIME$
+keyword.  BASIC V (introduced on the Archimedes computer) introduced
+many new keywords (for example
+.BR WHILE / ENDWHILE ).
+
 .SH FILE FORMAT
 
 A BBC BASIC file is encoded as a sequence of program lines.  The
 format of these lines varies between implementations.
 
+Some dialects record lines of code with a leading ASCII Carriage
+Return, others with a length byte first.  These formats also differ in
+the ordering of the bytes making up the line number (hence the names
+"Big-endian" for the files which start with Carriage Return and
+"Little-endian" for the ones which don't).  Some dialects also use
+some byte values as "extension codes" which introduce a multi-byte
+token representation.
+
 .TS
 tab(|) allbox;
-l l l.
-Type|Dialects|Line Format
-CR-first|6502, 32016, ARM, Mac|0x0D <hi> <lo> <len> tokens...
-Length-first|Z80, 8086, Windows|<len> <lo> <hi> tokens... 0x0D
+l l l l.
+Type|Dialects|Line Format|EOF marker
+Big-endian|6502, 32016, ARM, Mac|0x0D <hi> <lo> <len> data...|0x0D 0xFF
+Little-endian|Z80, 8086, Windows|<len> <lo> <hi> data... 0x0D|0x00 0xFF
 .TE
 
 Both line-encoding systems use the same general scheme for
@@ -72,9 +85,9 @@ set of tokens.  Each line is a sequence of tokens (see
 .BR TOKENISATION
 for a list).
 
-.SS "CR-First Line Format"
+.SS "Big-endian Line Format"
 
-In CR-first files, all lines (including the first) begin with a CR
+In big-endian files, all lines (including the first) begin with a CR
 character (hex 0x0D).  This is followed by the high byte then the low
 byte of the line number, the length of the line and then the line
 contents as a sequence of tokens.  Line number 25610 would be encoded
@@ -91,9 +104,9 @@ has a line number of 10 and includes just the token 0x0F1 representing "PRINT":
 10 PRINT
 .EE
 
-.SS "Length-First Line Format"
+.SS "Little-endian Line Format"
 
-In length-first files, all lines begin with a length byte.  This is
+In little-endian files, all lines begin with a length byte.  This is
 followed by two bytes of line number (low byte first), the line length
 followed by a number of token bytes implied by the line length.  After
 that, the following byte must be the 0x0D marking the end of the line.
@@ -117,11 +130,11 @@ has a line number of 10 and includes just the token 0xF5 representing "REPEAT":
 End-of-file is represented slightly differently in the two line
 encoding systems.
 
-In CR-first files, end-of-file is encoded as 0x0D 0xFF.  By
+In big-endian files, end-of-file is encoded as 0x0D 0xFF.  By
 implication, the highest representable line number would be 65279
 decimal.
 
-In length-first files, end-of-file is encoded as the line 0x00 0xFF
+In little-endian files, end-of-file is encoded as the line 0x00 0xFF
 0xFF.  Normally the length byte would include the line number bytes,
 but not in this case. The highest representable line number would be
 65534 decimal.
@@ -315,123 +328,99 @@ Byte|All Dialects
 0xC5|"EOF"
 .TE
 
-The keyword
-.B TOP
-is encoded as 0xB8 ("TO") followed by 0x50 (ASCII P).
-
 .SS Token 0xC6
 
 In the ARM and Mac dialects the 0xC6 byte introduces an extension
-mechanism:
+mechanism and the following byte identifies the expansion.  In other
+dialects, the 0xC6 is interpreted as a token, and the following byte
+is a separate token.
 
 .TS
 tab(|) allbox;
-lb   lb   lb  lb  lb  lb
-l    c    s   c   s   l.
-Byte|6502|Z80|ARM|Mac|Windows
-0xC6|"AUTO"|\fIExtension\fP|"SUM"
+lb lb lb lb lb lb
+l  c  s c  s l
+l  c  s c  s l
+l  ^  s c  s ^
+l  ^  ^ l  l ^
+l  ^  ^ ^  l ^.
+Bytes|6502|Z80|ARM|Mac|Windows
+0xC6|"AUTO"|\fIExtension, see below\fP|"SUM"
+0xC6 0x8E|T{
+.I Interpreted
+.br
+.I separately
+T}|"SUM"|T{
+.I Interpreted
+.br
+.I separately
+T}
+0xC6 0x8F||"BEAT"
+0xC6 0x90|||T{
+.I All
+.br
+.I invalid
+T}|"ASK"
+0xC6 0x91||||"ANSWER"
+0xC6 0x92||||"SFOPENIN"
+0xC6 0x93||||"SFOPENOUT"
+0xC6 0x94||||"SFOPENUP"
+0xC6 0x95||||"SFNAME$"
+0xC6 0x96||||"MENU"
 .TE
-
-In dialects where 0xC6 is an extension mechanism, the token is two
-bytes long (that is, 0xC6 followed by a second byte) and expands to a
-string as follows:
-
-.TS
-tab(|) allbox;
-lb lb lb
-l  c  s
-l  c  s
-l  l  l.
-Second Byte after 0xC6|ARM|Mac
-0x8E|"SUM"
-0x8F|"BEAT"
-0x90|\fIinvalid\fP|"ASK"
-0x91|\fIinvalid\fP|"ANSWER"
-0x92|\fIinvalid\fP|"SFOPENIN"
-0x93|\fIinvalid\fP|"SFOPENOUT"
-0x94|\fIinvalid\fP|"SFOPENUP"
-0x95|\fIinvalid\fP|"SFNAME$"
-0x96|\fIinvalid\fP|"MENU"
-.TE
-
-In the ARM dialect, the keyword
-.B SUMLEN
-is encoded as 0xC6 0x8E (which encode
-.BR SUM )
-followed by 0xA9 (which encodes
-.BR LEN ).
-On the other hand, in the Windows dialect,
-.B SUMLEN
-is encoded as 0xC6 (which encodes
-.BR SUM ),
-followed by 0xA9 (which encodes
-.BR LEN ).
 
 .SS Token 0xC7
 
 In the ARM and Mac dialects, the 0xC7 byte introduces an extension
-mechanism:
+mechanism, and the next byte identifies the expansion:
 
 .TS
 tab(|) allbox;
-lb   lb   lb  lb  lb  lb
-l    c    s   c   s   l.
-Byte|6502|Z80|ARM|Mac|Windows
-0xC7|"DELETE"|\fIExtension\fP|"WHILE"
-.TE
-
-The next byte identifies the expansion:
-
-.TS
-tab(|) allbox;
-lb lb lb
-l  c  s
-l  c  s
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  l
-l  l  ^.
-Second Byte after 0xC7|ARM|Mac
-0x8E|"APPEND"
-0x8F|"AUTO"
-0x90|"CRUNCH"|"DELETE"
-0x91|"DELETE"|"EDIT"
-0x92|"EDIT"|"HELP"
-0x93|"HELP"|"LIST"
-0x94|"LIST"|"LOAD"
-0x95|"LOAD"|"LVAR"
-0x96|"LVAR"|"NEW"
-0x97|"NEW"|"OLD"
-0x98|"OLD"|"RENUMBER"
-0x99|"RENUMBER"|"SAVE"
-0x9A|"SAVE"|"TWIN"
-0x9B|"TEXTLOAD"|"TWINO"
-0x9C|"TEXTSAVE"|\fIinvalid\f
-0x9D|"TWIN"
-0x9E|"TWINO"
-0x9f|"INSTALL"
-.TE
-
-Some keywords are encoded using this prefix and an ASCII suffix:
-
-.TS
-tab(|) allbox;
-lb lb lb lb
-l  lb l  l.
-Bytes|Dialect|Tokens|Keyword
-0xC7 0x92 0x4F|ARM|"EDIT" O|"EDITO"
-0xC7 0x93 0x24|Mac|"LIST" $|"LIST$"
-0xC7 0x94 0x4F|ARM|"LIST" O|"LISTO"
+lb lb lb lb lb lb
+l  c  s  c  s  l
+l  c  s  c  s  l
+l  ^  ^  c  s  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  l  ^
+l  ^  ^  l  ^  ^.
+Bytes|6502|Z80|ARM|Mac|Windows
+0xC7|"DELETE"|\fIExtension, see below\fP|"WHILE"
+0xC7 0x8E|T{
+.I Interpreted
+.br
+.I separately
+T}|"APPEND"|T{
+.I Interpreted
+.br
+.I separately
+T}
+0xC7 0x8F|||"AUTO"
+0xC7 0x90|||"CRUNCH"|"DELETE"
+0xC7 0x91|||"DELETE"|"EDIT"
+0xC7 0x92|||"EDIT"|"HELP"
+0xC7 0x93|||"HELP"|"LIST"
+0xC7 0x94|||"LIST"|"LOAD"
+0xC7 0x95|||"LOAD"|"LVAR"
+0xC7 0x96|||"LVAR"|"NEW"
+0xC7 0x97|||"NEW"|"OLD"
+0xC7 0x98|||"OLD"|"RENUMBER"
+0xC7 0x99|||"RENUMBER"|"SAVE"
+0xC7 0x9A|||"SAVE"|"TWIN"
+0xC7 0x9B|||"TEXTLOAD"|"TWINO"
+0xC7 0x9C|||"TEXTSAVE"|\fIinvalid\fP
+0xC7 0x9D|||"TWIN"
+0xC7 0x9E|||"TWINO"
+0xC7 0x9f|||"INSTALL"
 .TE
 
 .SS Token 0xC8
@@ -503,10 +492,6 @@ Byte|6502|Z80|ARM|Windows
 0xCE|"EDIT"|"PUT"|"ENDWHILE"
 .TE
 
-The keyword
-.B TIME$
-is encoded as 0xD1 0x24 (0x24 being ASCII $).
-
 .SS Single-Byte Tokens 0xCF ... 0xFF
 .TS
 tab(:) allbox;
@@ -531,11 +516,6 @@ Byte:All Dialects
 0xDE:"DIM"
 0xDF:"DRAW"   
 .TE
-
-The keyword
-.B PTR#
-is encoded as 0xCF ("PTR") 0x23 (0x23 being ASCII #).
-
 
 .\" There is a break between tables here just to ensure it fits on one page.
 
@@ -614,10 +594,36 @@ Some dialects (for example Mac) also accept
 .B COLOR
 when a program is being entered but this is "corrected" to
 .BR COLOUR .
-The keyword
-.B REPORT$
-is encoded as 0xF6 ("REPORT") followed by 0x24 (ASCII $).
 
+.SH "COMPOUND ENCODINGS"
+
+A number of keywords are encoded using a pair of tokens or an ASCII
+suffix to a token.  Here are some examples:
+
+.TS
+tab(|) allbox;
+lb lb lb lb
+l  l  l  l.
+Dialect|Bytes|Keyword|Representation
+All|0xB8 0x50|"TOP"|"TO" P
+All|0xD1 0x24|"TIME$"|"TIME" $
+All|0xCF 0x23|"PTR#"|"PTR" #
+All|0xF6 0x24|"REPORT$"|"REPORT" $
+ARM|0x8E 0xA9|"SUMLEN"|"SUM" "LEN"
+Windows|0xC6 0xA9|"SUMLEN"|"SUM" "LEN"
+Mac|0xC7 0x93 0x24|"LIST$"|"LIST" $
+ARM|0xC7 0x94 0x4F|"LISTO"|"LIST" O
+ARM|0xC7 0x92 0x4F|"EDITO"|"EDIT" O
+.TE
+
+In implementations where the saved format is the same as the in-memory
+format, leading context is needed to correctly interpret tokens, for
+example to distinguish the variable
+.B TOP
+from
+.B TO P
+in
+.BR FORI=1TOP .
 
 .SH "LINE NUMBERS"
 
@@ -688,9 +694,9 @@ Program line ends in the middle of a byte sequence encoding a line
 number
 .TP
 \(bu
-For CR-first files, line length byte is within a reasonable range
+For big-endian files, line length byte is within a reasonable range
 but the character following the end of the line is not 0x0D.  For
-length-first files, the final character of the line is not 0x0D.
+little-endian files, the final character of the line is not 0x0D.
 .TP
 \(bu
 Out-of-order line numbers
