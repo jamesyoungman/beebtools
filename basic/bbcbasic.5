@@ -7,12 +7,12 @@ representation of the program once loaded.
 
 .SH "BBC BASIC DIALECTS"
 
-There are a number of vartiants of the BBC BASIC language.  These vary
+There are a number of variants of the BBC BASIC language.  These vary
 in both the facilities offered (the ARM version has a richer set of
 keywords for example) and in how the programs are represented (there
 are differences in both tokenisation and how lines are recorded).
 Some dialects record lines of code with a leading ASCII Carriage
-Return, others with a length byte first.  Some dialexts also use some
+Return, others with a length byte first.  Some dialects also use some
 byte values as "extension codes" which introduce a multi-byte token
 representation.
 
@@ -48,7 +48,7 @@ encoding.
 
 .SH FILE FORMAT
 
-A BBC BASIC file is encorded as a seuqnece of program lines.  The
+A BBC BASIC file is encoded as a sequence of program lines.  The
 format of these lines varies between implementations.
 
 .TS
@@ -565,7 +565,7 @@ l  l
 l  l
 ^  l
 l  l.
-assertByte:All Dialects
+Byte:All Dialects
 0xE0:"END"
 0xE1:"ENDPROC"
 0xE2:"ENVELOPE"
@@ -622,7 +622,7 @@ Within a file, they are consistently represented high byte first
 Within the rest of the line, they are represented differently. They
 are introduced by the byte value 0x8D and (counting the 0x8D) always
 occupy four bytes.  These line numbers are encoded in such a way that
-they can be decoded as if with the folowing C expression (b1, b2 and
+they can be decoded as if with the following C expression (b1, b2 and
 b3 are the three unsigned bytes of the line number which follow the
 0x8D marker byte):
 
