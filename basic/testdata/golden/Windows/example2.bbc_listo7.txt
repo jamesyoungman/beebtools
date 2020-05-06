@@ -1,0 +1,1 @@
+      LET__fast_0000%=4:PRINT__fast_0000%:PRINT__fast_0000%*2
