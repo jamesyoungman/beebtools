@@ -67,9 +67,12 @@ Some dialects record lines of code with a leading ASCII Carriage
 Return, others with a length byte first.  These formats also differ in
 the ordering of the bytes making up the line number (hence the names
 "Big-endian" for the files which start with Carriage Return and
-"Little-endian" for the ones which don't).  Some dialects also use
-some byte values as "extension codes" which introduce a multi-byte
-token representation.
+"Little-endian" for the ones which don't).  Some dialects allow line
+numbers to be omitted.  When this is the case they are encoded as line
+number 0.
+
+Some dialects also use some byte values as "extension codes" which
+introduce a multi-byte token representation.
 
 .TS
 tab(|) allbox;
@@ -111,24 +114,24 @@ Some keywords are represented by "compound tokens"; see
 .BR "COMPOUND TOKENS" .
 Some compound tokens (for example
 .BR LISTO )
-occupy three bytes but are represented as a two-byte extension token
-(in this case 0xC7 0c95) followed by a byte representing an ASCII
-character (here, 0x4F).
+occupy three bytes: a two-byte extension token (in this case 0xC7
+0c95) followed by a byte representing an ASCII character (here, 0x4F).
 
 .SS "Big-endian Line Format"
 
-In big-endian files, all lines (including the first) begin with a CR
-character (hex 0x0D).  This is followed by the high byte then the low
-byte of the line number, the length of the line and then the line
-contents as a sequence of tokens.  Line number 25610 would be encoded
-as 0x64 (decimal 100) followed by 0x0A (decimal 10).  The <len> value
-counts from <hi>, so for example this line
+In big-endian files, all lines including the first begin with a CR
+character (hex 0x0D).  This is followed by the two bytes of line
+number (high byte first), the length of the line and then the line
+contents.  Line number 25610 would be encoded as 0x64 (decimal 100)
+followed by 0x0A (decimal 10).  The <len> value counts all the bytes,
+so for example this line
 
 .EX
 0x0D 0x00 0x0A 0x05 0xF1
 .EE
 
-has a line number of 10 and includes just the token 0x0F1 representing "PRINT":
+has a line number of 10 and includes just the token 0x0F1 representing
+"PRINT":
 
 .EX
 10 PRINT
@@ -214,20 +217,18 @@ an effect in Mode 7 (in this case,
 Some implementations support UTF-8 in strings. No change to the
 file format is needed for this.
 
-
 Within a string, a double-quote (ASCII 0x22) can be escaped by
 doubling it.  This makes a difference for parsing, but not for simple
-deserialisation (as a quoted double-quote looks exactly like two
+deserialisation (a quoted double-quote looks exactly like two
 double-quotes in a row, since that's what it is).
 
 Outside strings, bytes are either tokens or part of a line number
 (see
 .BR "LINE NUMBERS" ).
 
-.SS Single-Byte Tokens 0x00 ... 0x10
+.SS "Single-Byte Tokens 0x00 ... 0x10"
 
-Most of these tokens are valid only in the Windows dialect (hence the
-unusual column order in the table below):
+Most of these tokens are valid only in the Windows dialect:
 
 .TS
 tab(|) allbox;
@@ -269,11 +270,11 @@ Byte|6502|Z80|ARM|Mac|Windows
 0x10|\fIall invalid\fP|"EXIT"
 .TE
 
-.SS Single-Byte Tokens 0x11 ... 0x17: Fast Variables
+.SS "Bytes 0x11 ... 0x17"
 
 These bytes represent themselves (within a string or not).
 
-.SS Single-Byte Tokens 0x18 ... 0x1f: Windows/SDL Fast Variables
+.SS "Bytes 0x18 ... 0x1f: Windows/SDL Fast Variables"
 
 In dialects other than Windows (or its synonym, SDL), these bytes
 represent themseleves, within a string or not.  In Windows/SDL these
@@ -297,11 +298,11 @@ Bytes|Expansion|Significance
 Each of these byte values is followed by a two-byte "index" value
 (represented by "xx yy" above).
 
-.SS Single-Byte Tokens 0x20 ... 0x7E
+.SS "Bytes 0x20 ... 0x7E"
 
 These bytes just represent themselves.
 
-.SS Single-Byte Tokens 0x7f ... 0x8C
+.SS "Bytes 0x7f ... 0x8C"
 
 The token 0x7F is valid only on ARM and Mac, where if expands to
 "OTHERWISE".
@@ -328,9 +329,11 @@ Byte|6502|Z80|ARM|Mac|Windows
 0x8C|"THEN"
 .TE
 
-.SS Token 0x8D
+.SS "Byte 0x8D: Line Numbers"
 
-This token introduces a line number; see
+The byte 0x8D introduces a line number (for example after
+.BR GOTO );
+see
 .BR "LINE NUMBERS" .
 
 .SS "Token 0x8E"
@@ -346,7 +349,7 @@ Byte|All Dialects Identical
 .TE
 
 
-.SS Tokens 0x8F..0x93: Pseudo-Variable Right Tokens
+.SS "Single-Byte Tokens 0x8F..0x93: Pseudo-Variable Right Tokens"
 
 These tokens represent pseudo-variables in contexts wheir their value
 is being used (as opposed to contexts where they are the target of an
@@ -366,7 +369,7 @@ Byte|All Dialects Identical
 0x93|"HIMEM"
 .TE
 
-.SS Tokens 0x94..0x9F
+.SS "Single-Byte Tokens 0x94..0x9F"
 
 .TS
 tab(|) allbox;
@@ -389,7 +392,7 @@ Byte|All Dialects Identical
 0x9F|"ERR"
 .TE
 
-.SS Tokens 0xA0..0xC5
+.SS "Single-Byte Tokens 0xA0..0xC5"
 .TS
 tab(|) allbox;
 lb cb s  s  s  s
@@ -414,6 +417,9 @@ Byte|All Dialects Identical
 0xAE|"OPENOUT"
 0xAF|"PI"
 .TE
+
+.\" There is a break between tables here just to ensure each table can
+.\" fit on one page.
 
 .TS
 tab(|) allbox;
@@ -446,12 +452,12 @@ Byte|All Dialects Identical
 0xC5|"EOF"
 .TE
 
-.SS Token 0xC6
+.SS "Byte 0xC6: Extension Tokens"
 
 In the ARM and Mac dialects the 0xC6 byte introduces an extension
 mechanism and the following byte identifies the expansion.  In other
-dialects, the 0xC6 is interpreted as a token, and the following byte
-is a separate token.
+dialects, the 0xC6 by itself is interpreted as a token, and the
+following byte is some other token.
 
 .TS
 tab(|) allbox;
@@ -486,7 +492,7 @@ T}|"ASK"
 0xC6 0x96||||"MENU"
 .TE
 
-.SS Token 0xC7
+.SS "Byte 0xC7: Extension Tokens"
 
 In the ARM and Mac dialects, the 0xC7 byte introduces an extension
 mechanism, and the next byte identifies the expansion:
@@ -541,7 +547,7 @@ T}
 0xC7 0x9f|||"INSTALL"
 .TE
 
-.SS Token 0xC8
+.SS "Byte 0xC8: Extension Tokens"
 
 In the ARM and Mac dialects, the 0xC8 byte introduces an extension
 mechanism, while in 6502 and Z80 0xC8 is expanded by itself to
@@ -590,7 +596,7 @@ T}
 0xC8 0xA6||"EXIT"
 .TE
 
-.SS Single-Byte Tokens 0xC9 ... 0xCE
+.SS "Single-Byte Tokens 0xC9 ... 0xCE"
 
 Bytes in this range are interpreted as follows:
 
@@ -612,7 +618,7 @@ Byte|6502|Z80|ARM|Mac|Windows
 0xCE|"EDIT"|"PUT"|"ENDWHILE"
 .TE
 
-.SS Single-Byte Tokens 0xCF ... 0xD3: Pseudo-Variable left tokens
+.SS "Single-Byte Tokens 0xCF ... 0xD3: Pseudo-Variable left tokens"
 
 These tokens represent pseudo-variables when they are being assigned
 to (i.e. are on the left of an equals sign).
@@ -631,7 +637,7 @@ Byte:All Dialects Identical
 0xD3:"HIMEM"
 .TE
 
-.SS Single-Byte Tokens 0xD4 ... 0xDF
+.SS "Single-Byte Tokens 0xD4 ... 0xFF"
 .TS
 tab(:) allbox;
 lb cb s  s  s  s
@@ -653,7 +659,8 @@ Byte:All Dialects Identical
 0xDF:"DRAW"   
 .TE
 
-.\" There is a break between tables here just to ensure it fits on one page.
+.\" There is a break between tables here just to ensure each table can
+.\" fit on one page.
 
 .TS
 tab(:) allbox;
@@ -765,8 +772,7 @@ in
 
 Line numbers at the start of a line are encoded as exactly two bytes.
 Within a file, they are consistently represented high byte first
-(6502, 32016, ARM and probably Mac) or low byte first (Z80,
-8086, Windows).
+(6502, 32016, ARM and Mac) or low byte first (Z80, 8086, Windows).
 
 Within the rest of the line, they are represented differently. They
 are introduced by the byte value 0x8D and (counting the 0x8D) always
@@ -779,15 +785,7 @@ b3 are the three unsigned bytes of the line number which follow the
 (((b3 ^  (b1 << 4)) & 0xFF) << 8) | (b2 ^ ((b1 << 2)  & 0xC0))
 .EE
 
-Some dialects allow line numbers to be omitted.  When this is the case
-they are encoded as line number 0.
-
-
 .SH "MAC DIALECT"
-This document leans heavily on http://mdfs.net/Docs/Comp/BBCBasic/Tokens
-as source material, but that document is not very explicit about how
-the Mac implementation of BBC BASIC is tokenised.
-
 The Mac dialect described in this document is the 1987 implementation
 by Human-Computer Interface Ltd.  On the basis of examination of some
 sample programs, I see that the Mac dialect is similar to the ARM
@@ -797,17 +795,17 @@ There is also an SDL version for Mac OS X implemented by
 R. T. Russell, but it uses the same dialect as his Windows
 implementation.
 
-If you have additional information or corrections, please use the
-contact information given in the
-.B BUGS
-section.
-
 .SH "OTHER DIALECTS"
 
 This document describes all the formats I have been able to find
 documentation for or find a usable implementation of.  There are also
 BBC BASIC implementations for the PDP-11 and the 6809 CPU which I have
 not obtainted, and so these are not documented here.
+
+If you have additional information or corrections, please use the
+contact information given in the
+.B BUGS
+section.
 
 .SH "CORNER CASES"
 
