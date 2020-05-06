@@ -34,34 +34,6 @@ static bool is_invalid(const char *s)
   return s[0] == '_' && s[1] != 0;
 }
 
-static bool handle_fastvar(enum Dialect dialect, unsigned char intro,
-			   const unsigned char **input,
-			   unsigned char *len)
-{
-  static const char * suffixes[] = {"", "&", "%", "#", "", "{}", "%%", "$"};
-  unsigned char lo, hi;
-  unsigned int fast_index;
-  const char *suffix;
-  assert(dialect == Windows);
-  assert(intro >= 0x18 && intro <= 0x1F);
-  if (!*len)
-    return premature_eol(intro);
-  lo = **input;
-  ++*input;
-  --*len;
-  if (!*len)
-    return premature_eol(intro);
-  hi = **input;
-  ++*input;
-  --*len;
-  fast_index = (hi << 8) | lo;
-  suffix = suffixes[intro - 0x18];
-  if (printf("__fast_%04x%s", fast_index, suffix) < 0)
-    return false;
-  return true;
-}
-
-
 static bool handle_special_token(enum Dialect dialect, unsigned char intro,
 				 const char **output,
 				 const unsigned char **input,
@@ -159,13 +131,13 @@ static bool handle_token(enum Dialect dialect,
 	      return true;
 	    }
 	}
-      else if (dialect == Windows && is_fastvar(uch))
+      else if (t == fastvar)
 	{
-	  /* We have to handle this here, because handle_fastvar
-	   * needs to produce its output itself instead of assigning to t,
-	   * because its output is dynamic.
-	   */
-	  return handle_fastvar(dialect, uch, input, len);
+	  fprintf(stderr, "This program has been 'crunched', "
+		  "and its original identifiers have been mapped to "
+		  "meaningless numbers.  Please run this tool on the original "
+		  "source code instead.\n");
+	  return false;
 	}
       else if (!handle_special_token(dialect, uch, &t, input, len, m))
 	{
