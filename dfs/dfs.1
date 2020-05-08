@@ -1,0 +1,455 @@
+'\" t
+.TH DFS 1 2020-05-08 Youngman \" -*- nroff -*-
+
+.SH NAME
+dfs \- read Acorn DFS disc images
+
+.SH SYNOPSIS
+.B dfs
+[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-all|free|help|info|list|type
+[args...]
+
+.SH DESCRIPTION
+The
+.B dfs
+program reads data from an Acorn DFS disc image file.
+Only single-sided disc images are currently suported.
+
+The command line consists of global options (for example
+.BR "\-\-file" )
+followed by a command name (for example
+.BR cat ).
+
+.SH OPTIONS
+
+The following options are undersood:
+.IP "\-\-file \fINAME\fR"
+Specifies the name of the disc image to read.
+If this option is specified more than once, each image file is
+"inserted" into the next free "drive".
+.IP "\-\-dir \fID\fR"
+Specifies the current directory to assume when reading the disc image,
+as if the user had executed the command
+.B *DIR
+.IR D .
+This does not specify a directory on the system where you are running
+the
+.B dfs
+command.
+
+.SH "COMMANDS"
+
+.SS "cat [drive]"
+
+Prints a catalogue of the contents of the disc image.
+This is analogous to the Acorn DFS command
+.BR "*CAT" .
+A drive number can be specified as an optional argument (but is rarely
+useful).
+
+.SS "dump [filename]"
+
+Dumps the contents of a single file in hexadecimal and text.
+This is analogous to the Acorn DFS command
+.BR "*DUMP" .
+
+.SS "extract-all [directory]"
+
+Extracts all the files in the disc image to the specified destination
+(host) file system directory.
+Each file in the disc image results in two files generated in
+.IR directory .
+The first is a copy of the file extracted from the disc image.
+Files in the current DFS directory are extracted without a leading
+directory name.
+Other files are prefixed with \*(lq\fID\fP.\*(rq where
+.I D
+is the name of their DFS directory.
+
+The second file is a \*(lq.inf\*(rq file.
+This file contains the DFS file's original name (with directory) and
+the DFS metadata (load address, execution address, lock status).
+See
+.B "INF STANDARD ARCHIVE FILE FORMAT" for details.
+
+
+.SS "free [drive]"
+
+Display the space which is free and the space which is used on the
+disc image.  The output might look like this:
+
+.EX
+15 Files 106 Sectors  67,072 Bytes Free
+16 Files  8A Sectors  35,328 Bytes Used
+.EE
+
+The sector counts are in hexadecimal.  The file and byte counts are in
+decimal.
+
+Since the disc image is in the a regular Acorn DFS format, the total
+number of catalogue slots is 31, and so the used file count and the
+free file count sum to 31.
+The sector counts are given in hex and sum to 190 hex, which is 400 in
+decimal.
+This is because this disc image is of a 40-track single-sided disc and
+each track holds 10 sectors.
+
+The free/used byte counts are simply the free/used sector counts
+multiplied by the size of a sector (256 decimal).
+
+In this image, the largest sector number in use by any file is 89 hex
+(counting from zero), which is why the total number of in-use sectors
+is given as 8A hex.
+
+These numbers often reflect the amount of free space which could
+actually be used by saving more files on the disc.
+However the disc might contain additional free space between the
+existing files as a result, for example, of the deletion of a
+previously-existing file.
+Because DFS files are stored contigously, you could have a situation
+where there are 4 unused sectors on the disc but you can't save a
+1024-byte file on it because the free space is not contiguous.
+This additional free space can be made usable with the use of the
+.B *COMPACT
+command.
+
+.SS "help [command]..."
+
+Show a message explaining how to use the named command.
+If no command is specified, show a message briefly explaining how to
+use the
+.BR dfs (1)
+program and the commands which are understood.
+
+.SS "info \fIwildcard\fP"
+
+Prints metadata about wach file matching the specified \fIwildcard\fP
+(see
+.B "DFS WILDCARDS"
+above).
+For example:
+
+.EX
+$.MESSAGE    FF1000 FF802B 000200 1B0
+$.PUGWASH    FF1000 FF802B 000476 1AB
+$.LOOK       FF1000 FF802B 0002BC 156
+$.PANEL    L FF5FBD FF5FBD 001700 179
+C.TALK       FF0E00 FF802B 0000CE 002
+.EE
+
+The files are listed in the order they appear in the disc
+catalogue.
+The fields are:
+
+.TS
+tab(|);
+lb lb
+l l.
+Field|Explanation
+$.PUGWASH|Directory and file name
+|Locked flag (L for locked, blank for unlocked)
+FF1000|Load address (hex)
+FF802B|Execution address (hex)
+000476|File length (hex)
+1AB|Start sector (hex)
+.TE
+
+The load and execution addresses are displayed in a sign-extended form
+(see
+.BR "SIGN EXTENSION OF ADDRESSES" ).
+See
+.B "DFS FILE METADATA"
+for an explanation of these fields.
+
+
+.SS "list \fIfilename\fP"
+
+Displays the contents of the file
+.IR filename ,
+which is usually a text file.
+Each line is preceded with a line number, starting from 1.
+Lines are displayed as text using the host system's convention for
+line termination, even if that's not the same as the BBC
+Microcomputer's convention (ASCII Carriage Return).
+
+Because BBC BASIC stores its code in a tokenised form, this command is
+not useful for BBC BASIC programs.  See the
+.B EXAMPLES
+section for an alternative.
+
+.SS "type [-b] \fIfilename\fP"
+
+Displays the contents of the file
+.IR filename ,
+which is usually a text file.
+Carriage Return characters are converted to whatever character the
+host system uses as a line terminator.
+When the
+.B \-b
+option is used, Carriage Return passed through unchanged.
+The
+.B \-b
+option can be useful for extracting the contents of a single file,
+see the
+.B EXAMPLES
+section.
+
+.SH "DFS FILE NAMES"
+
+A fully-specified DFS file name looks like \*(lq:N.D.NAME\*(rq.
+Here,
+.I N
+is a disc drive number.
+
+.TS
+tab(|);
+lb lb
+l l.
+Drive Number|Description
+0|The first side of the first physical floppy drive
+1|The first side of the second physical floppy drive
+2|The second side of the first physical floppy drive
+3|The second side of the second physical floppy drive
+.TE
+
+When single-sided image files are installed, they are installed in
+drive number order (i.e. drive 0 then 1).
+Therefore if you install two single-sided image files, they appear to
+be two sides of the same physical floppy disc.
+
+The
+.I D
+part of the file name is the directory name.
+A directory is a single letter.  The default directory is '$'.
+
+The
+.I NAME
+part of the file name can be up to 7 characters long.
+
+The drive and directory parts of the file name are optional.
+Thus if the current drive is 0 and the current directory is 'B', then
+all these names refer to the same file:
+
+.TS
+l.
+:0.B.INPUT
+:0.INPUT
+B.INPUT
+INPUT
+.TE
+
+.SS "DFS WILDCARDS"
+
+The
+.B info
+command supports wildcard names.
+These may match more than one file.
+The DFS wildcard syntax is different to that of MS-DOS or Unix.
+The special characters are:
+
+.TS
+tab(|);
+lb lb
+l l.
+Character|Meaning
+#|Match any single character except \*(lq.\*(rq
+*|Match any sequence of characters except \*(lq.\*(rq
+\&.|Matches only itself
+.TE
+
+Suppose the disc in drive 0 contains the following files:
+
+.EX
+$.!BOOT
+B.PROG
+P.DONE2
+.EE
+
+If the current directory is \*(lqP\*(rq, then these wildcards will
+match the following:
+
+.TS
+tab(|);
+lb lb
+l l.
+Wildcard|Selected files
+*|:0.P.DONE2
+#.*|:0.$.!BOOT :0.B.PROG :0.P.DONE2
+*2|:0.P.DONE2
+D*|:0.P.DONE2
+D#NE2|:0.P.DONE2
+F*|(none)
+:0.$.!BOOT|:0.$.!BOOT
+$.!BOOT|:0.$.!BOOT
+:0.$.*|:0.$.!BOOT
+:0.*|:0.P.DONE2
+:0.#.*|:0.$.!BOOT :0.B.PROG :0.P.DONE2
+:0.*.*|:0.$.!BOOT :0.B.PROG :0.P.DONE2
+:0.B.*|:0.B.PROG
+:0.#.#####|:0.$.!BOOT :0.P.DONE2
+:0.#.####|:0.B.PROG
+.TE
+
+The wildcard \*(lq:0.*\*(rq will match \*(lq:0.P.DONE2\*(rq because
+the current directory is \*(lqP\*(rq.
+However, that wildcard does not also match \*(lq:0.$.!BOOT\*(rq
+because \*(lq*\*(rq will not match \*(lq.\*(rq.
+
+Acorn DFS documentation sometimes refers to wildcards as
+.IR "ambiguous file specifications" .
+
+.SH "DFS FILE METADATA"
+
+In DFS files have contents (i.e. the body of the file), a directory
+and a name.
+They also have some metadata.
+For example:
+
+.TS
+tab(|);
+lb lb lxb
+l  l  lx.
+Field|Example|Explanation
+Locked Flag|L|T{
+Usually shown as L for locked, blank for unlocked;
+setting this flag prevents the file being deleted or overwritten.
+T}
+Load Address|FF1000|T{
+This is the memory address at which this would be loaded by
+\fB*LOAD\fP or \fB*RUN\fP, in hex.
+See
+.BR "SIGN EXTENSION OF ADDRESSES" .
+T}
+Execution Address|FF802B|T{
+This is the address at which \fB*RUN\fP would execute the file, in
+hex. See
+.BR "SIGN EXTENSION OF ADDRESSES" .
+T}
+File length|000476|In hex.
+Start sector|1AB|In hex.
+.TE
+
+.SH "SIGN EXTENSION OF ADDRESSES"
+
+In the DFS and Cassette filing systems, load and execution addresses
+are stored as 18-bit numbers.
+When these addresses are shown in the output of the "info" command (or
+the DFS command
+.BR "*INFO")
+or in the body of a standard archive file, they are sign-extended to
+24 bits, with bits 23 to 18 being copies of bit 17 (which has the
+value 30000 hex), and bits 16 to 0 holding their original values.
+The address space of the MOS 6502 CPU is only 16 bits, but the top
+bits of the load and execution address are set when the file was saved
+from the Tube co-processor rather than the I/O processor.
+
+.SH "INF STANDARD ARCHIVE FILE FORMAT"
+
+To retain the metadata of a DFS file when extracting it from a disc
+image (for example with the
+.B extract-all
+command), we store it in a ".inf" file in a standard format devised by
+Wouter Scholten.
+Here's an example:
+
+.EX
+$.DICE   FF1B00 FF8023 000995 CRC=EA69
+.EE
+
+The ".inf" file containing the metadata has the same name as the file
+containing the data itself, but with the extension ".inf" added.
+For example, if the "$.DICE" file is stored in the file "dice", the
+metadata will be in "dice.inf".
+Some of the fields are from the file metadata (see
+.B "DFS FILE METADATA"
+for details) and some are specific to the archive file format.
+The fields are separated by white-space and appear in this order:
+
+.TS
+tab(|);
+lb lb lbx
+l  l  lx.
+Example|Field|Explanation
+$.DICE|Name|Original name of the file.
+FF1B00|Load address|T{
+See
+.BR "DFS FILE METADATA" .
+T}
+FF8023|Execution address|T{
+See
+.BR "DFS FILE METADATA" .
+T}
+000995|Length|Length of the file in bytes, in hex
+(blank)|Locked flag|T{
+See
+.BR "DFS FILE METADATA" .
+T}
+CRC=EA69|CRC|T{
+Cyclic Redunancy Check code for the file body, computed by the
+algorithm given in section 16.10 "The Cassette filing system" of
+.IR "The Advanced User Guide For The BBC Micro" .
+This field is not mandatory in the file format, but
+.BR dfs (1)
+always generates it (there is no CRC in the disc image).
+T}
+(blank)|Next file|T{
+For files extracted from the Cassette filing system, this
+is the name of the file which would be loaded next by
+.B CHAIN ""
+but this is blank in our example since the file was extracted from a
+DFS image.  The
+.BR dfs (1)
+program always leaves this field blank.
+T}
+.TE
+
+The load and execution addresses can be up to 6 hexadecimal digits
+long and are sign-extended; see
+.BR "SIGN EXTENSION OF ADDRESSES"
+for more information.
+
+The
+.BR dfs (1)
+program terminates the single line of the ".inf" file with a newline
+character (ASCII 10 decimal) but if you're writing a program consuming
+such files you should probably accept any reasonable line separator.
+
+.SH "EXIT STATUS"
+
+Zero if no error has occurred, non-zero otherwise.
+
+.SH "BUGS"
+
+This tool doesn't yet fully support the extended DFS filesystems from
+Watford Electronics, Opus, Solidisk or other vendors.
+
+Please report bugs to james@youngman.org.
+
+.SH EXAMPLES
+
+
+Th
+.B list
+command isn't useful for BBC BASIC programs because they are not
+stored as text, but you can read them like this:
+
+.EX
+dfs --file=image.ssd type -b ORIGIN | bbcbasic_to_text | less
+.EE
+
+.SH "SEE ALSO"
+
+.UR http://beebwiki.mdfs.net/Acorn_DFS_disc_format
+BeebWiki page
+.I Acorn DFS disc format
+.UE
+
+.IR "BBC Microcomputer System Disc Filing System User Guide" ,
+March 1985.
+
+.UR http://archive.retro-kit.co.uk/bbc.nvg.org/std-format.php3.html
+.I Standard Archive Format
+by Mark de Weger
+.UE
+
+.BR bbcbasic_to_text (1)
