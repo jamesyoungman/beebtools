@@ -50,7 +50,7 @@ if (PDF)
     COMMAND ${PDFROFF} -man --pdf-output=dfs.pdf -t
     ${CMAKE_CURRENT_SOURCE_DIR}/dfs.1 
     DEPENDS dfs.1)
-  add_custom_target(pdf
+  add_custom_target(pdf ALL
     DEPENDS bbcbasic.pdf bbcbasic_to_text.pdf dfs.pdf)
 endif()
 
