@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-05-08 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-05-09 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -418,17 +418,34 @@ such files you should probably accept any reasonable line separator.
 
 Zero if no error has occurred, non-zero otherwise.
 
+.SH CONFORMING TO
+
+There are several variants of the DFS file system, and this tool
+doesn't support all of them, yet.  Here's a summary of what is
+supported:
+
+.TS
+tab(|);
+lb lb
+l l.
+Variant|Status
+Acorn DFS|Supported.
+Watford DFS|Supported, lightly tested.
+Opus DFS|Not yet supported.
+Solidisk DFS|Not yet supported.
+HDFS|Not yet supported.
+.TE
+
+What "not yet supported" means in practice is that such images will be
+treated as if they were actually Acorn DFS images.
+
 .SH "BUGS"
-
-This tool doesn't yet fully support the extended DFS filesystems from
-Watford Electronics, Opus, Solidisk or other vendors.
-
 Please report bugs to james@youngman.org.
 
 .SH EXAMPLES
 
 
-Th
+The
 .B list
 command isn't useful for BBC BASIC programs because they are not
 stored as text, but you can read them like this:

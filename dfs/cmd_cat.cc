@@ -167,6 +167,9 @@ namespace
 	  left_column = !left_column;
 	}
       cout << "\n";
+      cout << image->catalog_entry_count() << " files of "
+	   << image->max_file_count() << "\n";
+      // TODO: Watford DFS states the number of tracks too.
       return true;
     }
   };

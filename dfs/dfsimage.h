@@ -24,8 +24,10 @@ enum class Format
    DFS,
    WDFS,
    Solidisk,
+   // I have no documentation for Opus's format.
   };
  Format identify_format(const std::vector<byte>& image);
+ std::string format_name(Format f);
 
 class BadFileSystemImage : public std::exception
 {
@@ -50,15 +52,8 @@ class BadFileSystemImage : public std::exception
 class CatalogEntry
 {
 public:
- CatalogEntry(std::vector<byte>::const_iterator image_data, int slot, Format fmt)
-    : data_(image_data), cat_offset_(slot * 8), fmt_(fmt)
-  {
-  }
-
-  CatalogEntry(const CatalogEntry& other)
-    : data_(other.data_), cat_offset_(other.cat_offset_), fmt_(other.fmt_)
-  {
-  }
+  CatalogEntry(std::vector<byte>::const_iterator image_data, int slot, Format fmt);
+  CatalogEntry(const CatalogEntry& other);
 
   inline unsigned char getbyte(unsigned int sector, unsigned short record_off) const
   {
@@ -139,15 +134,8 @@ public:
 
   inline Format disc_format() const { return disc_format_; }
 
-  offset end_of_catalog() const
-  {
-    return img_[0x105];
-  }
-
-  int catalog_entry_count() const
-  {
-    return end_of_catalog() / 8;
-  }
+  offset end_of_catalog() const;
+  int catalog_entry_count() const;
 
   CatalogEntry get_catalog_entry(int index) const
   {
@@ -172,8 +160,7 @@ public:
 
   int max_file_count() const
   {
-    // We do not currently correctly support Watford DFS format discs.
-    return 31;
+    return disc_format_ == Format::WDFS ? 62 : 31;
   }
 
   int find_catalog_slot_for_name(const DFSContext& ctx, const std::string& arg) const;
@@ -184,9 +171,13 @@ private:
   Format disc_format_;
 };
 
-
-
 }  // namespace DFS
+
+namespace std
+{
+  std::ostream& operator<<(std::ostream& os, const DFS::Format& f);
+}
+
 
 #endif
 

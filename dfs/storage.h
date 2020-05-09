@@ -45,8 +45,14 @@ namespace DFS
       for (drive = 0; drive < drives_.size(); ++drive)
 	{
 	  os << "Drive " << drive << ": "
-	     << (drives_[drive] ? "occupied" : "empty")
-	     << "\n";
+	     << (drives_[drive] ? "occupied" : "empty");
+	  auto image = drives_[drive].get();
+	  if (0 != image)
+	    {
+	      os << ", " << image->disc_format() << " format, "
+		 << image->disc_sector_count() << " sectors";
+	    }
+	  os << "\n";
 	}
     }
 
