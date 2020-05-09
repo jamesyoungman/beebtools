@@ -57,13 +57,20 @@ lb lb lb
 l l
 l l.
 Dialect Keyword   | What is it?
-6502              | BBC Microcomputer.
-32000             | Same as 6502.  BBC Microcomputer 32016 Tube.
-Z80               | BBC BASIC Z80 (as in e.g. the Sinclair Z88).
-8086              | Same as Z80.  BBC BASIC for DOS.
-ARM               | Acorn RiscOS.
-Windows           | Microsoft Windows.
-Mac               | Apple MacOS.
+6502| BBC Microcomputer.
+32000| Same as 6502.  BBC Microcomputer 32016 Tube.
+Z80| BBC BASIC Z80 (as in e.g. the Sinclair Z88).
+8086| Same as Z80.  BBC BASIC for DOS.
+ARM| Acorn RiscOS BASIC V.
+Windows|T{
+BBC BASIC for Windows
+.br
+BBC BASIC for SDL 2.0 (including Linux and Mac OS X)
+T}
+Mac|T{
+Apple Classic MacOS.  For compatibility with the the MacOS X
+implementation, use the Windows dialect instead.
+T}
 .TE
 
 .SH "LIST OPTION BITS"
@@ -152,8 +159,33 @@ is not encoded as a BBC BASIC program, its actual dialect doesn't
 match what was specified, or that the command-line inclued a usage
 error.
 
-.SH "SEE ALSO"
-\fBdfs\fP(1), \fBenscript\fP(1)
-
 .SH BUGS
 Please report bugs to james@youngman.org.
+
+.SH EXAMPLE
+
+To format a program saved by BBC BASIC for Windows 2.0 or for BBC
+BASIC for SDL 2.0 with formatting like
+.BR "LISTO 7" :
+
+.EX
+bbcbasic_to_text --dialect=Windows prog.bbc
+.EE
+
+To format a program saved by BBC BASIC for (Classic) Macintosh with
+formatting like
+.BR "LISTO 0" :
+
+.EX
+bbcbasic_to_text --dialect=Mac --listo=0 prog.bbc
+.EE
+
+
+.SH "SEE ALSO"
+.UR http://www.bbcbasic.co.uk/bbcbasic.html
+BBC BASIC Website
+.UE
+.br
+\fBdfs\fP(1), \fBenscript\fP(1)
+
+
