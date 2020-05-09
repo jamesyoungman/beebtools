@@ -43,7 +43,7 @@ if (PDF)
   add_custom_command(
     OUTPUT bbcbasic_to_text.pdf
     COMMAND ${PDFROFF} -man --pdf-output=bbcbasic_to_text.pdf -t
-    ${CMAKE_CURRENT_SOURCE_DIR}/bbcbasic.5 
+    ${CMAKE_CURRENT_SOURCE_DIR}/bbcbasic_to_text.1
     DEPENDS bbcbasic_to_text.1)
   add_custom_command(
     OUTPUT dfs.pdf
