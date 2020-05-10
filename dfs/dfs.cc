@@ -18,6 +18,7 @@
 
 #include "afsp.h"
 #include "commands.h"
+#include "dfs.h"
 #include "dfscontext.h"
 #include "dfsimage.h"
 #include "fsp.h"
@@ -88,45 +89,12 @@ namespace
     return DFS::SECTOR_BYTES * sector_num;
   }
 
-  unsigned long sign_extend(unsigned long address)
-  {
-    /*
-      The load and execute addresses are 18 bits.  The largest unsigned
-      18-bit value is 0x3FFFF (or &3FFFF if you prefer).  However, the
-      DFS *INFO command prints the address &3F1900 as FF1900.  This is
-      because, per pages K.3-1 to K.3-2 of the BBC Master Reference
-      manual part 2,
-
-      > BASIC sets the high-order bits of the load address to the
-      > high-order address of the processor it is running on.  This
-      > enables you to tell if a file was saved from the I/O processor
-      > or a co-processor.  For example if there was a BASIC file
-      > called prog1, its information might look like this:
-      >
-      > prog1 FFFF0E00 FFFF8023 00000777 000023
-      >
-      > This indicates that prog1 was saved on an I/O processor-only
-      > machine with PAGE set to &E00.  The execution address
-      > (FFFF8023) is not significant for BASIC programs.
-    */
-    if (address & 0x20000)
-      {
-	// We sign-extend just two digits (unlike the example above) ,
-	// as this is what the BBC model B DFS does.
-	return 0xFF0000 | address;
-      }
-    else
-      {
-	return address;
-      }
-  }
-
   bool create_inf_file(const string& name,
 		       unsigned long crc,
 		       const DFS::CatalogEntry& entry)
   {
-    unsigned long load_addr = sign_extend(entry.load_address());
-    unsigned long exec_addr = sign_extend(entry.exec_address());
+    unsigned long load_addr = DFS::sign_extend(entry.load_address());
+    unsigned long exec_addr = DFS::sign_extend(entry.exec_address());
     std::ofstream inf_file(name, std::ofstream::out);
     inf_file << std::hex << std::uppercase;
     // The NEXT field is missing because our source is not tape.
@@ -205,6 +173,40 @@ namespace DFS
 using stringutil::rtrim;
 using stringutil::case_insensitive_equal;
 using stringutil::case_insensitive_less;
+
+  unsigned long sign_extend(unsigned long address)
+  {
+    /*
+      The load and execute addresses are 18 bits.  The largest unsigned
+      18-bit value is 0x3FFFF (or &3FFFF if you prefer).  However, the
+      DFS *INFO command prints the address &3F1900 as FF1900.  This is
+      because, per pages K.3-1 to K.3-2 of the BBC Master Reference
+      manual part 2,
+
+      > BASIC sets the high-order bits of the load address to the
+      > high-order address of the processor it is running on.  This
+      > enables you to tell if a file was saved from the I/O processor
+      > or a co-processor.  For example if there was a BASIC file
+      > called prog1, its information might look like this:
+      >
+      > prog1 FFFF0E00 FFFF8023 00000777 000023
+      >
+      > This indicates that prog1 was saved on an I/O processor-only
+      > machine with PAGE set to &E00.  The execution address
+      > (FFFF8023) is not significant for BASIC programs.
+    */
+    if (address & 0x20000)
+      {
+	// We sign-extend just two digits (unlike the example above) ,
+	// as this is what the BBC model B DFS does.
+	return 0xFF0000 | address;
+      }
+    else
+      {
+	return address;
+      }
+  }
+
 
 bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
 		  const vector<string>& args,
@@ -337,103 +339,6 @@ public:
 };
 REGISTER_COMMAND(CommandExtractAll);
 
-
-class CommandInfo : public CommandInterface // *INFO
-{
-public:
-  const std::string name() const override
-  {
-    return "info";
-  }
-
-  const std::string usage() const override
-  {
-    return "usage: " + name() + " wildcard\n"
-      "The wildcard specifies which files information should be shown for.\n"
-      "To specify all files, use the wildcard #.*\n"
-      "Numeric values are shown in hexadecimal (base 16).\n"
-      "\n"
-      "The output fields are:\n"
-      "  file name\n"
-      "  'L' if the file is locked, otherwise spaces\n"
-      "  load address (in hex)\n"
-      "  execution address (in hex)\n"
-      "  file length (in hex)\n"
-      "  sector within the disc at which the file is stored (in hex)\n"
-      "\n"
-      "Load and execution addresses are sign-extended from their actual\n"
-      "18 bit length (as stored in the disc catalogue) to 24 bits.\n"
-      "For example, 3F1900 becomes FF1900.\n"
-      "We do this for consistency with the Acorn DFS implementation.\n"
-      "When the top bits (i.e. 30000) are set, this signifies that the\n"
-      "file was saved from the Tube co-processor rather than the I/O\n"
-      "processor.\n";
-  }
-
-  const std::string description() const override
-  {
-    return "display information about a file (for example load address)";
-  }
-
-  bool operator()(const DFS::StorageConfiguration& storage,
-		  const DFS::DFSContext& ctx,
-		  const std::vector<std::string>& args) override
-  {
-    if (args.size() < 2)
-      {
-	cerr << "info: please give a file name or wildcard specifying which files "
-	     << "you want to see information about.\n";
-	return false;
-      }
-    if (args.size() > 2)
-      {
-	cerr << "info: please specify no more than one argument (you specified "
-	     << (args.size() - 1) << ")\n";
-	return false;
-      }
-    const FileSystemImage *image;
-    if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
-      return false;
-    assert(image != 0);
-
-    string error_message;
-    std::unique_ptr<AFSPMatcher> matcher = AFSPMatcher::make_unique(ctx, args[1], &error_message);
-    if (!matcher)
-      {
-	cerr << "Not a valid pattern (" << error_message << "): " << args[1] << "\n";
-	return false;
-      }
-
-    const int entries = image->catalog_entry_count();
-    cout << std::hex;
-    cout << std::uppercase;
-    using std::setw;
-    using std::setfill;
-    for (int i = 1; i <= entries; ++i)
-      {
-	const auto& entry = image->get_catalog_entry(i);
-	const string full_name = string(1, entry.directory()) + "." + entry.name();
-#if VERBOSE_FOR_TESTS
-	std::cerr << "info: directory is '" << entry.directory() << "'\n";
-	std::cerr << "info: item is '" << full_name << "'\n";
-#endif
-	if (!matcher->matches(full_name))
-	  continue;
-	unsigned long load_addr, exec_addr;
-	load_addr = sign_extend(entry.load_address());
-	exec_addr = sign_extend(entry.exec_address());
-	cout << entry.directory() << "." << entry.name() << " "
-	     << (entry.is_locked() ? " L " : "   ")
-	     << setw(6) << setfill('0') << load_addr << " "
-	     << setw(6) << setfill('0') << exec_addr << " "
-	     << setw(6) << setfill('0') << entry.file_length() << " "
-	     << setw(3) << setfill('0') << entry.start_sector()
-	     << "\n";
-      }
-    return true;
-  }
-};
-REGISTER_COMMAND(CommandInfo);
 
 struct comma_thousands : std::numpunct<char>
 {
