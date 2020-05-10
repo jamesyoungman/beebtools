@@ -209,39 +209,6 @@ using stringutil::case_insensitive_less;
   }
 
 
-bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
-		  const vector<string>& args,
-		  file_body_logic logic)
-{
-  if (args.size() < 2)
-    {
-      cerr << "please give a file name.\n";
-      return false;
-    }
-  if (args.size() > 2)
-    {
-      // The Beeb ignores subsequent arguments.
-      cerr << "warning: ignoring additional arguments.\n";
-    }
-  ParsedFileName name;
-  if (!parse_filename(ctx, args[1], &name))
-    return false;
-  const FileSystemImage *image;
-  if (!storage.select_drive(name.drive, &image))
-    return false;
-  assert(image != 0);
-  const int slot = image->find_catalog_slot_for_name(ctx, name);
-  if (-1 == slot)
-    {
-      std::cerr << args[1] << ": not found\n";
-      return false;
-    }
-  auto [start, end] = image->file_body(slot);
-  const vector<string> tail(args.begin() + 1, args.end());
-  return logic(start, end, tail);
-}
-
-  
   const std::map<string,string> option_help =
     {
      {"file", "the name of the DFS image file to read"},
