@@ -40,6 +40,7 @@ namespace
      OPT_IMAGE_FILE = SCHAR_MIN,
      OPT_CWD,
      OPT_DRIVE,
+     OPT_SHOW_CONFIG,
      OPT_HELP,
     };
 
@@ -57,6 +58,7 @@ namespace
      // associated with the disc image specified in --file (as for
      // *DRIVE).
      { "drive", 1, NULL, OPT_DRIVE },
+     { "show-config", 0, NULL, OPT_SHOW_CONFIG },
      { "help", 0, NULL, OPT_HELP },
      { 0, 0, 0, 0 },
     };
@@ -65,6 +67,7 @@ namespace
      {"file", "the name of the DFS image file to read"},
      {"dir", "the default directory (if unspecified, use $)"},
      {"drive", "the default drive (if unspecified, use 0)"},
+     {"show-config", "show the storage configuraiton before performing the operation"},
      {"help", "print a brief explanation of how to use the program"},
     };
 
@@ -716,6 +719,8 @@ int main (int argc, char *argv[])
   int longindex;
   vector<string> extra_args;
   DFS::StorageConfiguration storage;
+  bool show_config = false;
+
   int opt;
   while ((opt=getopt_long(argc, argv, "+", global_opts, &longindex)) != -1)
     {
@@ -748,6 +753,10 @@ int main (int argc, char *argv[])
 	  }
 	  break;
 
+	case OPT_SHOW_CONFIG:
+	  show_config = true;
+	  break;
+
 	case OPT_HELP:
 	  {
 	    DFS::CommandHelp help;
@@ -770,7 +779,10 @@ int main (int argc, char *argv[])
       cerr << "unknown command " << cmd_name << "\n";
       return 1;
     }
-  storage.show_drive_configuration(std::cerr);
+  if (show_config) 
+    {
+      storage.show_drive_configuration(std::cerr);
+    }
   return (*instance)(storage, ctx, extra_args) ? 1 : 0;
 };
 
