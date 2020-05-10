@@ -40,9 +40,12 @@ public:
       "18 bit length (as stored in the disc catalogue) to 24 bits.\n"
       "For example, 3F1900 becomes FF1900.\n"
       "We do this for consistency with the Acorn DFS implementation.\n"
-      "When the top bits (i.e. 30000) are set, this signifies that the\n"
-      "file was saved from the Tube co-processor rather than the I/O\n"
-      "processor.\n";
+      // Reference for the significance of the 0x20000 bit is the
+      // Watford DFS manual (section 9.1 "18 BIT ADDRESSING") and the
+      // Master Reference Guide.
+      "When the top bits (i.e. hex 20000) are set, this signifies that the\n"
+      "file was saved from the I/O processor rather than the tube\n"
+      "co-processor, and should be loaded back into the same processor.\n";
   }
 
   const std::string description() const override
