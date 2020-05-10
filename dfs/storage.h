@@ -1,6 +1,7 @@
 #ifndef INC_STORAGE_H
 #define INC_STORAGE_H 1
 
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -8,6 +9,7 @@
 
 #include "dfsimage.h"
 #include "dfstypes.h"
+#include "media.h"
 
 namespace DFS
 {
@@ -16,11 +18,14 @@ namespace DFS
      MAX_DRIVES = 4
     };
 
+
+  class FileSystem;
+
   class StorageConfiguration
   {
   public:
     StorageConfiguration() {}
-    bool connect_drive(const std::string& name);
+    bool connect_drive(std::unique_ptr<AbstractDrive>&&);
 
     bool is_drive_connected(unsigned drive) const
     {
@@ -34,9 +39,9 @@ namespace DFS
       return drives_.size();
     }
 
-    bool select_drive_by_number(const std::string& drive_arg, const FileSystemImage **pim) const;
-    bool select_drive_by_afsp(const std::string& drive_arg, const FileSystemImage **pim, int current) const;
-    bool select_drive(unsigned int drive, const FileSystemImage **pim) const;
+    bool select_drive_by_number(const std::string& drive_arg, AbstractDrive **pp) const;
+    bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, int current) const;
+    bool select_drive(unsigned int drive, AbstractDrive **pp) const;
 
     void show_drive_configuration(std::ostream& os) const
     {
@@ -49,17 +54,14 @@ namespace DFS
 	  auto image = drives_[drive].get();
 	  if (0 != image)
 	    {
-	      os << ", " << image->disc_format() << " format, "
-		 << image->disc_sector_count() << " sectors";
+	      os << ", " << image->description();
 	    }
 	  os << "\n";
 	}
     }
 
   private:
-    bool connect_single(const byte* data, const byte* end);
-    bool connect_double(const byte* data, const byte* end);
-    std::array<std::unique_ptr<FileSystemImage>, MAX_DRIVES> drives_;
+    std::array<std::unique_ptr<AbstractDrive>, MAX_DRIVES> drives_;
   };
 }
 

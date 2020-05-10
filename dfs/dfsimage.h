@@ -3,22 +3,20 @@
 
 #include <algorithm>
 #include <exception>
+#include <functional>
 #include <vector>
 #include <string>
 #include <utility>
 
 #include "dfscontext.h"
 #include "dfstypes.h"
+#include "media.h"
 #include "stringutil.h"
 #include "fsp.h"
+#include "storage.h"
 
 namespace DFS
 {
-  enum
-  {
-   SECTOR_BYTES = 256
-  };
-
 enum class Format
   {
    HDFS,
@@ -27,13 +25,13 @@ enum class Format
    Solidisk,
    // I have no documentation for Opus's format.
   };
- Format identify_format(const std::vector<byte>& image);
- std::string format_name(Format f);
+  Format identify_format(AbstractDrive* device);
+  std::string format_name(Format f);
 
-class BadFileSystemImage : public std::exception
+class BadFileSystem : public std::exception
 {
  public:
- BadFileSystemImage(const std::string& msg)
+ BadFileSystem(const std::string& msg)
    : error_message_(std::string("bad disk image: ") + msg)
     {
     }
@@ -53,31 +51,32 @@ class BadFileSystemImage : public std::exception
 class CatalogEntry
 {
 public:
-  CatalogEntry(std::vector<byte>::const_iterator image_data, int slot, Format fmt);
-  CatalogEntry(const CatalogEntry& other);
+  CatalogEntry(AbstractDrive* media, int slot, Format fmt);
+  CatalogEntry(const CatalogEntry& other) = default;
   bool has_name(const ParsedFileName&) const;
-  inline unsigned char getbyte(unsigned int sector, unsigned short record_off) const
-  {
-    return data_[sector * 0x100 + record_off + cat_offset_];
-  }
-
-  inline unsigned long getword(unsigned int sector, unsigned short record_off) const
-  {
-    return getbyte(sector, record_off) | (getbyte(sector, record_off + 1) << 8);
-  }
 
   std::string name() const;
   char directory() const;
 
   bool is_locked() const
   {
-    return (1 << 7) & data_[cat_offset_ + 0x07];
+    return (1 << 7) & raw_name_[0x07];
   }
 
+  unsigned short metadata_byte(unsigned offset) const
+  {
+    return raw_metadata_[offset];
+  }
+
+  unsigned short metadata_word(unsigned offset) const
+  {
+    return (raw_metadata_[offset+1] << 8) | raw_metadata_[offset];
+  }
+  
   unsigned long load_address() const
   {
-    unsigned long address = getword(1, 0x00);
-    address |= ((getbyte(1, 0x06) >> 2) & 3) << 16;
+    unsigned long address = metadata_word(0);
+    address |= ((metadata_byte(6) >> 2) & 3) << 16;
     // On Solidisk there is apparently a second copy of bits 16 and 17
     // of the load address, but we only need one copy.
     return address;
@@ -85,35 +84,36 @@ public:
 
   unsigned long exec_address() const
   {
-    return getword(1, 0x02)
-      | ((getbyte(1, 0x06) >> 6) & 3) << 16;
+    return metadata_word(0x02) | ((metadata_byte(0x06) >> 6) & 3) << 16;
   }
 
   unsigned long file_length() const
   {
-    return getword(1, 0x4)
-      | ((getbyte(1, 0x06) >> 4) & 3) << 16;
+    return metadata_word(4) | ((metadata_byte(6) >> 4) & 3) << 16;
   }
 
   unsigned short start_sector() const
   {
-    return getbyte(1, 0x07) | ((getbyte(1, 0x06) & 3) << 8);
+    return metadata_byte(7) | ((metadata_byte(6) & 3) << 8);
   }
 
+  unsigned short last_sector() const;
+  
 private:
-  std::vector<byte>::const_iterator data_;
-  offset cat_offset_;
+  std::array<byte, 8> raw_name_;
+  std::array<byte, 8> raw_metadata_;
   Format fmt_;
 };
 
-// FileSystemImage is an image of a single file system (as opposed to a wrapper
-// around a disk image file.  For DFS file systems, FileSystemImage usually
+// FileSystem is an image of a single file system (as opposed to a wrapper
+// around a disk image file.  For DFS file systems, FileSystem usually
 // represents a side of a disk.
-class FileSystemImage
+class FileSystem
 {
 public:
- explicit FileSystemImage(const std::vector<byte>& disc_image)
-    : img_(disc_image), disc_format_(identify_format(disc_image))
+ explicit FileSystem(AbstractDrive* drive)
+    : media_(drive),
+      disc_format_(identify_format(drive))
   {
   }
 
@@ -121,14 +121,14 @@ public:
 
   inline int opt_value() const
   {
-    return (img_[0x106] >> 4) & 0x03;
+    return (get_byte(1, 0x06) >> 4) & 0x03;
   }
 
   inline int cycle_count() const
   {
     if (disc_format_ != Format::HDFS)
       {
-	return int(img_[0x104]);
+	return int(get_byte(1, 0x04));
       }
     return -1;				  // signals an error
   }
@@ -140,21 +140,21 @@ public:
 
   CatalogEntry get_catalog_entry(int index) const
   {
-    // TODO: bounds checking
-    return CatalogEntry(img_.cbegin(), index, disc_format());
+    return CatalogEntry(media_, index, disc_format());
   }
 
   sector_count_type disc_sector_count() const
   {
-    sector_count_type result = img_[0x107];
-    result |= (img_[0x106] & 3) << 8;
+    const auto title_initial = get_byte(0, 0);
+    sector_count_type result = get_byte(1, 0x07);
+    result |= (get_byte(1, 0x06) & 3) << 8;
     if (disc_format_ == Format::HDFS)
       {
 	// http://mdfs.net/Docs/Comp/Disk/Format/DFS disagrees with
 	// the HDFS manual on this (the former states both that this
 	// bit is b10 of the total sector count and that it is b10 of
 	// the start sector).  We go with what the HDFS manual says.
-	result |= img_[0] & (1 << 7);
+	result |= title_initial & (1 << 7);
       }
     return result;
   }
@@ -166,9 +166,12 @@ public:
 
   int find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const;
   std::pair<const byte*, const byte*> file_body(int slot) const;
+  bool visit_file_body_piecewise(int slot,
+				 std::function<bool(const byte* begin, const byte *end)> visitor) const;
 
 private:
-  std::vector<byte> img_;
+  byte get_byte(sector_count_type sector, unsigned offset) const;
+  AbstractDrive* media_;
   Format disc_format_;
 };
 

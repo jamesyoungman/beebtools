@@ -13,14 +13,18 @@ install(TARGETS dfs
   DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 
 set(HEADERS
-  dfscontext.h
   afsp.h
-  fsp.h
-  regularexpression.h
+  commands.h
+  dfscontext.h
+  dfs.h
   dfsimage.h
-  storage.h
   dfstypes.h
-  commands.h)
+  fsp.h
+  media.h
+  regularexpression.h
+  storage.h
+  stringutil.h
+  )
 
 target_sources(dfs
   PRIVATE
@@ -36,6 +40,7 @@ target_sources(dfs
   commands.cc
   dfsimage.cc
   main.cc
+  media.cc
   storage.cc
   fsp.cc
   afsp.cc

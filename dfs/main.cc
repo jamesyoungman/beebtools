@@ -8,6 +8,7 @@
 
 #include "commands.h"
 #include "dfs.h"
+#include "media.h"
 
 namespace
 {
@@ -156,7 +157,7 @@ int main (int argc, char *argv[])
 	case OPT_IMAGE_FILE:
 	  try
 	    {
-	      storage.connect_drive(optarg);
+	      storage.connect_drive(DFS::make_image_file(optarg));
 	    }
 	  catch (std::exception& e)
 	    {
@@ -226,4 +227,5 @@ int main (int argc, char *argv[])
       return 1;
     }
 };
+
 

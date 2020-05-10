@@ -4,6 +4,26 @@
 #include <vector>
 #include <string>
 
+namespace 
+{
+  void read_file_body(const DFS::FileSystem *fs,
+		      unsigned int slot,
+		      std::vector<DFS::byte>* body) 
+  {
+    using DFS::byte;
+    using std::copy;
+    fs->visit_file_body_piecewise(slot, [body]
+				  (const byte* begin, const byte* end)
+					{
+					  copy(begin, end,
+					       std::back_inserter(*body));
+					  return true;
+					});
+  }
+
+}  // namespace
+
+
 namespace DFS
 {
   CommandInterface* CIReg::get_command(const std::string& name)
@@ -55,19 +75,24 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   ParsedFileName name;
   if (!parse_filename(ctx, args[1], &name))
     return false;
-  const FileSystemImage *image;
-  if (!storage.select_drive(name.drive, &image))
+
+
+
+  DFS::AbstractDrive *drive;
+  if (!storage.select_drive(name.drive, &drive))
     return false;
-  assert(image != 0);
-  const int slot = image->find_catalog_slot_for_name(ctx, name);
+  assert(drive != 0);
+  const DFS::FileSystem file_system(drive);
+  const int slot = file_system.find_catalog_slot_for_name(ctx, name);
   if (-1 == slot)
     {
       std::cerr << args[1] << ": not found\n";
       return false;
     }
-  auto [start, end] = image->file_body(slot);
+  std::vector<DFS::byte> body;
+  read_file_body(&file_system, slot, &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
-  return logic(start, end, tail);
+  return logic(body.data(), body.data() + body.size(), tail);
 }
 
 }  // namespace DFS

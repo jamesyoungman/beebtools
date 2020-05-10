@@ -69,11 +69,6 @@ public:
 	     << (args.size() - 1) << ")\n";
 	return false;
       }
-    const DFS::FileSystemImage *image;
-    if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
-      return false;
-    assert(image != 0);
-
     std::string error_message;
     std::unique_ptr<DFS::AFSPMatcher> matcher =
       DFS::AFSPMatcher::make_unique(ctx, args[1], &error_message);
@@ -83,14 +78,21 @@ public:
 	return false;
       }
 
-    const int entries = image->catalog_entry_count();
+    DFS::AbstractDrive *drive;
+    if (!storage.select_drive_by_afsp(args[1], &drive, ctx.current_drive))
+      return false;
+    assert(drive != 0);
+    const DFS::FileSystem file_system(drive);
+    const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
+
+    const int entries = fs->catalog_entry_count();
     cout << std::hex;
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
     for (int i = 1; i <= entries; ++i)
       {
-	const auto& entry = image->get_catalog_entry(i);
+	const auto& entry = fs->get_catalog_entry(i);
 	const std::string full_name = std::string(1, entry.directory()) + "." + entry.name();
 #if VERBOSE_FOR_TESTS
 	std::cerr << "info: directory is '" << entry.directory() << "'\n";

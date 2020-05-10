@@ -9,6 +9,7 @@
 
 #include "dfs.h"
 #include "dfsimage.h"
+#include "media.h"
 #include "storage.h"
 #include "stringutil.h"
 
@@ -89,19 +90,23 @@ public:
     string dest_dir(args[1]);
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
-    const DFS::FileSystemImage* image;
-    if (!storage.select_drive(ctx.current_drive, &image))
+    
+    DFS::AbstractDrive *drive;
+    if (!storage.select_drive(ctx.current_drive, &drive))
       {
 	cerr << "failed to select current drive " << ctx.current_drive << "\n";
 	return false;
       }
+    const DFS::FileSystem file_system(drive);
+    const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
+    std::vector<DFS::byte> file_body;
 
-    const int entries = image->catalog_entry_count();
+    const int entries = fs->catalog_entry_count();
     for (int i = 1; i <= entries; ++i)
       {
-	const auto& entry = image->get_catalog_entry(i);
-	auto [start, end] = image->file_body(i);
-
+	file_body.clear();
+	const auto& entry = fs->get_catalog_entry(i);
+	DFS::CRC crc;
 	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
 	string output_basename;
 	if (entry.directory() == ctx.current_directory)
@@ -115,18 +120,28 @@ public:
 	const string output_body_file = dest_dir + output_basename;
 
 	std::ofstream outfile(output_body_file, std::ofstream::out);
-	outfile.write(reinterpret_cast<const char*>(start),
-		      end - start);
-	outfile.close();
-	if (!outfile.good())
-	  {
-	    std::cerr << output_body_file << ": " << strerror(errno) << "\n";
-	    return false;
-	  }
 
-	unsigned long crc = DFS::compute_crc(start, end);
+	auto ok = fs->visit_file_body_piecewise(i, [&crc, &outfile, &output_body_file]
+						(const DFS::byte* begin,
+						 const DFS::byte* end)
+						   {
+						     crc.update(begin, end);
+						     outfile.write(reinterpret_cast<const char*>(begin),
+								   end - begin);
+						     if (!outfile) 
+						       {
+							 std::cerr << output_body_file
+								   << ": "
+								   << strerror(errno) << "\n";
+							 return false;
+						       }
+						     return true;
+						   });
+	outfile.close();
+	if (!ok)
+	  return false;
 	const string inf_file_name = output_body_file + ".inf";
-	if (!create_inf_file(inf_file_name, crc, entry))
+	if (!create_inf_file(inf_file_name, crc.get(), entry))
 	  {
 	    std::cerr << inf_file_name << ": " << strerror(errno) << "\n";
 	    return false;

@@ -49,16 +49,23 @@ namespace DFS
       }
   }
 
-  unsigned long compute_crc(const DFS::byte* start, const DFS::byte *end)
+  CRC::CRC()
+    : crc_(0uL) {}
+
+  void CRC::update(const DFS::byte* start, const DFS::byte *end)
   {
-    unsigned long crc = 0;
     for (const DFS::byte* p = start; p < end; ++p)
       {
-	crc ^= *p++ << 8;
+	crc_ ^= *p++ << 8;
 	for(int k = 0; k < 8; k++)
-	  crc = crc_cycle(crc);
-	assert((crc & ~0xFFFF) == 0);
+	  crc_ = crc_cycle(crc_);
+	assert((crc_ & ~0xFFFF) == 0);
       }
-    return crc;
   }
+
+  unsigned long CRC::get() const 
+  {
+    return crc_;
+  }
+  
 }  // namespace DFS

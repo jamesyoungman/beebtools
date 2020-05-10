@@ -46,7 +46,7 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
-    const DFS::FileSystemImage *image;
+    DFS::AbstractDrive *drive;
     if (args.size() > 2)
       {
 	std::cerr << "at most one command-line argument is needed.\n";
@@ -54,21 +54,22 @@ public:
       }
     if (args.size() < 2)
       {
-	if (!storage.select_drive(ctx.current_drive, &image))
+	if (!storage.select_drive(ctx.current_drive, &drive))
 	  return false;
       }
     else
       {
-	if (!storage.select_drive_by_number(args[1], &image))
+	if (!storage.select_drive_by_number(args[1], &drive))
 	  return false;
       }
-    assert(image != 0);
+    const DFS::FileSystem file_system(drive);
+    const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
 
     int sectors_used = 2;
-    const int entries = image->catalog_entry_count();
+    const int entries = fs->catalog_entry_count();
     for (int i = 1; i <= entries; ++i)
       {
-	const auto& entry = image->get_catalog_entry(i);
+	const auto& entry = fs->get_catalog_entry(i);
 	ldiv_t division = ldiv(entry.file_length(), DFS::SECTOR_BYTES);
 	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
 	const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
@@ -77,8 +78,8 @@ public:
 	    sectors_used = last_sector_of_file;
 	  }
       }
-    int files_free = image->max_file_count() - image->catalog_entry_count();
-    int sectors_free = image->disc_sector_count() - sectors_used;
+    int files_free = fs->max_file_count() - fs->catalog_entry_count();
+    int sectors_free = fs->disc_sector_count() - sectors_used;
     std::cout << std::uppercase;
     auto show = [](int files, int sectors, const std::string& desc)
 		{
@@ -94,7 +95,7 @@ public:
     auto prevlocale = std::cout.imbue(std::locale(std::cout.getloc(),
 					     new comma_thousands)); // takes ownership
     show(files_free, sectors_free, "Free");
-    show(image->catalog_entry_count(), sectors_used, "Used");
+    show(fs->catalog_entry_count(), sectors_used, "Used");
     std::cout.imbue(prevlocale);
     return true;
   }
