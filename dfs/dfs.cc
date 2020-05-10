@@ -1,34 +1,7 @@
 #include <assert.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include <algorithm>
-#include <exception>
-#include <fstream>
-#include <functional>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <set>
-#include <vector>
-
-#include "afsp.h"
-#include "commands.h"
 #include "dfs.h"
-#include "dfscontext.h"
-#include "dfsimage.h"
-#include "fsp.h"
-#include "stringutil.h"
 
-using std::cerr;
-using std::cout;
-using std::string;
-using std::vector;
-
-using DFS::byte;
-using DFS::offset;
 
 namespace 
 {
@@ -43,10 +16,6 @@ namespace
 
 namespace DFS
 {
-using stringutil::rtrim;
-using stringutil::case_insensitive_equal;
-using stringutil::case_insensitive_less;
-
   unsigned long sign_extend(unsigned long address)
   {
     /*
@@ -80,10 +49,10 @@ using stringutil::case_insensitive_less;
       }
   }
 
-  unsigned long compute_crc(const byte* start, const byte *end)
+  unsigned long compute_crc(const DFS::byte* start, const DFS::byte *end)
   {
     unsigned long crc = 0;
-    for (const byte* p = start; p < end; ++p)
+    for (const DFS::byte* p = start; p < end; ++p)
       {
 	crc ^= *p++ << 8;
 	for(int k = 0; k < 8; k++)
