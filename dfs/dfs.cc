@@ -797,7 +797,7 @@ int main (int argc, char *argv[])
 	{
 	  storage.show_drive_configuration(std::cerr);
 	}
-      return (*instance)(storage, ctx, extra_args) ? 1 : 0;
+      return (*instance)(storage, ctx, extra_args) ? 0 : 1;
     }
   catch (std::exception& e)
     {
