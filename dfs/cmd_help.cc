@@ -33,6 +33,7 @@ namespace DFS
 			       const DFS::DFSContext&,
 			       const std::vector<std::string>& args)
   {
+    const auto& option_help = get_option_help();
     const int max_command_name_len = 11;
     if (args.size() < 2)
       {
@@ -49,11 +50,11 @@ namespace DFS
 	     << "\n"
 	     << "Global options:\n";
 	std::string::size_type max_option_len = 0;
-	for (const auto& h : DFS::option_help)
+	for (const auto& h : option_help)
 	  {
 	    max_option_len = std::max(max_option_len, h.first.size());
 	  }
-	for (const auto& h : DFS::option_help)
+	for (const auto& h : option_help)
 	  {
 	    cout << "--" << std::left << std::setw(max_option_len)
 		 << h.first << ": " << h.second << "\n";

@@ -39,6 +39,7 @@ namespace
 
   bool check_consistency()
   {
+    const auto& option_help = DFS::get_option_help();
     bool ok = true;
     std::set<std::string> global_opt_names;
     // Check that all global options have a help string.
@@ -47,19 +48,19 @@ namespace
 	if (opt.name == 0)
 	  break;
 	global_opt_names.insert(opt.name);
-	auto it = DFS::option_help.find(opt.name);
-	if (it == DFS::option_help.end())
+	auto it = option_help.find(opt.name);
+	if (it == option_help.end())
 	  {
 	    std::cerr << "option_help lacks entry for --" << opt.name << "\n";
 	    ok = false;
 	  }
       }
     // Check that all option help strings match a global option.
-    for (const auto& h : DFS::option_help)
+    for (const auto& h : option_help)
       {
 	if (global_opt_names.find(h.first) == global_opt_names.end())
 	  {
-	    std::cerr << "option_help has entry for "
+	    std::cerr << "help has entry for "
 		      << h.first << " but that's not an actual option "
 		      << "in global_opts.\n";
 	    ok = false;
@@ -103,19 +104,34 @@ namespace
     return std::make_pair(ok, static_cast<int>(v));
   }
 
+std::unique_ptr<std::map<std::string, std::string>> option_help;
 
+std::unique_ptr<std::map<std::string, std::string>> make_option_help()
+{
+  const std::map<std::string, std::string>
+    m({
+       {"file", "the name of the DFS image file to read"},
+       {"dir", "the default directory (if unspecified, use $)"},
+       {"drive", "the default drive (if unspecified, use 0)"},
+       {"show-config", "show the storage configuraiton before "
+	"performing the operation"},
+       {"help", "print a brief explanation of how to use the program"}
+      });
+  return std::make_unique<std::map<std::string, std::string>>(m);
+}
+  
 }  // namespace
 
 namespace DFS 
 {
-  const std::map<std::string, std::string> option_help =
-    {
-     {"file", "the name of the DFS image file to read"},
-     {"dir", "the default directory (if unspecified, use $)"},
-     {"drive", "the default drive (if unspecified, use 0)"},
-     {"show-config", "show the storage configuraiton before performing the operation"},
-     {"help", "print a brief explanation of how to use the program"},
-    };
+  const std::map<std::string, std::string>& get_option_help() 
+  {
+    if (!option_help) 
+      {
+	option_help = make_option_help();
+      }
+    return *(option_help.get());
+  }
 }  // namespace DFS
 
 int main (int argc, char *argv[])

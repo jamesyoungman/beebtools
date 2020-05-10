@@ -9,7 +9,7 @@
 namespace DFS {
   unsigned long sign_extend(unsigned long address);
   unsigned long compute_crc(const byte* start, const byte *end);
-  extern const std::map<std::string, std::string> option_help;
+  const std::map<std::string, std::string>& get_option_help();
 }  // namespace DFS
 
 #endif
