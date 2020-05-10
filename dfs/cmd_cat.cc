@@ -176,15 +176,3 @@ namespace
 
   REGISTER_COMMAND(CommandCat);
 }
-
-namespace DFS
-{
-
-bool cmd_cat(const StorageConfiguration& storage, const DFSContext& ctx,
-	     const vector<string>& args)
-{
-  auto instance = CIReg::get_command("cat");
-  return (*instance)(storage, ctx, args);
-}
-
-}  // namespace DFS
