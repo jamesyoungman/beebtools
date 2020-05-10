@@ -26,6 +26,7 @@ target_sources(dfs
   PRIVATE
   dfs.cc
   cmd_cat.cc
+  cmd_dump.cc
   cmd_type.cc
   cmd_list.cc
   commands.cc

@@ -63,7 +63,7 @@ char CatalogEntry::directory() const
   return 0x7F & (data_[cat_offset_ + 0x07]);
 }
 
-bool CatalogEntry::has_name(const ParsedFileName& wanted) const 
+bool CatalogEntry::has_name(const ParsedFileName& wanted) const
 {
   if (wanted.dir != directory())
     {
@@ -83,7 +83,7 @@ bool CatalogEntry::has_name(const ParsedFileName& wanted) const
     }
   return true;
 }
-  
+
 
 std::string FileSystemImage::title() const
 {

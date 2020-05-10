@@ -33,8 +33,6 @@ using DFS::offset;
 
 namespace
 {
-  const long int HexdumpStride = 8;
-
   enum OptSignifier
     {
      OPT_IMAGE_FILE = SCHAR_MIN,
@@ -88,29 +86,6 @@ namespace
   inline offset sector(int sector_num)
   {
     return DFS::SECTOR_BYTES * sector_num;
-  }
-
-  bool hexdump_bytes(size_t pos, size_t len, const byte* data)
-  {
-    cout << std::setw(6) << std::setfill('0') << pos;
-    for (size_t i = 0; i < HexdumpStride; ++i)
-      {
-	if (i < len)
-	  cout << ' ' << std::setw(2) << std::setfill('0') << unsigned(data[pos + i]);
-	else
-	  cout << std::setw(3) << std::setfill(' ') << ' ';
-      }
-    cout << ' ';
-    for (size_t i = 0; i < len; ++i)
-      {
-	const char ch = data[pos + i];
-	if (isgraph(ch))
-	  cout << ch;
-	else
-	  cout << '.';
-      }
-    cout << '\n';
-    return true;
   }
 
   unsigned long sign_extend(unsigned long address)
@@ -264,49 +239,6 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
 }
 
 
-
-class CommandDump : public CommandInterface // *DUMP
-{
-public:
-  const std::string name() const override
-    {
-      return "dump";
-    }
-
-    const std::string usage() const override
-    {
-      return "usage: dump filename\n";
-    }
-
-    const std::string description() const override
-    {
-      return "displays the contents of a file in both hex and printable characters";
-    }
-
-    bool operator()(const DFS::StorageConfiguration& storage,
-		    const DFS::DFSContext& ctx,
-		    const std::vector<std::string>& args) override
-    {
-      return body_command(storage, ctx, args,
-			  [](const byte* body_start,
-			     const byte *body_end,
-			     const vector<string>&)
-			  {
-			    std::cout << std::hex;
-			    assert(body_end > body_start);
-			    size_t len = body_end - body_start;
-			    for (size_t pos = 0; pos < len; pos += HexdumpStride)
-			      {
-				auto avail = (pos + HexdumpStride > len) ? (len - pos) : HexdumpStride;
-
-				if (!hexdump_bytes(pos, avail, body_start))
-				  return false;
-			      }
-			    return true;
-			  });
-    }
-};
-REGISTER_COMMAND(CommandDump);
 
 class CommandExtractAll : public CommandInterface
 {
@@ -793,7 +725,7 @@ int main (int argc, char *argv[])
 
   try
     {
-      if (show_config) 
+      if (show_config)
 	{
 	  storage.show_drive_configuration(std::cerr);
 	}
