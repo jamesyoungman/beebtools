@@ -32,36 +32,13 @@ using DFS::offset;
 
 namespace 
 {
-
-  const int max_command_name_len = 11;
-
-  inline char byte_to_char(byte b)
-  {
-    return char(b);
-  }
-
-  inline string extract_string(const vector<byte>& image,
-			       offset position, offset size)
-  {
-    std::string result;
-    std::transform(image.begin()+position, image.begin()+position+size,
-		   std::back_inserter(result), byte_to_char);
-    return result;
-  }
-
-  inline offset sector(int sector_num)
-  {
-    return DFS::SECTOR_BYTES * sector_num;
-  }
-
-  inline unsigned long cycle(unsigned long crc)
+  inline unsigned long crc_cycle(unsigned long crc)
   {
     if (crc & 32768)
       return  (((crc ^ 0x0810) & 32767) << 1) + 1;
     else
       return crc << 1;
   }
-
 }  // namespace
 
 namespace DFS
@@ -110,7 +87,7 @@ using stringutil::case_insensitive_less;
       {
 	crc ^= *p++ << 8;
 	for(int k = 0; k < 8; k++)
-	  crc = cycle(crc);
+	  crc = crc_cycle(crc);
 	assert((crc & ~0xFFFF) == 0);
       }
     return crc;
