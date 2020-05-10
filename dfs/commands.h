@@ -83,7 +83,7 @@ bool cmd_list(const StorageConfiguration& config, const DFSContext& ctx,
 		    const std::vector<std::string>& args) override;
   };
 
-  
+
 }  // namespace DFS
 
 #endif

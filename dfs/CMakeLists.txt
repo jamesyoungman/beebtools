@@ -35,6 +35,7 @@ target_sources(dfs
   cmd_list.cc
   commands.cc
   dfsimage.cc
+  main.cc
   storage.cc
   fsp.cc
   afsp.cc

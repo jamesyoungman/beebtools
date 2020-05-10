@@ -69,5 +69,5 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(start, end, tail);
 }
-  
+
 }  // namespace DFS
