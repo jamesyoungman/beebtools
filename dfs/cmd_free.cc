@@ -6,8 +6,8 @@
 #include <string>
 
 #include "dfsimage.h"
-	     
-namespace 
+
+namespace
 {
 struct comma_thousands : std::numpunct<char>
 {

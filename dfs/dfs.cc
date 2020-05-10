@@ -42,8 +42,6 @@ namespace
      OPT_HELP,
     };
 
-  const int max_command_name_len = 11;
-
   // struct option fields: name, has_arg, *flag, val
   const struct option global_opts[] =
     {
@@ -60,14 +58,8 @@ namespace
      { "help", 0, NULL, OPT_HELP },
      { 0, 0, 0, 0 },
     };
-  const std::map<string,string> option_help =
-    {
-     {"file", "the name of the DFS image file to read"},
-     {"dir", "the default directory (if unspecified, use $)"},
-     {"drive", "the default drive (if unspecified, use 0)"},
-     {"show-config", "show the storage configuraiton before performing the operation"},
-     {"help", "print a brief explanation of how to use the program"},
-    };
+
+  const int max_command_name_len = 11;
 
   inline char byte_to_char(byte b)
   {
@@ -130,6 +122,38 @@ namespace
 	      }();
     return std::make_pair(ok, static_cast<int>(v));
   }
+
+bool check_consistency()
+{
+  bool ok = true;
+  std::set<std::string> global_opt_names;
+  // Check that all global options have a help string.
+  for (const auto& opt : global_opts)
+    {
+      if (opt.name == 0)
+	break;
+      global_opt_names.insert(opt.name);
+      auto it = DFS::option_help.find(opt.name);
+      if (it == DFS::option_help.end())
+	{
+	  std::cerr << "option_help lacks entry for --" << opt.name << "\n";
+	  ok = false;
+	}
+    }
+  // Check that all option help strings match a global option.
+  for (const auto& h : DFS::option_help)
+    {
+      if (global_opt_names.find(h.first) == global_opt_names.end())
+	{
+	  std::cerr << "option_help has entry for "
+		    << h.first << " but that's not an actual option "
+		    << "in global_opts.\n";
+	  ok = false;
+	}
+    }
+  return ok;
+}
+
 }  // namespace
 
 namespace DFS
@@ -217,132 +241,24 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   return logic(start, end, tail);
 }
 
+  
+  const std::map<string,string> option_help =
+    {
+     {"file", "the name of the DFS image file to read"},
+     {"dir", "the default directory (if unspecified, use $)"},
+     {"drive", "the default drive (if unspecified, use 0)"},
+     {"show-config", "show the storage configuraiton before performing the operation"},
+     {"help", "print a brief explanation of how to use the program"},
+    };
 
 
-class CommandHelp : public CommandInterface
-{
-public:
-  const std::string name() const override
-  {
-    return "help";
-  }
-
-  const std::string usage() const override
-  {
-    return name() + " [command]...\n";
-  }
-
-  const std::string description() const override
-  {
-    return "explain how to use one or more commands";
-  }
-
-  static bool check_consistency()
-  {
-    bool ok = true;
-    std::set<string> global_opt_names;
-    // Check that all global options have a help string.
-    for (const auto& opt : global_opts)
-      {
-	if (opt.name == 0)
-	  break;
-	global_opt_names.insert(opt.name);
-	auto it = option_help.find(opt.name);
-	if (it == option_help.end())
-	  {
-	    std::cerr << "option_help lacks entry for --" << opt.name << "\n";
-	    ok = false;
-	  }
-      }
-    // Check that all option help strings match a global option.
-    for (const auto& h : option_help)
-      {
-	if (global_opt_names.find(h.first) == global_opt_names.end())
-	  {
-	    std::cerr << "option_help has entry for "
-		      << h.first << " but that's not an actual option "
-		      << "in global_opts.\n";
-	    ok = false;
-	  }
-      }
-    return ok;
-  }
-
-  bool operator()(const DFS::StorageConfiguration&,
-		  const DFS::DFSContext&,
-		  const std::vector<std::string>& args) override
-  {
-    const int max_command_name_len = 11;
-    if (args.size() < 2)
-      {
-	cout << "usage: dfs [global-options] command [command-options] [command-arguments]\n"
-	     << "\n"
-	     << "This is a program for extracting information from Acorn DFS disc images.\n"
-	     << "\n"
-	     << "The global options affect almost all commands.  See below for details.\n"
-	     << "The command is a single word (for example dump, info) specifying what\n"
-	     << "action should be performed on one or more of the files within the DFS\n"
-	     << "disc image.  The command options modify the way the command works.\n"
-	     << "Most commands take no options.  The command-arguments typically specify\n"
-	     << "which files within the disc image will be selected.\n"
-	     << "\n"
-	     << "Global options:\n";
-	string::size_type max_option_len = 0;
-	for (const auto& h : option_help)
-	  {
-	    max_option_len = std::max(max_option_len, h.first.size());
-	  }
-	for (const auto& h : option_help)
-	  {
-	    cout << "--" << std::left << std::setw(max_option_len)
-		 << h.first << ": " << h.second << "\n";
-	  }
-	cout << "\n";
-
-	const string prefix = "      ";
-	cout << "Commands:\n";
-	auto show = [prefix, max_command_name_len](CommandInterface* c) -> bool
-		    {
-		      cout << prefix << std::setw(max_command_name_len)
-			   << std::left << c->name() << ": "
-			   << c->description() << "\n";
-		      return cout.good();
-		    };
-	auto ok = CIReg::visit_all_commands(show);
-	cout << "For help on any individual command, use \"help command-name\"\n";
-	return ok && cout.good();
-      }
-    else
-      {
-	for (unsigned int i = 1; i < args.size(); ++i)
-	  {
-	    auto instance = CIReg::get_command(args[i]);
-	    if (instance)
-	      {
-		cout << std::setw(args.size() > 2 ? max_command_name_len : 0)
-		     << std::left << args[i]
-		     << ": " << instance->description()
-		     << "\n" << instance->usage() << "\n";
-		if (!cout.good())
-		  return false;
-	      }
-	    else
-	      {
-		cerr << args[i] << " is not a known command.\n";
-		return false;
-	      }
-	  }
-	return true;
-      }
-  }
-};
-REGISTER_COMMAND(CommandHelp);
-
+  
 }  // namespace DFS
+
 
 int main (int argc, char *argv[])
 {
-  if (!DFS::CommandHelp::check_consistency())
+  if (!check_consistency())
     return 2;
   DFS::DFSContext ctx('$', 0);
   int longindex;

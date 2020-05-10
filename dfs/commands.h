@@ -70,6 +70,20 @@ extern std::map<std::string, Command> commands;
 bool cmd_list(const StorageConfiguration& config, const DFSContext& ctx,
 	      const std::vector<std::string>& args);
 
+
+  class CommandHelp : public CommandInterface
+  {
+  public:
+    const std::string name() const override;
+    const std::string usage() const override;
+    const std::string description() const override;
+    static bool check_consistency();
+    bool operator()(const DFS::StorageConfiguration&,
+		    const DFS::DFSContext&,
+		    const std::vector<std::string>& args) override;
+  };
+
+  
 }  // namespace DFS
 
 #endif

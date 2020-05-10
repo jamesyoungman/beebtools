@@ -16,7 +16,7 @@ using std::cerr;
 using std::string;
 using DFS::stringutil::rtrim;
 
-namespace 
+namespace
 {
   bool create_inf_file(const string& name,
 		       unsigned long crc,
@@ -39,7 +39,7 @@ namespace
     inf_file.close();
     return inf_file.good();
   }
-  
+
 class CommandExtractAll : public DFS::CommandInterface
 {
 public:
