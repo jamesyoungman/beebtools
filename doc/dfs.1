@@ -298,6 +298,22 @@ because \*(lq*\*(rq will not match \*(lq.\*(rq.
 Acorn DFS documentation sometimes refers to wildcards as
 .IR "ambiguous file specifications" .
 
+Implementations of DFS vary slightly in how wildcards work:
+
+
+.TS
+tab(|);
+lb lb
+l l.
+Implementation|Other character after * OK?
+Acorn DFS 0.90|No ("Bad filename")
+Acorn DFS 2.26|Yes
+Watford DDFS 1.53|Yes
+Opus DDOS 3.45|No ("Bad drive")
+Solidisk DOS 2.1|No ("Bad filename")
+This program, \fBdfs\fP(1)|Yes
+.TE
+
 .SH "DFS FILE METADATA"
 
 In DFS files have contents (i.e. the body of the file), a directory

@@ -100,6 +100,17 @@ namespace
      .         [.]   (matches only itself)
      x         [xX]  (alphabetic characters match their upper or lower case selves)
      4         [4]   (other characters match only themselves)
+
+     Some documentation claims that the Acorn DFS does not allow * in
+     a position other than at the end of the wildcard, but my testing
+     shows that this varies:
+     Acorn DFS 2.26 supports *INFO *2
+     Acorn DFS 0.90 does not (giving the error "Bad filename")
+
+     As for other vendors:
+     Watford DDFS 1.53 does support it
+     Opus DDOS 3.45 does not (giving the error "Bad drive")
+     Solidisk DOS 2.1 does not (giving the error "Bad filename")
   */
   bool convert_wildcard_into_extended_regex(const DFSContext& ctx, const string& wild,
 					    string* ere, string* error_message)
@@ -265,8 +276,6 @@ AFSPMatcher::make_unique(const DFSContext& ctx, const string& pattern, string *e
   AFSPMatcher::FactoryKey k;
   std::unique_ptr<AFSPMatcher> result = std::make_unique<AFSPMatcher>(k, ctx, pattern,
 								      error_message);
-  if (!result)
-    return std::move(result);
   if (!result->valid())
     result.reset();
   return std::move(result);
