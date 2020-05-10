@@ -731,7 +731,16 @@ int main (int argc, char *argv[])
 	  return 1;
 
 	case OPT_IMAGE_FILE:
-	  storage.connect_drive(optarg);
+	  try
+	    {
+	      storage.connect_drive(optarg);
+	    }
+	  catch (std::exception& e)
+	    {
+	      cerr << "cannot use image file " << optarg << ": "
+		   << e.what() << "\n";
+	      return 1;
+	    }
 	  break;
 
 	case OPT_CWD:
@@ -779,10 +788,19 @@ int main (int argc, char *argv[])
       cerr << "unknown command " << cmd_name << "\n";
       return 1;
     }
-  if (show_config) 
+
+  try
     {
-      storage.show_drive_configuration(std::cerr);
+      if (show_config) 
+	{
+	  storage.show_drive_configuration(std::cerr);
+	}
+      return (*instance)(storage, ctx, extra_args) ? 1 : 0;
     }
-  return (*instance)(storage, ctx, extra_args) ? 1 : 0;
+  catch (std::exception& e)
+    {
+      cerr << "error: " << e.what() << "\n";
+      return 1;
+    }
 };
 
