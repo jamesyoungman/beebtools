@@ -10,6 +10,7 @@
 #include "dfscontext.h"
 #include "dfstypes.h"
 #include "stringutil.h"
+#include "fsp.h"
 
 namespace DFS
 {
@@ -54,7 +55,7 @@ class CatalogEntry
 public:
   CatalogEntry(std::vector<byte>::const_iterator image_data, int slot, Format fmt);
   CatalogEntry(const CatalogEntry& other);
-
+  bool has_name(const ParsedFileName&) const;
   inline unsigned char getbyte(unsigned int sector, unsigned short record_off) const
   {
     return data_[sector * 0x100 + record_off + cat_offset_];
@@ -163,7 +164,7 @@ public:
     return disc_format_ == Format::WDFS ? 62 : 31;
   }
 
-  int find_catalog_slot_for_name(const DFSContext& ctx, const std::string& arg) const;
+  int find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const;
   std::pair<const byte*, const byte*> file_body(int slot) const;
 
 private:

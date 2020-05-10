@@ -63,6 +63,28 @@ char CatalogEntry::directory() const
   return 0x7F & (data_[cat_offset_ + 0x07]);
 }
 
+bool CatalogEntry::has_name(const ParsedFileName& wanted) const 
+{
+  if (wanted.dir != directory())
+    {
+#if VERBOSE_FOR_TESTS
+      std::cerr << "No match; " << wanted.dir << " != " << directory() << "\n";
+#endif
+      return false;
+    }
+
+  const std::string trimmed_name(stringutil::rtrim(name()));
+  if (!stringutil::case_insensitive_equal(wanted.name, trimmed_name))
+    {
+#if VERBOSE_FOR_TESTS
+      std::cerr << "No match; " << wanted.name << " != " << trimmed_name << "\n";
+#endif
+      return false;
+    }
+  return true;
+}
+  
+
 std::string FileSystemImage::title() const
 {
   std::vector<byte> title_data;
@@ -91,39 +113,14 @@ std::string FileSystemImage::title() const
       }
     return count;
   }
-int FileSystemImage::find_catalog_slot_for_name(const DFSContext& ctx, const std::string& arg) const
+
+int FileSystemImage::find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const
 {
-  auto [dir, name] = directory_and_name_of(ctx, arg);
-#if VERBOSE_FOR_TESTS
-  std::cerr << "find_catalog_slot_for_name: dir=" << dir << ", name=" << name << "\n";
-#endif
   const int entries = catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
     {
-      const auto& entry = get_catalog_entry(i);
-#if VERBOSE_FOR_TESTS
-      std::cerr << "Looking for " << arg << ", considering " << entry.directory()
-		<< "." << entry.name() << "\n";
-#endif
-      const std::string trimmed_name(stringutil::rtrim(entry.name()));
-
-      if (dir != entry.directory())
-	{
-#if VERBOSE_FOR_TESTS
-	  std::cerr << "No match; " << dir << " != " << entry.directory() << "\n";
-#endif
-	  continue;
-	}
-
-      if (!stringutil::case_insensitive_equal(name, trimmed_name))
-	{
-#if VERBOSE_FOR_TESTS
-	  std::cerr << "No match; " << name << " != " << trimmed_name << "\n";
-#endif
-	  continue;
-	}
-
-      return i;
+      if (get_catalog_entry(i).has_name(name))
+	return i;
     }
   return -1;
 }

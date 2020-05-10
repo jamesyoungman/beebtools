@@ -245,12 +245,14 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       // The Beeb ignores subsequent arguments.
       cerr << "warning: ignoring additional arguments.\n";
     }
+  ParsedFileName name;
+  if (!parse_filename(ctx, args[1], &name))
+    return false;
   const FileSystemImage *image;
-  if (!storage.select_drive_by_afsp(args[1], &image, ctx.current_drive))
+  if (!storage.select_drive(name.drive, &image))
     return false;
   assert(image != 0);
-
-  const int slot = image->find_catalog_slot_for_name(ctx, args[1]);
+  const int slot = image->find_catalog_slot_for_name(ctx, name);
   if (-1 == slot)
     {
       std::cerr << args[1] << ": not found\n";
