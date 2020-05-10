@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(beebtools)
 enable_testing()
+find_program(BOURNE_SHELL sh)
 add_subdirectory(basic)
 add_subdirectory(dfs)
 add_subdirectory(doc)

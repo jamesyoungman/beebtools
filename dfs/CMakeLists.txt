@@ -37,6 +37,8 @@ target_sources(dfs
   )
 target_link_libraries(dfs dfsbase)
 
+######################################## Unit Tests
+
 enable_testing()
 
 add_executable(test_afsp)
@@ -55,3 +57,17 @@ target_sources(test_stringutil
   stringutil.h)
 target_link_libraries(test_stringutil dfsbase)
 add_test(NAME dfs_test_stringutil_passes COMMAND test_stringutil)
+
+######################################## Regression Tests
+
+file(GLOB SH_TEST_SCRIPTS tests/test_*.sh)
+set(SH_TEST_CWD ${CMAKE_CURRENT_BINARY_DIR}/work)
+file(MAKE_DIRECTORY ${SH_TEST_CWD})
+
+foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
+  add_test(
+    NAME ${SH_TEST_SCRIPT}
+    COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/test_runner.sh
+    ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/testdata 
+    WORKING_DIRECTORY ${SH_TEST_CWD})
+endforeach()

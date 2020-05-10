@@ -23,7 +23,6 @@ add_executable(tokens_test tokens_test.c)
 target_link_libraries(tokens_test decoder)
 add_test(NAME basic_tokens_test_passes COMMAND tokens_test)
 
-find_program(BOURNE_SHELL sh)
 add_test(NAME basic_golden
   COMMAND
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/run_golden_tests.sh
