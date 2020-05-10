@@ -28,6 +28,7 @@ target_sources(dfs
   cmd_cat.cc
   cmd_dump.cc
   cmd_extract.cc
+  cmd_free.cc
   cmd_info.cc
   cmd_type.cc
   cmd_list.cc
