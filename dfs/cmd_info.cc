@@ -104,7 +104,7 @@ public:
 	load_addr = DFS::sign_extend(entry.load_address());
 	exec_addr = DFS::sign_extend(entry.exec_address());
 	cout << entry.directory() << "." << entry.name() << " "
-	     << (entry.is_locked() ? " L " : "   ")
+	     << (entry.is_locked() ? " L  " : "    ")
 	     << setw(6) << setfill('0') << load_addr << " "
 	     << setw(6) << setfill('0') << exec_addr << " "
 	     << setw(6) << setfill('0') << entry.file_length() << " "
