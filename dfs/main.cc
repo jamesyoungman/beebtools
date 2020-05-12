@@ -120,14 +120,14 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
       });
   return std::make_unique<std::map<std::string, std::string>>(m);
 }
-  
+
 }  // namespace
 
-namespace DFS 
+namespace DFS
 {
-  const std::map<std::string, std::string>& get_option_help() 
+  const std::map<std::string, std::string>& get_option_help()
   {
-    if (!option_help) 
+    if (!option_help)
       {
 	option_help = make_option_help();
       }

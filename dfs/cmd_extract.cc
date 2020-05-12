@@ -90,7 +90,7 @@ public:
     string dest_dir(args[1]);
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
-    
+
     DFS::AbstractDrive *drive;
     if (!storage.select_drive(ctx.current_drive, &drive))
       {
@@ -128,7 +128,7 @@ public:
 						     crc.update(begin, end);
 						     outfile.write(reinterpret_cast<const char*>(begin),
 								   end - begin);
-						     if (!outfile) 
+						     if (!outfile)
 						       {
 							 std::cerr << output_body_file
 								   << ": "

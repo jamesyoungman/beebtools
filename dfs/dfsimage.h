@@ -1,9 +1,12 @@
 #ifndef INC_DFSIMAGE_H
 #define INC_DFSIMAGE_H 1
 
+#include <assert.h>
+
 #include <algorithm>
 #include <exception>
 #include <functional>
+#include <optional>
 #include <vector>
 #include <string>
 #include <utility>
@@ -17,6 +20,13 @@
 
 namespace DFS
 {
+enum class BootSetting
+  {
+   None, Load, Run, Exec
+  };
+  std::string description(const BootSetting& opt);
+  int value(const BootSetting& opt);
+
 enum class Format
   {
    HDFS,
@@ -72,7 +82,7 @@ public:
   {
     return (raw_metadata_[offset+1] << 8) | raw_metadata_[offset];
   }
-  
+
   unsigned long load_address() const
   {
     unsigned long address = metadata_word(0);
@@ -98,11 +108,41 @@ public:
   }
 
   unsigned short last_sector() const;
-  
+
 private:
   std::array<byte, 8> raw_name_;
   std::array<byte, 8> raw_metadata_;
   Format fmt_;
+};
+
+
+class FileSystemMetadata
+{
+public:
+  static Format identify_format(AbstractDrive* drive);
+  explicit FileSystemMetadata(AbstractDrive *drive);
+
+  Format format() const { return format_; }
+  std::string title() const { return title_; }
+  std::optional<byte> sequence_number() const
+  {
+    return sequence_number_;
+  }
+
+  unsigned int position_of_last_catalog_entry() const
+  {
+    return position_of_last_catalog_entry_;
+  }
+  BootSetting boot_setting() const { return boot_; }
+  unsigned int total_sectors() const { return total_sectors_; };
+
+private:
+  Format format_;
+  std::string title_;		// s0 0-7 + s1 0-3 incl.
+  std::optional<byte> sequence_number_;	// s1[4]
+  unsigned position_of_last_catalog_entry_; // s1[5]
+  BootSetting boot_;		// (s1[6] >> 3) & 3
+  unsigned total_sectors_;	// s1[7] | (s1[6] & 3) << 8
 };
 
 // FileSystem is an image of a single file system (as opposed to a wrapper
@@ -111,29 +151,24 @@ private:
 class FileSystem
 {
 public:
- explicit FileSystem(AbstractDrive* drive)
-    : media_(drive),
-      disc_format_(identify_format(drive))
-  {
-  }
+ explicit FileSystem(AbstractDrive* drive);
 
   std::string title() const;
 
-  inline int opt_value() const
+  inline BootSetting opt_value() const
   {
-    return (get_byte(1, 0x06) >> 4) & 0x03;
+    return metadata_.boot_setting();
   }
 
-  inline int cycle_count() const
+  inline std::optional<int> cycle_count() const
   {
-    if (disc_format_ != Format::HDFS)
-      {
-	return int(get_byte(1, 0x04));
-      }
-    return -1;				  // signals an error
+    return metadata_.sequence_number();
   }
 
-  inline Format disc_format() const { return disc_format_; }
+  inline Format disc_format() const
+  {
+    return metadata_.format();
+  }
 
   offset end_of_catalog() const;
   int catalog_entry_count() const;
@@ -145,23 +180,12 @@ public:
 
   sector_count_type disc_sector_count() const
   {
-    const auto title_initial = get_byte(0, 0);
-    sector_count_type result = get_byte(1, 0x07);
-    result |= (get_byte(1, 0x06) & 3) << 8;
-    if (disc_format_ == Format::HDFS)
-      {
-	// http://mdfs.net/Docs/Comp/Disk/Format/DFS disagrees with
-	// the HDFS manual on this (the former states both that this
-	// bit is b10 of the total sector count and that it is b10 of
-	// the start sector).  We go with what the HDFS manual says.
-	result |= title_initial & (1 << 7);
-      }
-    return result;
+    return metadata_.total_sectors();
   }
 
   int max_file_count() const
   {
-    return disc_format_ == Format::WDFS ? 62 : 31;
+    return disc_format() == Format::WDFS ? 62 : 31;
   }
 
   int find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const;
@@ -171,8 +195,8 @@ public:
 
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;
+  FileSystemMetadata metadata_;
   AbstractDrive* media_;
-  Format disc_format_;
 };
 
 }  // namespace DFS
@@ -180,8 +204,7 @@ private:
 namespace std
 {
   std::ostream& operator<<(std::ostream& os, const DFS::Format& f);
+  std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt);
 }
 
-
 #endif
-

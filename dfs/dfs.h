@@ -20,7 +20,7 @@ namespace DFS {
   private:
     unsigned long crc_;
   };
-  
+
 }  // namespace DFS
 
 #endif

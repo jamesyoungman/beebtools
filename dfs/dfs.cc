@@ -3,7 +3,7 @@
 #include "dfs.h"
 
 
-namespace 
+namespace
 {
   inline unsigned long crc_cycle(unsigned long crc)
   {
@@ -63,9 +63,9 @@ namespace DFS
       }
   }
 
-  unsigned long CRC::get() const 
+  unsigned long CRC::get() const
   {
     return crc_;
   }
-  
+
 }  // namespace DFS

@@ -19,18 +19,6 @@ namespace
   using DFS::FileSystem;
   using DFS::Format;
 
-  inline std::string decode_opt(DFS::byte opt)
-  {
-    switch (opt)
-      {
-      case 0: return "off";
-      case 1: return "load";
-      case 2: return "run";
-      case 3: return "exec";
-      }
-    return "?";
-  }
-
   class CommandCat : public DFS::CommandInterface
   {
   public:
@@ -79,18 +67,18 @@ namespace
 	}
       FileSystem file_system(drive);
       const FileSystem* fs = &file_system; // TODO: this is a bit untidy
-      
+
       cout << fs->title();
-      if (fs->disc_format() != Format::HDFS)
+      std::optional<int> cycle_count = fs->cycle_count();
+      if (cycle_count)
 	{
-	  cout << " ("  << std::setbase(16) << fs->cycle_count()
-	       << std::setbase(10) << ") FM";
+	  // HDFS uses this field for something else.
+	  cout << " ("  << std::setbase(16) << cycle_count.value() << ")";
 	}
-      cout << "\n";
+      cout << std::setbase(10) << " FM\n";
       const auto opt = fs->opt_value();
       cout << "Drive "<< ctx.current_drive
-	   << "            Option "
-	   << opt << " (" << decode_opt(opt) << ")\n";
+	   << "            Option " << opt << "\n";
       cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
 	   << "          "
 	   << "Lib. :0.$\n\n";

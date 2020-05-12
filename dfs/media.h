@@ -43,6 +43,6 @@ namespace DFS
   };
 
   std::unique_ptr<AbstractDrive> make_image_file(const std::string& file_name);
-  
-}  // namespace DFS  
+
+}  // namespace DFS
 #endif

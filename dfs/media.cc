@@ -10,7 +10,7 @@
 #include "dfstypes.h"
 #include "storage.h"
 
-namespace 
+namespace
 {
   class OsError : public std::exception
   {
@@ -45,7 +45,7 @@ namespace
     {
       get_file_size(*f_, &file_size_);
     }
-    
+
     virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf) override
     {
       errno = 0;
@@ -56,19 +56,19 @@ namespace
       if (!f_->read(reinterpret_cast<char*>(buf->data()), DFS::SECTOR_BYTES).good())
 	throw OsError(errno);
     }
-    
+
     DFS::sector_count_type get_total_sectors() const override
     {
       ldiv_t division = ldiv(file_size_, DFS::SECTOR_BYTES);
       return division.quot + (division.rem ? 1 : 0);
     }
-    
+
     std::string description() const override
     {
       return std::string("image file ") + name_;
     }
 
-    
+
 
   private:
     std::string name_;
@@ -113,7 +113,7 @@ namespace DFS
 	dsd_unsupported();
 	return failed;
       }
-    
+
     std::cerr << "Guessing whether " << name << " is a single- or a double-sided image based on the extension\n";
     switch (len)
       {
@@ -132,7 +132,7 @@ namespace DFS
 	return failed;
       }
   }
-  
-  
+
+
 }  // namespace DFS
 

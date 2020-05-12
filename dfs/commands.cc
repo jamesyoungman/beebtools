@@ -4,11 +4,11 @@
 #include <vector>
 #include <string>
 
-namespace 
+namespace
 {
   void read_file_body(const DFS::FileSystem *fs,
 		      unsigned int slot,
-		      std::vector<DFS::byte>* body) 
+		      std::vector<DFS::byte>* body)
   {
     using DFS::byte;
     using std::copy;
