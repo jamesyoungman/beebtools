@@ -83,11 +83,11 @@ public:
     std::cout << std::uppercase;
     auto show = [](int files, int sectors, const std::string& desc)
 		{
-		  std::cout << std::setw(2) << std::dec
+		  std::cout << std::setw(2) << std::setfill('0') << std::dec
 			    << files << " Files "
-			    << std::setw(3) << std::hex
+			    << std::setw(3) << std::setfill('0') << std::hex
 			    << sectors << " Sectors "
-			    << std::setw(7) << std::dec
+			    << std::setw(7) << std::setfill(' ') << std::dec
 			    << (sectors * DFS::SECTOR_BYTES)
 			    << " Bytes " << desc << "\n";
 		};
