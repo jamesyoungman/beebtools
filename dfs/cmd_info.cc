@@ -85,14 +85,14 @@ public:
     const DFS::FileSystem file_system(drive);
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
 
-    const int entries = fs->catalog_entry_count();
+    const int entries = fs->global_catalog_entry_count();
     cout << std::hex;
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
     for (int i = 1; i <= entries; ++i)
       {
-	const auto& entry = fs->get_catalog_entry(i);
+	const auto& entry = fs->get_global_catalog_entry(i);
 	const std::string full_name = std::string(1, entry.directory()) + "." + entry.name();
 #if VERBOSE_FOR_TESTS
 	std::cerr << "info: directory is '" << entry.directory() << "'\n";

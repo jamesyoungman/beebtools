@@ -64,12 +64,12 @@ namespace DFS
     return true;
   }
 
-  bool StorageConfiguration::select_drive_by_number(const std::string& drive_arg, AbstractDrive** pp) const
+  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, unsigned* num)
   {
     if (drive_arg.size() == 1 && isdigit(drive_arg[0]))
       {
-	unsigned drive_wanted = drive_arg[0] - '0';
-	return select_drive(drive_wanted, pp);
+	*num = (drive_arg[0] - '0');
+	return true;
       }
     else
       {

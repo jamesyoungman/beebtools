@@ -59,17 +59,20 @@ public:
       }
     else
       {
-	if (!storage.select_drive_by_number(args[1], &drive))
+	unsigned int drive_num;
+	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
+	  return false;
+	if (!storage.select_drive(drive_num, &drive))
 	  return false;
       }
     const DFS::FileSystem file_system(drive);
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
 
     int sectors_used = 2;
-    const int entries = fs->catalog_entry_count();
+    const int entries = fs->global_catalog_entry_count();
     for (int i = 1; i <= entries; ++i)
       {
-	const auto& entry = fs->get_catalog_entry(i);
+	const auto& entry = fs->get_global_catalog_entry(i);
 	ldiv_t division = ldiv(entry.file_length(), DFS::SECTOR_BYTES);
 	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
 	const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
@@ -78,7 +81,7 @@ public:
 	    sectors_used = last_sector_of_file;
 	  }
       }
-    int files_free = fs->max_file_count() - fs->catalog_entry_count();
+    int files_free = fs->max_file_count() - fs->global_catalog_entry_count();
     int sectors_free = fs->disc_sector_count() - sectors_used;
     std::cout << std::uppercase;
     auto show = [](int files, int sectors, const std::string& desc)
@@ -95,7 +98,7 @@ public:
     auto prevlocale = std::cout.imbue(std::locale(std::cout.getloc(),
 					     new comma_thousands)); // takes ownership
     show(files_free, sectors_free, "Free");
-    show(fs->catalog_entry_count(), sectors_used, "Used");
+    show(fs->global_catalog_entry_count(), sectors_used, "Used");
     std::cout.imbue(prevlocale);
     return true;
   }

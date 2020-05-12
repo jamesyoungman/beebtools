@@ -225,6 +225,15 @@ std::string CatalogEntry::name() const
   return result;
 }
 
+std::string CatalogEntry::full_name() const
+{
+  std::string result(1, directory());
+  result.push_back('.');
+  for (auto ch : name())
+    result.push_back(ch);
+  return result;
+}
+
 bool CatalogEntry::has_name(const ParsedFileName& wanted) const
 {
   if (wanted.dir != directory())
@@ -251,7 +260,7 @@ unsigned short CatalogEntry::last_sector() const
   unsigned long len = file_length();
   ldiv_t division = ldiv(file_length(), DFS::SECTOR_BYTES);
   const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
-  return start_sector() + sectors_for_this_file;
+  return start_sector() + sectors_for_this_file - 1;
 }
 
 
@@ -260,7 +269,7 @@ std::string FileSystem::title() const
   return metadata_.title();
 }
 
-int FileSystem::catalog_entry_count() const
+int FileSystem::global_catalog_entry_count() const
 {
   int count = 0;
   for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
@@ -275,7 +284,7 @@ int FileSystem::catalog_entry_count() const
   return count;
 }
 
-CatalogEntry FileSystem::get_catalog_entry(int slot) const
+CatalogEntry FileSystem::get_global_catalog_entry(int slot) const
 {
   if (slot > 62 || slot < 1)
     {
@@ -285,7 +294,7 @@ CatalogEntry FileSystem::get_catalog_entry(int slot) const
     {
       throw std::range_error("request for extended catalog slot in non-Watford disk");
     }
-  assert(slot <= catalog_entry_count());
+  assert(slot <= global_catalog_entry_count());
 
   unsigned offset = slot * 8;
 #if 0
@@ -313,13 +322,28 @@ CatalogEntry FileSystem::get_catalog_entry(int slot) const
 
 int FileSystem::find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const
 {
-  const int entries = catalog_entry_count();
+  const int entries = global_catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
     {
-      if (get_catalog_entry(i).has_name(name))
+      if (get_global_catalog_entry(i).has_name(name))
 	return i;
     }
   return -1;
+}
+
+std::vector<std::vector<CatalogEntry>>
+FileSystem::get_catalog_in_disc_order() const
+{
+  std::vector<std::vector<CatalogEntry>> result(metadata_.catalog_count());
+  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+    {
+      auto last = metadata_.position_of_last_catalog_entry(c);
+      for (int pos = 8; pos <= last; pos += 8)
+	{
+	  result[c].push_back(CatalogEntry(media_, c, pos, disc_format()));
+	}
+    }
+  return result;
 }
 
 
@@ -327,11 +351,11 @@ bool FileSystem::visit_file_body_piecewise
 (int slot,
  std::function<bool(const byte* begin, const byte* end)> visitor) const
 {
-  if (slot < 1 || slot > catalog_entry_count())
+  if (slot < 1 || slot > global_catalog_entry_count())
     throw std::range_error("catalog slot is out of range");
 
   const sector_count_type total_sectors = media_->get_total_sectors();
-  const auto entry = get_catalog_entry(slot);
+  const auto entry = get_global_catalog_entry(slot);
   const sector_count_type start=entry.start_sector(), end=entry.last_sector();
   if (start >= total_sectors)
     throw BadFileSystem("file begins beyond the end of the media");
@@ -350,6 +374,34 @@ bool FileSystem::visit_file_body_piecewise
     }
   return true;
 }
+
+std::vector<int> FileSystem::sector_to_catalog_entry_mapping() const
+{
+  // occupied_by is a mapping from sector number to catalog position.
+  std::vector<int> occupied_by(disc_sector_count(), sector_unused);
+
+  for (int i = 0; i < catalog_sectors(); ++i)
+    occupied_by[i] = sector_catalogue;
+  if (disc_format() == DFS::Format::WDFS)
+    {
+      // occupied_by[2] = occupied_by[3] = sector_catalogue;
+      assert(occupied_by[2] == sector_catalogue);
+      assert(occupied_by[3] == sector_catalogue);
+    }
+  
+  const int entries = global_catalog_entry_count();
+  for (int i = 1; i <= entries; ++i)
+    {
+      const auto& entry = get_global_catalog_entry(i);
+      assert(entry.start_sector() < occupied_by.size());
+      assert(entry.last_sector() < occupied_by.size());
+      std::fill(occupied_by.begin() + entry.start_sector(),
+		occupied_by.begin() + entry.last_sector() + 1,
+		i);
+    }
+  return occupied_by;
+}
+
 
 std::string format_name(Format f)
 {

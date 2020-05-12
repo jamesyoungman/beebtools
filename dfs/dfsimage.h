@@ -87,11 +87,13 @@ public:
   // The name of a file is not space-padded.  So we return
   // "FOO" instead of "FOO    ".
   std::string name() const;
-
   char directory() const
   {
     return 0x7F & raw_name_[0x07];
   }
+
+  // The "full name" includes the directory, for example "$.FOO".
+  std::string full_name() const;
 
   bool is_locked() const
   {
@@ -199,9 +201,32 @@ public:
     return metadata_.format();
   }
 
-  offset end_of_catalog() const;
-  int catalog_entry_count() const;
-  CatalogEntry get_catalog_entry(int index) const;
+  // Get the total number of catalogs.  Acorn DFS has 1,
+  // in sectors 0 and 1.  Watford DFS has 2, the second
+  // of which lives in sectors 2 and 3.
+  int get_number_of_catalogs() const;
+
+  // Get the total number of entries in all catalogs.
+  int global_catalog_entry_count() const;
+  // Get a catalog entry using a numbering scheme starting with 1 and
+  // ending at global_catalog_entry_count().
+  CatalogEntry get_global_catalog_entry(int index) const;
+
+  // Return catalog entries in on-disc order.  The outermost vector is
+  // the order in which the datalog is stored.  In the case of a
+  // Watford DFS sidc for example, entry 0 is the catalog in sectors 0
+  // and 1 (i.e. the one also visible to Acorn DFS) and entry 1 is the
+  // catalog in sectors 2 and 3 (if it is present).
+  //
+  // The innermost vector simply stores the catalog entries in the
+  // order they occur in the relevant sector.
+  std::vector<std::vector<CatalogEntry>>
+  get_catalog_in_disc_order() const;
+  
+  sector_count_type catalog_sectors() const
+  {
+    return disc_format() == Format::WDFS ? 4 : 2;
+  }
 
   sector_count_type disc_sector_count() const
   {
@@ -217,6 +242,12 @@ public:
   std::pair<const byte*, const byte*> file_body(int slot) const;
   bool visit_file_body_piecewise(int slot,
 				 std::function<bool(const byte* begin, const byte *end)> visitor) const;
+
+  // sector_to_catalog_entry_mapping uses special values to represent the
+  // catalog itself (0) and free sectors (-1).
+  static constexpr int sector_unused = -1;
+  static constexpr int sector_catalogue = 0;
+  std::vector<int> sector_to_catalog_entry_mapping() const;
 
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;

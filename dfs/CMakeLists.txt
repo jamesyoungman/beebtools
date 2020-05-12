@@ -38,6 +38,7 @@ target_sources(dfs
   cmd_type.cc
   cmd_list.cc
   cmd_sector_map.cc
+  cmd_space.cc
   commands.cc
   dfsimage.cc
   main.cc

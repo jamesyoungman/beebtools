@@ -83,7 +83,7 @@ namespace
 	   << "          "
 	   << "Lib. :0.$\n\n";
 
-      const int entries = fs->catalog_entry_count();
+      const int entries = fs->global_catalog_entry_count();
       vector<int> ordered_catalog_index;
       ordered_catalog_index.reserve(entries);
       ordered_catalog_index.push_back(0);	  // dummy for title
@@ -94,8 +94,8 @@ namespace
       auto compare_entries =
 	[&fs, &ctx](int left, int right) -> bool
 	{
-	  const auto& l = fs->get_catalog_entry(left);
-	  const auto& r = fs->get_catalog_entry(right);
+	  const auto& l = fs->get_global_catalog_entry(left);
+	  const auto& r = fs->get_global_catalog_entry(right);
 	  // Ensure that entries in the current directory sort
 	  // first.
 	  auto mapdir =
@@ -109,8 +109,8 @@ namespace
 	    return false;
 	  // Same directory, compare names.
 	  return DFS::stringutil::case_insensitive_less
-	    (fs->get_catalog_entry(left).name(),
-	     fs->get_catalog_entry(right).name());
+	    (fs->get_global_catalog_entry(left).name(),
+	     fs->get_global_catalog_entry(right).name());
 	};
 
       std::sort(ordered_catalog_index.begin()+1,
@@ -123,7 +123,7 @@ namespace
       constexpr int name_col_width = 8;
       for (int i = 1; i <= entries; ++i)
 	{
-	  auto entry = fs->get_catalog_entry(ordered_catalog_index[i]);
+	  auto entry = fs->get_global_catalog_entry(ordered_catalog_index[i]);
 	  if (entry.directory() != ctx.current_directory)
 	    {
 	      if (!printed_gap)
@@ -150,7 +150,7 @@ namespace
 	  left_column = !left_column;
 	}
       cout << "\n";
-      cout << fs->catalog_entry_count() << " files of "
+      cout << fs->global_catalog_entry_count() << " files of "
 	   << fs->max_file_count() << "\n";
       // TODO: Watford DFS states the number of tracks too.
       return true;

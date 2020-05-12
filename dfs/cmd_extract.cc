@@ -101,11 +101,11 @@ public:
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
     std::vector<DFS::byte> file_body;
 
-    const int entries = fs->catalog_entry_count();
+    const int entries = fs->global_catalog_entry_count();
     for (int i = 1; i <= entries; ++i)
       {
 	file_body.clear();
-	const auto& entry = fs->get_catalog_entry(i);
+	const auto& entry = fs->get_global_catalog_entry(i);
 	DFS::CRC crc;
 	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
 	string output_basename;
