@@ -119,6 +119,8 @@ namespace
 
       bool left_column = true;
       bool printed_gap = false;
+      std::cout << std::left;
+      constexpr int name_col_width = 8;
       for (int i = 1; i <= entries; ++i)
 	{
 	  auto entry = fs->get_catalog_entry(ordered_catalog_index[i]);
@@ -133,22 +135,14 @@ namespace
 		}
 	    }
 
-	  if (!left_column)
-	    {
-	      cout << std::setw(6) << "";
-	    }
-
-	  cout << " ";
+	  cout << std::setw(left_column ? 1 : 6) << "";
+	  std::cout << std::setw(0);
 	  if (entry.directory() != ctx.current_directory)
 	    cout << " " << entry.directory() << ".";
 	  else
 	    cout << "   ";
-	  cout << entry.name();
-	  if (entry.is_locked())
-	    cout << " L";
-	  else
-	    cout << "  ";
-
+	  cout << std::setw(name_col_width) << std::left << entry.name();
+	  cout << std::setw(2) << std::right << (entry.is_locked() ? "L": "");
 	  if (!left_column)
 	    {
 	      cout << "\n";
