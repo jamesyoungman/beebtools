@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <exception>
+#include <iomanip>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -90,7 +91,8 @@ namespace DFS
 	// HDFS uses the "key number" field for.
 	sequence_number_.reset();
       }
-    position_of_last_catalog_entry_ = s[5];
+    position_of_last_catalog_entry_.clear();
+    position_of_last_catalog_entry_.push_back(s[5]); // first catalog.
     // s1[6] is where all the interesting stuff alternate-format-wise is.  Bits:
     // b0: bit 8 of total sector count (Acorn => all)
     // b1: bit 9 of total sector count (Acorn => all)
@@ -154,6 +156,15 @@ namespace DFS
 	// no more bits
 	break;
       }
+
+    // Add any second catalog now.
+    switch (format_)
+      {
+      case Format::WDFS:
+	drive->read_sector(3, &s);
+	position_of_last_catalog_entry_.push_back(s[5]);
+	break;
+      }
   }
 
   FileSystem::FileSystem(AbstractDrive* drive)
@@ -182,43 +193,36 @@ offset calc_cat_offset(int slot, Format fmt)
 }
 
 
-CatalogEntry::CatalogEntry(AbstractDrive* media, int slot,
+CatalogEntry::CatalogEntry(AbstractDrive* media,
+			   unsigned catalog_instance,
+			   unsigned position,
 			   Format fmt)
 {
-  unsigned name_sec = 0, md_sec = 1, pos;
-  if (slot > 62)
+  if (position > 31*8 || position < 8)
     {
       throw std::range_error("request for impossible catalog slot");
     }
-  if (slot > 31)
-    {
-      if (fmt != Format::WDFS)
-	{
-	  throw std::range_error("request for extended catalog slot in non-Watford disk");
-	}
-      name_sec = 2;
-      md_sec = 3;
-      pos = (slot - 31) * 8;
-    }
-  else
-    {
-      pos = slot * 8;
-    }
+  auto name_sec = catalog_instance * 2u;
+  auto md_sec = name_sec + 1;
   DFS::AbstractDrive::SectorBuffer buf;
   media->read_sector(name_sec, &buf);
-  std::copy(buf.cbegin() + pos, buf.cbegin() + pos + 8, raw_name_.begin());
+  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8, raw_name_.begin());
   media->read_sector(md_sec, &buf);
-  std::copy(buf.cbegin() + pos, buf.cbegin() + pos + 8, raw_metadata_.begin());
+  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8, raw_metadata_.begin());
 }
 
 std::string CatalogEntry::name() const
 {
-  return ascii7_string(raw_name_.cbegin(), raw_name_.cbegin() + 0x07);
-}
-
-char CatalogEntry::directory() const
-{
-  return 0x7F & raw_name_[0x07];
+  std::string result;
+  result.reserve(7);
+  for (auto it = raw_name_.cbegin(); it != raw_name_.cbegin() + 7; ++it)
+    {
+      const char ch = byte_to_ascii7(*it);
+      if (' ' == ch || '\0' == ch)
+	break;
+      result.push_back(ch);
+    }
+  return result;
 }
 
 bool CatalogEntry::has_name(const ParsedFileName& wanted) const
@@ -256,20 +260,56 @@ std::string FileSystem::title() const
   return metadata_.title();
 }
 
-  offset FileSystem::end_of_catalog() const
-  {
-    return metadata_.position_of_last_catalog_entry();
-  }
+int FileSystem::catalog_entry_count() const
+{
+  int count = 0;
+  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+    {
+      auto pos = metadata_.position_of_last_catalog_entry(c);
+      if (pos % 8)
+	{
+	  throw BadFileSystem("position of last catalog entry is not a multiple of 8");
+	}
+      count += pos / 8;
+    }
+  return count;
+}
 
-  int FileSystem::catalog_entry_count() const
-  {
-    int count = end_of_catalog() / 8;
-    if (disc_format() == Format::WDFS)
-      {
-	count += get_byte(3, 5) / 8;
-      }
-    return count;
-  }
+CatalogEntry FileSystem::get_catalog_entry(int slot) const
+{
+  if (slot > 62 || slot < 1)
+    {
+      throw std::range_error("request for impossible catalog slot");
+    }
+  if (slot > 31 && disc_format() != Format::WDFS)
+    {
+      throw std::range_error("request for extended catalog slot in non-Watford disk");
+    }
+  assert(slot <= catalog_entry_count());
+
+  unsigned offset = slot * 8;
+#if 0
+  std::cerr << "We're looking for a catalog entry with a cumulative offset of "
+	    << std::hex << std::setfill('0') << std::setw(4) << offset << "\n";
+#endif
+  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+    {
+      auto last = metadata_.position_of_last_catalog_entry(c);
+#if 0
+      std::cerr << "Catalog " << c << " has its last entry at position "
+		<< std::hex << std::setfill('0') << std::setw(2) << last
+		<< " and we want the item at postition "
+		<< std::hex << std::setfill('0') << std::setw(4) << offset
+		<< "\n";
+#endif
+      if (offset <= last)
+	{
+	  return CatalogEntry(media_, c, offset, disc_format());
+	}
+      offset -= last;
+    }
+  throw std::range_error("request for unused catalog slot");
+}
 
 int FileSystem::find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const
 {

@@ -103,8 +103,13 @@ public:
 	unsigned long load_addr, exec_addr;
 	load_addr = DFS::sign_extend(entry.load_address());
 	exec_addr = DFS::sign_extend(entry.exec_address());
-	cout << entry.directory() << "." << entry.name() << " "
-	     << (entry.is_locked() ? " L  " : "    ")
+	cout << entry.directory() << "."
+	     << std::left
+	     << std::setw(8) << std::setfill(' ')
+	     << entry.name() << " "
+	     << setw(3)
+	     << (entry.is_locked() ? "L" : "")
+	     << std::right
 	     << setw(6) << setfill('0') << load_addr << " "
 	     << setw(6) << setfill('0') << exec_addr << " "
 	     << setw(6) << setfill('0') << entry.file_length() << " "

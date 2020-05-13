@@ -61,12 +61,37 @@ class BadFileSystem : public std::exception
 class CatalogEntry
 {
 public:
-  CatalogEntry(AbstractDrive* media, int slot, Format fmt);
+  // Create a catalog entry object from a catalog on the specified
+  // media.  catalog_instance is the ordianal number of the catalog in
+  // which the entry can be found (so for Acorn DFS filesystems, this
+  // is always 0).  position is the offset within the catalog sectors
+  // at which we can find the item.  The initial catlog entry has
+  // position==1.  This position value is literally an offset.  For
+  // example if a Watford DFS disc has 8 entries in the first catalog
+  // and 4 entries in the second, the following constructors are
+  // valid:
+  // CatalogEntry(m, 0,  1, Format::WDFS) // first entry in catalog 0
+  // CatalogEntry(m, 0, 64, Format::WDFS) // last entry in catalog 0
+  // CatalogEntry(m, 1,  1, Format::WDFS) // first entry in catalog 1
+  // CatalogEntry(m, 1, 32, Format::WDFS) // last entry in catalog 1
+  //
+  // This example file system has a total of 12 entries, but this
+  // constructor is invalid:
+  // CatalogEntry(m, 0, 12, Format::WDFS) // invalid
+  CatalogEntry(AbstractDrive* media,
+	       unsigned catalog_instance, unsigned position,
+	       Format fmt);
   CatalogEntry(const CatalogEntry& other) = default;
   bool has_name(const ParsedFileName&) const;
 
+  // The name of a file is not space-padded.  So we return
+  // "FOO" instead of "FOO    ".
   std::string name() const;
-  char directory() const;
+
+  char directory() const
+  {
+    return 0x7F & raw_name_[0x07];
+  }
 
   bool is_locked() const
   {
@@ -128,10 +153,14 @@ public:
   {
     return sequence_number_;
   }
-
-  unsigned int position_of_last_catalog_entry() const
+  unsigned int catalog_count() const
   {
-    return position_of_last_catalog_entry_;
+    return position_of_last_catalog_entry_.size();
+  }
+
+  unsigned int position_of_last_catalog_entry(int catalog) const
+  {
+    return position_of_last_catalog_entry_.at(catalog);
   }
   BootSetting boot_setting() const { return boot_; }
   unsigned int total_sectors() const { return total_sectors_; };
@@ -140,7 +169,7 @@ private:
   Format format_;
   std::string title_;		// s0 0-7 + s1 0-3 incl.
   std::optional<byte> sequence_number_;	// s1[4]
-  unsigned position_of_last_catalog_entry_; // s1[5]
+  std::vector<int> position_of_last_catalog_entry_; // s1[5]
   BootSetting boot_;		// (s1[6] >> 3) & 3
   unsigned total_sectors_;	// s1[7] | (s1[6] & 3) << 8
 };
@@ -172,11 +201,7 @@ public:
 
   offset end_of_catalog() const;
   int catalog_entry_count() const;
-
-  CatalogEntry get_catalog_entry(int index) const
-  {
-    return CatalogEntry(media_, index, disc_format());
-  }
+  CatalogEntry get_catalog_entry(int index) const;
 
   sector_count_type disc_sector_count() const
   {
