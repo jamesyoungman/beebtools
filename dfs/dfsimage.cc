@@ -200,8 +200,7 @@ offset calc_cat_offset(int slot, Format fmt)
 
 CatalogEntry::CatalogEntry(AbstractDrive* media,
 			   unsigned catalog_instance,
-			   unsigned position,
-			   Format fmt)
+			   unsigned position)
 {
   if (position > 31*8 || position < 8)
     {
@@ -317,14 +316,14 @@ CatalogEntry FileSystem::get_global_catalog_entry(int slot) const
 #endif
       if (offset <= last)
 	{
-	  return CatalogEntry(media_, c, offset, disc_format());
+	  return CatalogEntry(media_, c, offset);
 	}
       offset -= last;
     }
   throw std::range_error("request for unused catalog slot");
 }
 
-int FileSystem::find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const
+int FileSystem::find_catalog_slot_for_name(const ParsedFileName& name) const
 {
   const int entries = global_catalog_entry_count();
   for (int i = 1; i <= entries; ++i)
@@ -344,7 +343,7 @@ FileSystem::get_catalog_in_disc_order() const
       auto last = metadata_.position_of_last_catalog_entry(c);
       for (decltype(last) pos = 8; pos <= last; pos += 8)
 	{
-	  result[c].push_back(CatalogEntry(media_, c, pos, disc_format()));
+	  result[c].push_back(CatalogEntry(media_, c, pos));
 	}
     }
   return result;

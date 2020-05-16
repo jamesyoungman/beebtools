@@ -100,7 +100,6 @@ public:
       (unsigned int catalog, unsigned int entry) -> DFS::sector_count_type
 			     {
 			       assert(catalog < catalogs.size());
-			       assert(entry >= 0);
 			       assert(entry <= catalogs[catalog].size());
 			       if (entry > 0)
 				 return catalogs[catalog][entry-1].start_sector();

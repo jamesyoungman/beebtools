@@ -10,10 +10,7 @@
 
 namespace DFS
 {
-  enum
-  {
-   SECTOR_BYTES = 256
-  };
+  constexpr unsigned int SECTOR_BYTES = 256;
 
   class MediaReadFailure : public std::exception
   {

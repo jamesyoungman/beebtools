@@ -83,7 +83,7 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
     return false;
   assert(drive != 0);
   const DFS::FileSystem file_system(drive);
-  const int slot = file_system.find_catalog_slot_for_name(ctx, name);
+  const int slot = file_system.find_catalog_slot_for_name(name);
   if (-1 == slot)
     {
       std::cerr << args[1] << ": not found\n";

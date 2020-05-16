@@ -56,8 +56,6 @@ class BadFileSystem : public std::exception
 
 
 
-// Note, a CatalogEntry holds an iterator into the disc image data so
-// it must not outlive the image data.
 class CatalogEntry
 {
 public:
@@ -70,17 +68,16 @@ public:
   // example if a Watford DFS disc has 8 entries in the first catalog
   // and 4 entries in the second, the following constructors are
   // valid:
-  // CatalogEntry(m, 0,  1, Format::WDFS) // first entry in catalog 0
-  // CatalogEntry(m, 0, 64, Format::WDFS) // last entry in catalog 0
-  // CatalogEntry(m, 1,  1, Format::WDFS) // first entry in catalog 1
-  // CatalogEntry(m, 1, 32, Format::WDFS) // last entry in catalog 1
+  // CatalogEntry(m, 0,  1) // first entry in catalog 0
+  // CatalogEntry(m, 0, 64) // last entry in catalog 0
+  // CatalogEntry(m, 1,  1) // first entry in catalog 1
+  // CatalogEntry(m, 1, 32) // last entry in catalog 1
   //
   // This example file system has a total of 12 entries, but this
   // constructor is invalid:
-  // CatalogEntry(m, 0, 12, Format::WDFS) // invalid
+  // CatalogEntry(m, 0, 12) // invalid
   CatalogEntry(AbstractDrive* media,
-	       unsigned catalog_instance, unsigned position,
-	       Format fmt);
+	       unsigned catalog_instance, unsigned position);
   CatalogEntry(const CatalogEntry& other) = default;
   bool has_name(const ParsedFileName&) const;
 
@@ -139,7 +136,6 @@ public:
 private:
   std::array<byte, 8> raw_name_;
   std::array<byte, 8> raw_metadata_;
-  Format fmt_;
 };
 
 
@@ -238,7 +234,7 @@ public:
     return disc_format() == Format::WDFS ? 62 : 31;
   }
 
-  int find_catalog_slot_for_name(const DFSContext& ctx, const ParsedFileName& name) const;
+  int find_catalog_slot_for_name(const ParsedFileName& name) const;
   std::pair<const byte*, const byte*> file_body(int slot) const;
   bool visit_file_body_piecewise(int slot,
 				 std::function<bool(const byte* begin, const byte *end)> visitor) const;
