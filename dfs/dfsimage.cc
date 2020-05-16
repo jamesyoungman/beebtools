@@ -164,6 +164,11 @@ namespace DFS
 	drive->read_sector(3, &s);
 	position_of_last_catalog_entry_.push_back(s[5]);
 	break;
+      case Format::DFS:
+      case Format::HDFS:
+      case Format::Solidisk:
+	// No second catalog.
+	break;
       }
   }
 
@@ -257,7 +262,6 @@ bool CatalogEntry::has_name(const ParsedFileName& wanted) const
 
 unsigned short CatalogEntry::last_sector() const
 {
-  unsigned long len = file_length();
   ldiv_t division = ldiv(file_length(), DFS::SECTOR_BYTES);
   const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
   return start_sector() + sectors_for_this_file - 1;
@@ -338,7 +342,7 @@ FileSystem::get_catalog_in_disc_order() const
   for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
     {
       auto last = metadata_.position_of_last_catalog_entry(c);
-      for (int pos = 8; pos <= last; pos += 8)
+      for (decltype(last) pos = 8; pos <= last; pos += 8)
 	{
 	  result[c].push_back(CatalogEntry(media_, c, pos, disc_format()));
 	}

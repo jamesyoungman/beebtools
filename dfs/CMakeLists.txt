@@ -6,11 +6,13 @@ target_sources(dfsbase
   PRIVATE
   stringutil.cc
   stringutil.h)
+target_compile_options(dfsbase PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 add_executable(dfs)
 install(TARGETS dfs
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+target_compile_options(dfs PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 set(HEADERS
   afsp.h
@@ -60,6 +62,7 @@ target_sources(test_afsp
   test_afsp.cc afsp.cc
   stringutil.h
   afsp.h dfscontext.h)
+target_compile_options(test_afsp PRIVATE ${EXTRA_WARNING_OPTIONS})
 target_link_libraries(test_afsp dfsbase)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
 
@@ -68,6 +71,7 @@ target_sources(test_stringutil
   PRIVATE
   test_stringutil.cc
   stringutil.h)
+target_compile_options(test_stringutil PRIVATE ${EXTRA_WARNING_OPTIONS})
 target_link_libraries(test_stringutil dfsbase)
 add_test(NAME dfs_test_stringutil_passes COMMAND test_stringutil)
 

@@ -251,8 +251,8 @@ public:
 
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;
-  FileSystemMetadata metadata_;
   AbstractDrive* media_;
+  FileSystemMetadata metadata_;
 };
 
 }  // namespace DFS

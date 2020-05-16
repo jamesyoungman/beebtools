@@ -97,7 +97,7 @@ public:
     const std::vector<std::vector<DFS::CatalogEntry>> catalogs = file_system.get_catalog_in_disc_order();
     assert(catalogs.size() <= std::numeric_limits<int>::max());
     auto start_sec_of_next = [&catalogs, &file_system]
-      (int catalog, int entry) -> DFS::sector_count_type
+      (unsigned int catalog, unsigned int entry) -> DFS::sector_count_type
 			     {
 			       assert(catalog < catalogs.size());
 			       assert(entry >= 0);
