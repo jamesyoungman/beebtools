@@ -18,9 +18,9 @@ bool is_fastvar(unsigned int i);
 bool set_dialect(const char* name, enum Dialect* d);
 bool print_dialects(FILE*, const char *default_dialect_name);
 bool decode_len_leading_program(FILE *f, const char *filename,
-				enum Dialect dialect, const struct expansion_map *m, int listo);
+				const struct expansion_map *m, int listo);
 bool decode_cr_leading_program(FILE *f, const char *filename,
-			       enum Dialect dialect, const struct expansion_map *m, int listo);
+			       const struct expansion_map *m, int listo);
 void please_submit_bug_report();
 
 

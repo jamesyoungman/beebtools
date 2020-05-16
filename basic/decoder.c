@@ -32,9 +32,9 @@ static bool dialect_has_leading_cr(enum Dialect d)
 bool decode_file(struct decoder*dec, const char *filename, FILE* f)
 {
   bool (*line_decoder)(FILE *f, const char *filename,
-		       enum Dialect dialect, const struct expansion_map* m,
+		       const struct expansion_map* m,
 		       int listo) = dialect_has_leading_cr(dec->dialect)
     ? decode_cr_leading_program : decode_len_leading_program;
-  return line_decoder(f, filename, dec->dialect, &dec->xmap, dec->listo);
+  return line_decoder(f, filename, &dec->xmap, dec->listo);
 }
 
