@@ -37,16 +37,11 @@ const char end_marker[] = "__end__";
  * to |identity|. This tells the intialisation code to use
  * a value from ascii[] instead of the value in base_map.
  */
-enum
-  {
-   /* -1 since Mac is missing. */
-   NUM_EXPLICIT_BASE_MAPPINGS = NUM_DIALECTS-1
-  };
-
 struct multi_mapping 
 {
   unsigned int token_value;
-  const char* dialect_mappings[NUM_EXPLICIT_BASE_MAPPINGS]; 
+  /* -1 since Mac is missing. */
+  const char* dialect_mappings[NUM_DIALECTS-1]; 
 };
   
 static const struct multi_mapping base_map[NUM_TOKENS] = {
@@ -320,15 +315,6 @@ bool is_fastvar(unsigned int i)
     }
 }
 
-static char* char_to_string(char ch)
-{
-  char *p = calloc(2, 1);
-  if (p == NULL)
-    abort();
-  p[0] = ch;
-  return p;
-}
-
 bool build_mapping(unsigned dialect, struct expansion_map *m)
 {
   unsigned int tok, i;
@@ -342,7 +328,7 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
        */
       base_dialect = ARM;
     }
-  assert(base_dialect < NUM_EXPLICIT_BASE_MAPPINGS);
+  assert(base_dialect < NUM_DIALECTS-1);
 
   for (i = 0; i <= 0x80; ++i)
     {
