@@ -27,7 +27,7 @@ namespace
   {
     std::cerr << "There is not enough room to attach more drives.\n";
     return false;
-  };
+  }
 }
 
 

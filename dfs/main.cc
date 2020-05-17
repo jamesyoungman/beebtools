@@ -226,6 +226,6 @@ int main (int argc, char *argv[])
       std::cerr << "error: " << e.what() << "\n";
       return 1;
     }
-};
+}
 
 
