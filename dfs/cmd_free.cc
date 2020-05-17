@@ -69,11 +69,12 @@ public:
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
 
     int sectors_used = 2;
-    const int entries = fs->global_catalog_entry_count();
-    for (int i = 1; i <= entries; ++i)
+    const unsigned short entries = fs->global_catalog_entry_count();
+    for (unsigned short int i = 1; i <= entries; ++i)
       {
 	const auto& entry = fs->get_global_catalog_entry(i);
-	ldiv_t division = ldiv(entry.file_length(), DFS::SECTOR_BYTES);
+	assert(entry.file_length() < std::numeric_limits<int>::max());
+	div_t division = div(static_cast<int>(entry.file_length()), DFS::SECTOR_BYTES);
 	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
 	const int last_sector_of_file = entry.start_sector() + sectors_for_this_file;
 	if (last_sector_of_file > sectors_used)

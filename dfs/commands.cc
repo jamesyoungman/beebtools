@@ -7,7 +7,7 @@
 namespace
 {
   void read_file_body(const DFS::FileSystem *fs,
-		      unsigned int slot,
+		      unsigned short slot,
 		      std::vector<DFS::byte>* body)
   {
     using DFS::byte;
@@ -84,13 +84,14 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   assert(drive != 0);
   const DFS::FileSystem file_system(drive);
   const int slot = file_system.find_catalog_slot_for_name(name);
-  if (-1 == slot)
+  if (slot < 0)
     {
       std::cerr << args[1] << ": not found\n";
       return false;
     }
   std::vector<DFS::byte> body;
-  read_file_body(&file_system, slot, &body);
+  assert(slot < std::numeric_limits<unsigned short>::max());
+  read_file_body(&file_system, static_cast<unsigned short>(slot), &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(body.data(), body.data() + body.size(), tail);
 }

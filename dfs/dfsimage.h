@@ -77,7 +77,7 @@ public:
   // constructor is invalid:
   // CatalogEntry(m, 0, 12) // invalid
   CatalogEntry(AbstractDrive* media,
-	       unsigned catalog_instance, unsigned position);
+	       unsigned short catalog_instance, unsigned short position);
   CatalogEntry(const CatalogEntry& other) = default;
   bool has_name(const ParsedFileName&) const;
 
@@ -104,7 +104,8 @@ public:
 
   unsigned short metadata_word(unsigned offset) const
   {
-    return (raw_metadata_[offset+1] << 8) | raw_metadata_[offset];
+    return static_cast<unsigned short>((raw_metadata_[offset+1] << 8)
+				       | raw_metadata_[offset]);
   }
 
   unsigned long load_address() const
@@ -126,12 +127,13 @@ public:
     return metadata_word(4) | ((metadata_byte(6) >> 4) & 3) << 16;
   }
 
-  unsigned short start_sector() const
+  sector_count_type start_sector() const
   {
-    return metadata_byte(7) | ((metadata_byte(6) & 3) << 8);
+    return static_cast<sector_count_type>(metadata_byte(7)
+					  | ((metadata_byte(6) & 3) << 8));
   }
 
-  unsigned short last_sector() const;
+  sector_count_type last_sector() const;
 
 private:
   std::array<byte, 8> raw_name_;
@@ -151,25 +153,25 @@ public:
   {
     return sequence_number_;
   }
-  unsigned int catalog_count() const
+  unsigned short catalog_count() const
   {
-    return position_of_last_catalog_entry_.size();
+    return static_cast<unsigned short>(position_of_last_catalog_entry_.size());
   }
 
-  unsigned int position_of_last_catalog_entry(int catalog) const
+  unsigned short position_of_last_catalog_entry(unsigned short catalog) const
   {
     return position_of_last_catalog_entry_.at(catalog);
   }
   BootSetting boot_setting() const { return boot_; }
-  unsigned int total_sectors() const { return total_sectors_; };
+  sector_count_type total_sectors() const { return total_sectors_; };
 
 private:
   Format format_;
   std::string title_;		// s0 0-7 + s1 0-3 incl.
   std::optional<byte> sequence_number_;	// s1[4]
-  std::vector<int> position_of_last_catalog_entry_; // s1[5]
+  std::vector<unsigned short> position_of_last_catalog_entry_; // s1[5]
   BootSetting boot_;		// (s1[6] >> 3) & 3
-  unsigned total_sectors_;	// s1[7] | (s1[6] & 3) << 8
+  sector_count_type total_sectors_; // s1[7] | (s1[6] & 3) << 8
 };
 
 // FileSystem is an image of a single file system (as opposed to a wrapper
@@ -203,10 +205,10 @@ public:
   int get_number_of_catalogs() const;
 
   // Get the total number of entries in all catalogs.
-  int global_catalog_entry_count() const;
+  unsigned short global_catalog_entry_count() const;
   // Get a catalog entry using a numbering scheme starting with 1 and
   // ending at global_catalog_entry_count().
-  CatalogEntry get_global_catalog_entry(int index) const;
+  CatalogEntry get_global_catalog_entry(unsigned short index) const;
 
   // Return catalog entries in on-disc order.  The outermost vector is
   // the order in which the datalog is stored.  In the case of a
@@ -218,7 +220,7 @@ public:
   // order they occur in the relevant sector.
   std::vector<std::vector<CatalogEntry>>
   get_catalog_in_disc_order() const;
-  
+
   sector_count_type catalog_sectors() const
   {
     return disc_format() == Format::WDFS ? 4 : 2;
@@ -236,7 +238,7 @@ public:
 
   int find_catalog_slot_for_name(const ParsedFileName& name) const;
   std::pair<const byte*, const byte*> file_body(int slot) const;
-  bool visit_file_body_piecewise(int slot,
+  bool visit_file_body_piecewise(unsigned short slot,
 				 std::function<bool(const byte* begin, const byte *end)> visitor) const;
 
   // sector_to_catalog_entry_mapping uses special values to represent the

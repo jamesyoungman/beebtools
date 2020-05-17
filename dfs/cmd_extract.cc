@@ -101,8 +101,8 @@ public:
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
     std::vector<DFS::byte> file_body;
 
-    const int entries = fs->global_catalog_entry_count();
-    for (int i = 1; i <= entries; ++i)
+    const unsigned short entries = fs->global_catalog_entry_count();
+    for (unsigned short i = 1; i <= entries; ++i)
       {
 	file_body.clear();
 	const auto& entry = fs->get_global_catalog_entry(i);

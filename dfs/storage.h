@@ -34,11 +34,6 @@ namespace DFS
       return drives_[drive].get();
     }
 
-    unsigned int get_num_drives() const
-    {
-      return drives_.size();
-    }
-
     static bool decode_drive_number(const std::string& s, unsigned int *result);
     bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, int current) const;
     bool select_drive(unsigned int drive, AbstractDrive **pp) const;

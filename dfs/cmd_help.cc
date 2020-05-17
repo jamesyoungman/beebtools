@@ -49,10 +49,12 @@ namespace DFS
 	     << "which files within the disc image will be selected.\n"
 	     << "\n"
 	     << "Global options:\n";
-	std::string::size_type max_option_len = 0;
+	int max_option_len = 0;
 	for (const auto& h : option_help)
 	  {
-	    max_option_len = std::max(max_option_len, h.first.size());
+	    assert(h.first.size() < std::numeric_limits<int>::max());
+	    max_option_len = std::max(max_option_len,
+				      static_cast<int>(h.first.size()));
 	  }
 	for (const auto& h : option_help)
 	  {

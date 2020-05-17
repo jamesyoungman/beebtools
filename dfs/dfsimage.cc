@@ -92,6 +92,8 @@ namespace DFS
 	sequence_number_.reset();
       }
     position_of_last_catalog_entry_.clear();
+    assert(position_of_last_catalog_entry_.size()
+	   < std::numeric_limits<unsigned int>::max());
     position_of_last_catalog_entry_.push_back(s[5]); // first catalog.
     // s1[6] is where all the interesting stuff alternate-format-wise is.  Bits:
     // b0: bit 8 of total sector count (Acorn => all)
@@ -140,8 +142,8 @@ namespace DFS
       case 3: boot_ = BootSetting::Exec; break;
       }
 
-    total_sectors_ = s[7]	// bits 0-7
-      | ((s[6] & 3) << 8);	// bits 8-9
+    total_sectors_ = sector_count(s[7]	// bits 0-7
+				  | ((s[6] & 3) << 8));	// bits 8-9
     switch (format_)
       {
       case Format::HDFS:
@@ -162,6 +164,8 @@ namespace DFS
       {
       case Format::WDFS:
 	drive->read_sector(3, &s);
+	assert(position_of_last_catalog_entry_.size()
+	       < std::numeric_limits<unsigned int>::max());
 	position_of_last_catalog_entry_.push_back(s[5]);
 	break;
       case Format::DFS:
@@ -199,20 +203,22 @@ offset calc_cat_offset(int slot, Format fmt)
 
 
 CatalogEntry::CatalogEntry(AbstractDrive* media,
-			   unsigned catalog_instance,
-			   unsigned position)
+			   unsigned short catalog_instance,
+			   unsigned short position)
 {
   if (position > 31*8 || position < 8)
     {
       throw std::range_error("request for impossible catalog slot");
     }
-  auto name_sec = catalog_instance * 2u;
-  auto md_sec = name_sec + 1;
+  const sector_count_type name_sec = sector_count(catalog_instance * 2u);
+  const sector_count_type md_sec = sector_count(name_sec + 1u);
   DFS::AbstractDrive::SectorBuffer buf;
   media->read_sector(name_sec, &buf);
-  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8, raw_name_.begin());
+  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
+	    raw_name_.begin());
   media->read_sector(md_sec, &buf);
-  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8, raw_metadata_.begin());
+  std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
+	    raw_metadata_.begin());
 }
 
 std::string CatalogEntry::name() const
@@ -259,11 +265,13 @@ bool CatalogEntry::has_name(const ParsedFileName& wanted) const
   return true;
 }
 
-unsigned short CatalogEntry::last_sector() const
+sector_count_type CatalogEntry::last_sector() const
 {
   ldiv_t division = ldiv(file_length(), DFS::SECTOR_BYTES);
-  const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
-  return start_sector() + sectors_for_this_file - 1;
+  assert(division.quot < std::numeric_limits<int>::max());
+  const int sectors_for_this_file = static_cast<int>(division.quot)
+    + (division.rem ? 1 : 0);
+  return sector_count(start_sector() + sectors_for_this_file - 1);
 }
 
 
@@ -272,22 +280,22 @@ std::string FileSystem::title() const
   return metadata_.title();
 }
 
-int FileSystem::global_catalog_entry_count() const
+unsigned short FileSystem::global_catalog_entry_count() const
 {
-  int count = 0;
-  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+  unsigned short count = 0u;
+  for (unsigned short c = 0; c < metadata_.catalog_count(); ++c)
     {
-      auto pos = metadata_.position_of_last_catalog_entry(c);
+      unsigned short pos = metadata_.position_of_last_catalog_entry(c);
       if (pos % 8)
 	{
 	  throw BadFileSystem("position of last catalog entry is not a multiple of 8");
 	}
-      count += pos / 8;
+      count = static_cast<unsigned short>(count + pos / 8);
     }
   return count;
 }
 
-CatalogEntry FileSystem::get_global_catalog_entry(int slot) const
+CatalogEntry FileSystem::get_global_catalog_entry(unsigned short slot) const
 {
   if (slot > 62 || slot < 1)
     {
@@ -299,14 +307,14 @@ CatalogEntry FileSystem::get_global_catalog_entry(int slot) const
     }
   assert(slot <= global_catalog_entry_count());
 
-  unsigned offset = slot * 8;
+  unsigned short offset = static_cast<unsigned short>(slot * 8);
 #if 0
   std::cerr << "We're looking for a catalog entry with a cumulative offset of "
 	    << std::hex << std::setfill('0') << std::setw(4) << offset << "\n";
 #endif
-  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+  for (unsigned short c = 0; c < metadata_.catalog_count(); ++c)
     {
-      auto last = metadata_.position_of_last_catalog_entry(c);
+      unsigned short last = metadata_.position_of_last_catalog_entry(c);
 #if 0
       std::cerr << "Catalog " << c << " has its last entry at position "
 		<< std::hex << std::setfill('0') << std::setw(2) << last
@@ -318,15 +326,15 @@ CatalogEntry FileSystem::get_global_catalog_entry(int slot) const
 	{
 	  return CatalogEntry(media_, c, offset);
 	}
-      offset -= last;
+      offset = static_cast<unsigned short>(offset - last);
     }
   throw std::range_error("request for unused catalog slot");
 }
 
 int FileSystem::find_catalog_slot_for_name(const ParsedFileName& name) const
 {
-  const int entries = global_catalog_entry_count();
-  for (int i = 1; i <= entries; ++i)
+  const unsigned short entries = global_catalog_entry_count();
+  for (unsigned short i = 1; i <= entries; ++i)
     {
       if (get_global_catalog_entry(i).has_name(name))
 	return i;
@@ -338,10 +346,12 @@ std::vector<std::vector<CatalogEntry>>
 FileSystem::get_catalog_in_disc_order() const
 {
   std::vector<std::vector<CatalogEntry>> result(metadata_.catalog_count());
-  for (unsigned c = 0; c < metadata_.catalog_count(); ++c)
+  for (unsigned short c = 0; c < metadata_.catalog_count(); ++c)
     {
-      auto last = metadata_.position_of_last_catalog_entry(c);
-      for (decltype(last) pos = 8; pos <= last; pos += 8)
+      unsigned short last = metadata_.position_of_last_catalog_entry(c);
+      for (unsigned short pos = 8;
+	   pos <= last;
+	   pos = static_cast<unsigned short>(pos + 8))
 	{
 	  result[c].push_back(CatalogEntry(media_, c, pos));
 	}
@@ -351,7 +361,7 @@ FileSystem::get_catalog_in_disc_order() const
 
 
 bool FileSystem::visit_file_body_piecewise
-(int slot,
+(unsigned short slot,
  std::function<bool(const byte* begin, const byte* end)> visitor) const
 {
   if (slot < 1 || slot > global_catalog_entry_count())
@@ -391,11 +401,11 @@ std::vector<int> FileSystem::sector_to_catalog_entry_mapping() const
       assert(occupied_by[2] == sector_catalogue);
       assert(occupied_by[3] == sector_catalogue);
     }
-  
-  const int entries = global_catalog_entry_count();
-  for (int i = 1; i <= entries; ++i)
+
+  const unsigned short entries = global_catalog_entry_count();
+  for (unsigned short i = 1; i <= entries; ++i)
     {
-      const auto& entry = get_global_catalog_entry(i);
+      const CatalogEntry& entry = get_global_catalog_entry(i);
       assert(entry.start_sector() < occupied_by.size());
       assert(entry.last_sector() < occupied_by.size());
       std::fill(occupied_by.begin() + entry.start_sector(),

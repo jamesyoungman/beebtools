@@ -85,12 +85,12 @@ public:
     const DFS::FileSystem file_system(drive);
     const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
 
-    const int entries = fs->global_catalog_entry_count();
+    const unsigned short entries = fs->global_catalog_entry_count();
     cout << std::hex;
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
-    for (int i = 1; i <= entries; ++i)
+    for (unsigned short i = 1; i <= entries; ++i)
       {
 	const auto& entry = fs->get_global_catalog_entry(i);
 	const std::string full_name = std::string(1, entry.directory()) + "." + entry.name();

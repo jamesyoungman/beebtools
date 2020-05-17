@@ -12,6 +12,8 @@
 
 namespace
 {
+  using DFS::sector_count_type;
+
   class OsError : public std::exception
   {
   public:
@@ -27,7 +29,7 @@ namespace
     int errno_value_;
   };
 
-  bool get_file_size(std::ifstream& infile, unsigned int* size_in_bytes)
+  bool get_file_size(std::ifstream& infile, unsigned long int* size_in_bytes)
   {
     if (!infile.seekg(0, infile.end))
       return false;
@@ -57,10 +59,11 @@ namespace
 	throw OsError(errno);
     }
 
-    DFS::sector_count_type get_total_sectors() const override
+    sector_count_type get_total_sectors() const override
     {
       ldiv_t division = ldiv(file_size_, DFS::SECTOR_BYTES);
-      return division.quot + (division.rem ? 1 : 0);
+      assert(division.quot < std::numeric_limits<sector_count_type>::max());
+      return DFS::sector_count(division.quot + (division.rem ? 1 : 0));
     }
 
     std::string description() const override
@@ -73,7 +76,7 @@ namespace
   private:
     std::string name_;
     std::unique_ptr<std::ifstream> f_;
-    unsigned int file_size_;
+    unsigned long int file_size_;
   };
 
   DFS::AbstractDrive* dsd_unsupported()
@@ -97,7 +100,7 @@ namespace DFS
   std::unique_ptr<AbstractDrive> make_image_file(const std::string& name)
   {
     std::unique_ptr<std::ifstream> infile(std::make_unique<std::ifstream>(name, std::ifstream::in));
-    unsigned int len;
+    unsigned long int len;
     if (!get_file_size(*infile, &len))
       throw OsError(errno);	// TODO: include file name
 

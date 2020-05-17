@@ -24,12 +24,23 @@ namespace
   using DFS::DFSContext;
   using DFS::RegularExpression;
 
+  inline char up(char ch)
+  {
+    return static_cast<char>(toupper(static_cast<unsigned char>(ch)));
+  }
+
+  inline char down(char ch)
+  {
+    return static_cast<char>(tolower(static_cast<unsigned char>(ch)));
+  }
+
   string drive_prefix(int drive)
   {
     string result;
     result.reserve(3);
     result.push_back(':');
-    result.push_back('0' + drive);
+    assert((std::numeric_limits<char>::max() - '0') > drive);
+    result.push_back(static_cast<char>('0' + drive));
     result.push_back('.');
     return result;
   }
@@ -150,11 +161,11 @@ namespace
 
 	  case '.':
 	  default:
-	    if (toupper(w) != tolower(w))
+	    if (up(w) != down(w))
 	      {
 		parts.push_back('[');
-		parts.push_back(toupper(w));
-		parts.push_back(tolower(w));
+		parts.push_back(up(w));
+		parts.push_back(down(w));
 		parts.push_back(']');
 	      }
 	    else

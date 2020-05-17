@@ -65,7 +65,9 @@ public:
     constexpr int max_col = 5;
     constexpr int name_col_width = 9;
     constexpr char sector_col_header[] = "Sector";
-    const auto sector_col_width = std::max(size_t(6), strlen(sector_col_header));
+    assert(strlen(sector_col_header) < std::numeric_limits<int>::max());
+    const int sector_col_width =
+      std::max(6, static_cast<int>(strlen(sector_col_header)));
     std::cout << std::setw(sector_col_width) << sector_col_header << ":\n"
 	      << std::setw(sector_col_width) << "(dec)" << ": "
 	      << "Name of file occupying each sector\n";
@@ -94,7 +96,9 @@ public:
 
 	  default:
 	    {
-	      auto e = fs.get_global_catalog_entry(occupied_by[sec]);
+	      assert(occupied_by[sec] > 0);
+	      assert(occupied_by[sec] < std::numeric_limits<unsigned short>::max());
+	      auto e = fs.get_global_catalog_entry(static_cast<unsigned short>(occupied_by[sec]));
 	      name = std::string(1, e.directory()) + "." + e.name();
 	      assert(name.size() <= name_col_width);
 	      break;

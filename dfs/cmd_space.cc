@@ -72,8 +72,7 @@ public:
     std::cerr << "Total file storage space in sectors = "
 	      << (file_system.disc_sector_count()
 		  - file_system.catalog_sectors()) << "\n";
-    
-    
+
     // Files occur on the disk in a kind of reverse order.  The last
     // file on the disk is the first one mentioned in the catalog in
     // sector 3.  The last file in that catalog occurs immediately
@@ -118,23 +117,28 @@ public:
 			   gaps.push_back(gap);
 			 }
 		     };
-      
-    for (int c = catalogs.size()-1; c >= 0; --c)
+
+    assert(catalogs.size() < std::numeric_limits<int>::max());
+    if (catalogs.size())  // check subtraction below won't wrap.
       {
-	if (c == 0)
+	for (int c = static_cast<int>(catalogs.size())-1; c >= 0; --c)
 	  {
-	    // Account for any gap between the catalog and the first
-	    // file of the first catalog.
-	    maybe_gap(file_system.catalog_sectors() - 1u,
-		      catalogs[0].back().start_sector());
-	  }
-	for (int entry = catalogs[c].size()-1; entry >= 0; --entry)
-	  {
-	    auto last_sec = catalogs[c][entry].last_sector();
-	    maybe_gap(last_sec, start_sec_of_next(c, entry));
+	    if (c == 0)
+	      {
+		// Account for any gap between the catalog and the first
+		// file of the first catalog.
+		maybe_gap(DFS::sector_count(file_system.catalog_sectors() - 1u),
+			  catalogs[0].back().start_sector());
+	      }
+	    assert(catalogs[c].size() < std::numeric_limits<int>::max());
+	    for (int entry = static_cast<int>(catalogs[c].size())-1; entry >= 0; --entry)
+	      {
+		auto last_sec = catalogs[c][entry].last_sector();
+		maybe_gap(last_sec, start_sec_of_next(c, entry));
+	      }
 	  }
       }
-    
+
     std::cout << "Gap sizes on disc " << drive_num << ":\n";
     bool first = true;
     for (const auto& gap : gaps)
@@ -145,7 +149,7 @@ public:
 	std::cout << std::setw(3) << std::hex << std::uppercase
 		  << std::setfill('0') << gap;
     }
-    
+
     std::cout << "\n\nTotal space free = "
 	      << std::hex << std::uppercase
 	      << std::accumulate(gaps.cbegin(), gaps.cend(), 0)

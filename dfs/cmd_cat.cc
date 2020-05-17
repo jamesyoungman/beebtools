@@ -23,10 +23,6 @@ namespace
   {
   public:
     CommandCat() {}
-    static CommandCat* NewInstance()
-    {
-      return new CommandCat;
-    }
 
     const std::string name() const override
     {
@@ -83,16 +79,16 @@ namespace
 	   << "          "
 	   << "Lib. :0.$\n\n";
 
-      const int entries = fs->global_catalog_entry_count();
-      vector<int> ordered_catalog_index;
+      const unsigned short entries = fs->global_catalog_entry_count();
+      vector<unsigned short int> ordered_catalog_index;
       ordered_catalog_index.reserve(entries);
       ordered_catalog_index.push_back(0);	  // dummy for title
-      for (int i = 1; i <= entries; ++i)
+      for (unsigned short i = 1; i <= entries; ++i)
 	ordered_catalog_index.push_back(i);
 
 
       auto compare_entries =
-	[&fs, &ctx](int left, int right) -> bool
+	[&fs, &ctx](unsigned short left, unsigned short int right) -> bool
 	{
 	  const auto& l = fs->get_global_catalog_entry(left);
 	  const auto& r = fs->get_global_catalog_entry(right);
@@ -100,7 +96,9 @@ namespace
 	  // first.
 	  auto mapdir =
 	    [&ctx] (char dir) -> char {
-	      return dir == ctx.current_directory ? 0 : tolower(dir);
+	      if (dir == ctx.current_directory)
+		return '\0';
+	      return static_cast<char>(tolower(static_cast<unsigned char>(dir)));
 	    };
 
 	  if (mapdir(l.directory()) < mapdir(r.directory()))
