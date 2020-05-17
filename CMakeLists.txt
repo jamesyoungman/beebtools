@@ -4,7 +4,7 @@ enable_testing()
 find_program(BOURNE_SHELL sh)
 set(EXTRA_WARNING_OPTIONS
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-          -Wall -Wextra>
+          -Wall -Wextra -Wconversion>
      $<$<CXX_COMPILER_ID:MSVC>:
           /W4>)
 add_subdirectory(basic)
