@@ -1,10 +1,14 @@
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "tokens.h"
+
+#define STATIC_ASSERT(condition) \
+do { static char assertion_arr[(condition)?1:-1]; (void)assertion_arr; } while(0)
 
 static bool stdout_write_error()
 {
@@ -14,9 +18,10 @@ static bool stdout_write_error()
 
 static bool print_target_line_number(unsigned char b1, unsigned char b2, unsigned char b3)
 {
-  unsigned char lo = b2 ^ ((b1 * 4) & 0xC0);
-  unsigned char hi = b3 ^ (b1 * 16);
-  unsigned int n = (hi*256) + lo;
+  const unsigned char mask = 0xC0;
+  unsigned char lo = b2 ^ ((unsigned char)(b1 << 2) & mask);
+  unsigned char hi = b3 ^ (unsigned char)(b1 << 4);
+  unsigned int n = (hi*256u) + lo;
   if (fprintf(stdout, "%u", n) < 0)
     return stdout_write_error();
   return true;
@@ -124,7 +129,7 @@ static bool handle_token(unsigned char uch, long file_pos,
 		return false;
 	      (*input) += 3;
 	      assert((*len) >= 3);
-	      (*len) -= 3;
+	      *len = (unsigned char)(*len - 3u);
 	      file_pos += 3;
 	      return true;
 	    }
@@ -297,9 +302,11 @@ bool decode_len_leading_program(FILE *f, const char *filename,
   for (;;)
     {
       int ch;
-      int hi, lo;
+      unsigned char hi, lo;
       size_t nread;
-      unsigned long len;
+      unsigned char len;
+      // BufSize must be at least UCHAR_MAX, so len < BufSize always.
+      STATIC_ASSERT(UCHAR_MAX < BufSize);
       if ((ch = getc(f)) == EOF)
 	{
 	  if (empty)
@@ -308,8 +315,7 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 	    return premature_eof(f);
 	}
       empty = false;
-      len = ch;
-      assert(len < BufSize);
+      len = (unsigned char)ch;
       if (0 == len)
 	{
 	  // This is logical EOF.  We still expect to see 0xFF 0xFF though.
@@ -331,9 +337,9 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 	}
       if (len < 3)
 	{
-	  fprintf(stderr, "line at position %ld has length %lu "
+	  fprintf(stderr, "line at position %ld has length %u "
 		  "which is impossibly short, are you sure you specified the right "
-		  "dialect?\n", ftell(f), len);
+		  "dialect?\n", ftell(f), (unsigned int)len);
 	  return false;
 	}
       if ((ch = fgetc(f)) == EOF)
@@ -345,8 +351,7 @@ bool decode_len_leading_program(FILE *f, const char *filename,
 
       clearerr(f);
       file_pos = ftell(f);
-      len -= 3;  /* len is unsigned so a wrap here generates a large value. */
-      assert(len < sizeof(buf));
+      len = (unsigned char)(len - 3u);  /* len is unsigned so a wrap here generates a large value. */
       nread = fread(buf, 1, len, f);
       if (nread < len)
 	{
@@ -375,7 +380,8 @@ bool decode_len_leading_program(FILE *f, const char *filename,
       */
       if (len)
 	{
-	  if (!decode_line(hi, lo, len-1, buf, file_pos, m, &indent, listo))
+	  --len;
+	  if (!decode_line(hi, lo, len, buf, file_pos, m, &indent, listo))
 	    return false;
 	}
     }
@@ -396,13 +402,15 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
   bool empty = true;
   int indent = 0;
   long int file_pos;
+  unsigned char len;
   static char buf[1024];
+  // Ensure that len can never overflow buf. */
+  STATIC_ASSERT(UCHAR_MAX < sizeof(buf));
   for (;;)
     {
       int ch;
-      int hi, lo;
+      unsigned char hi, lo;
       size_t nread;
-      unsigned long len;
       if ((ch = getc(f)) == EOF)
 	{
 	  if (empty)
@@ -453,14 +461,13 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
       /* len counts from the initial 0x0D, and we already read 4 characters. */
       if (len < 4u)
 	{
-	  fprintf(stderr, "line at position %ld has length %lu "
+	  fprintf(stderr, "line at position %ld has length %u "
 		  "which is impossibly short, are you sure you specified the right "
-		  "format?\n", ftell(f), len);
+		  "format?\n", ftell(f), (unsigned int)len);
 	  return false;
 	}
-      len -= 4;
+      len = (unsigned char)(len - 4u);
       clearerr(f);
-      assert(len < sizeof(buf));
       file_pos = ftell(f);
       nread = fread(buf, 1, len, f);
       if (nread < len)

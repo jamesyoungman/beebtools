@@ -317,7 +317,7 @@ bool is_fastvar(unsigned int i)
 
 bool build_mapping(unsigned dialect, struct expansion_map *m)
 {
-  unsigned int tok, i;
+  unsigned int tok;
   enum Dialect base_dialect = dialect;
   assert(dialect < NUM_DIALECTS);
   if (dialect == Mac)
@@ -330,18 +330,21 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
     }
   assert(base_dialect < NUM_DIALECTS-1);
 
-  for (i = 0; i <= 0x80; ++i)
+  for (char i = 0; ; ++i)
     {
-      m->ascii[i][0] = i;
-      m->ascii[i][1] = 0;
+      m->ascii[(unsigned int)i][0] = i;
+      m->ascii[(unsigned int)i][1] = 0;
+      // char may not be able to represent 0x80, so we can't use a normal for loop.
+      if (i == 0x7F)
+	break;
     }
   /* Set up ASCII identity mappings. */
-  for (i = 0x11; i < 0x7F; ++i)
+  for (char i = 0x11; i < 0x7F; ++i)
     {
-      m->base[i] = m->ascii[i];	/* some of these values will be overwritten. */
+      m->base[(unsigned int)i] = m->ascii[(unsigned int)i];	/* some of these values will be overwritten. */
     }
 
-  for (i = 0; i < NUM_TOKENS; ++i)
+  for (unsigned int i = 0; i < NUM_TOKENS; ++i)
     {
       tok = base_map[i].token_value;
       const char *s = base_map[i].dialect_mappings[base_dialect];
@@ -367,6 +370,8 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
 	  assert(s[0]);		/* empty mappings not allowed */
 	  m->base[tok] = s;
 	}
+      if (i == NUM_TOKENS-1)
+	break;
     }
 
   m->base[0x7F] = (ARM == dialect || Mac == dialect) ? "OTHERWISE" : m->ascii[0x7F];
