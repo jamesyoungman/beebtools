@@ -227,10 +227,13 @@ Drive Number|Description
 3|The second side of the second physical floppy drive
 .TE
 
-When single-sided image files are installed, they are installed in
+When single-sided image files are installed (with the
+.B -\-file
+option), they are installed in
 drive number order (i.e. drive 0 then 1).
 Therefore if you install two single-sided image files, they appear to
 be two sides of the same physical floppy disc.
+This behaviour may change in the future.
 
 The
 .I D
@@ -469,6 +472,14 @@ HDFS|Not yet supported.
 
 What "not yet supported" means in practice is that such images will be
 treated as if they were actually Acorn DFS images.
+
+.SH "NOTES"
+
+In the future, there may be a behaviour change in how insertion of
+single-sided disc images is handled, changing the drive ordering from
+0, 1, 2, 3 to 0, 1.
+This would better mimic what happens when you insert physical floppies
+on a real system.
 
 .SH "BUGS"
 Please report bugs to james@youngman.org.
