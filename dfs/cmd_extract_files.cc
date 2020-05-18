@@ -153,5 +153,3 @@ public:
 REGISTER_COMMAND(CommandExtractFiles);
 
 } // namespace
-
-
