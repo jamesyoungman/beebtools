@@ -6,7 +6,7 @@ dfs \- read Acorn DFS disc images
 
 .SH SYNOPSIS
 .B dfs
-[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-all|free|help|info|list|type
+[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-all|free|help|info|list|sector_map|space|type
 [args...]
 
 .SH DESCRIPTION
@@ -193,6 +193,21 @@ option can be useful for extracting the contents of a single file,
 see the
 .B EXAMPLES
 section.
+
+.SS "sector_map [drive]"
+
+Print a description of the layout of the disc, showing the locations
+of the files.
+
+.SS "space [drive]"
+
+Show the sizes of the areas of free space in the disc and the total
+amount of free space.  The
+.B free
+command by comparison only describes free space at the end of the
+disc.  This command works similarly to the
+.B *HELP SPACE
+command of Watford DFS.
 
 .SH "DFS FILE NAMES"
 
