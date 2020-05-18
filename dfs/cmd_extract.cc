@@ -41,12 +41,12 @@ namespace
     return inf_file.good();
   }
 
-class CommandExtractAll : public DFS::CommandInterface
+class CommandExtractFiles : public DFS::CommandInterface
 {
 public:
   const std::string name() const override
   {
-    return "extract-all";
+    return "extract-files";
   }
 
   const std::string usage() const override
@@ -150,7 +150,7 @@ public:
     return true;
   }
 };
-REGISTER_COMMAND(CommandExtractAll);
+REGISTER_COMMAND(CommandExtractFiles);
 
 } // namespace
 

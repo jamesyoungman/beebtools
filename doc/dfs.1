@@ -6,7 +6,7 @@ dfs \- read Acorn DFS disc images
 
 .SH SYNOPSIS
 .B dfs
-[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-all|free|help|info|list|sector_map|space|type
+[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|free|help|info|list|sector_map|space|type
 [args...]
 
 .SH DESCRIPTION
@@ -53,7 +53,7 @@ Dumps the contents of a single file in hexadecimal and text.
 This is analogous to the Acorn DFS command
 .BR "*DUMP" .
 
-.SS "extract-all [directory]"
+.SS "extract-files [directory]"
 
 Extracts all the files in the disc image to the specified destination
 (host) file system directory.
@@ -381,7 +381,7 @@ from the Tube co-processor rather than the I/O processor.
 
 To retain the metadata of a DFS file when extracting it from a disc
 image (for example with the
-.B extract-all
+.B extract-files
 command), we store it in a ".inf" file in a standard format devised by
 Wouter Scholten.
 Here's an example:
