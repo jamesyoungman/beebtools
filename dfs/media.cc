@@ -20,6 +20,7 @@ namespace
     explicit OsError(int errno_value)
       : errno_value_(errno_value)
     {
+      assert(errno_value_ != 0);
     }
     const char *what() const throw()
     {
@@ -48,10 +49,18 @@ namespace
       get_file_size(*f_, &file_size_);
     }
 
-    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf) override
+    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
+			     bool& beyond_eof) override
     {
+      const unsigned long int pos = sector * DFS::SECTOR_BYTES;
+      if (pos >= file_size_)
+	{
+	  beyond_eof = true;
+	  return;
+	}
+      beyond_eof = false;
       errno = 0;
-      if (!f_->seekg(sector * DFS::SECTOR_BYTES, f_->beg))
+      if (!f_->seekg(pos, f_->beg))
 	{
 	  throw OsError(errno);
 	}

@@ -34,6 +34,7 @@ target_sources(dfs
   cmd_cat.cc
   cmd_dump.cc
   cmd_extract_files.cc
+  cmd_extract_unused.cc
   cmd_free.cc
   cmd_help.cc
   cmd_info.cc

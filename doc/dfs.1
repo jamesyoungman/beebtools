@@ -6,7 +6,7 @@ dfs \- read Acorn DFS disc images
 
 .SH SYNOPSIS
 .B dfs
-[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|free|help|info|list|sector_map|space|type
+[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|extract\-unused|free|help|info|list|sector_map|space|type
 [args...]
 
 .SH DESCRIPTION
@@ -47,13 +47,13 @@ This is analogous to the Acorn DFS command
 A drive number can be specified as an optional argument (but is rarely
 useful).
 
-.SS "dump [filename]"
+.SS "dump filename"
 
 Dumps the contents of a single file in hexadecimal and text.
 This is analogous to the Acorn DFS command
 .BR "*DUMP" .
 
-.SS "extract-files [directory]"
+.SS "extract-files directory"
 
 Extracts all the files in the disc image to the specified destination
 (host) file system directory.
@@ -72,6 +72,11 @@ the DFS metadata (load address, execution address, lock status).
 See
 .B "INF STANDARD ARCHIVE FILE FORMAT" for details.
 
+.SS "extract-unused directory"
+
+Extracts a copy of the unused parts of the file system into the named
+directory.  The file names contain the number of the sector at which
+they start.
 
 .SS "free [drive]"
 

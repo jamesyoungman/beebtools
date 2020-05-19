@@ -34,7 +34,7 @@ namespace DFS
 			       const std::vector<std::string>& args)
   {
     const auto& option_help = get_option_help();
-    const int max_command_name_len = 13;
+    const int max_command_name_len = 14;
     if (args.size() < 2)
       {
 	cout << "usage: dfs [global-options] command [command-options] [command-arguments]\n"

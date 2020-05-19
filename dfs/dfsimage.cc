@@ -15,6 +15,9 @@ using std::string;
 
 namespace
 {
+  DFS::BadFileSystem eof_in_catalog("file system image is too short "
+				    "to contain a catalog");
+
   inline char byte_to_ascii7(DFS::byte b)
   {
     return char(b & 0x7F);
@@ -36,7 +39,10 @@ namespace DFS
   Format FileSystemMetadata::identify_format(AbstractDrive* drive)
   {
     AbstractDrive::SectorBuffer buf;
-    drive->read_sector(1, &buf);
+    bool beyond_eof = false;
+    drive->read_sector(1, &buf, beyond_eof);
+    if (beyond_eof)
+      throw BadFileSystem("file system image is empty");
 
     if (buf[0x06] & 8)
       return Format::HDFS;
@@ -63,7 +69,14 @@ namespace DFS
 
     // Look for the Watford DFS recognition string
     // in the initial entry in its extended catalog.
-    drive->read_sector(2, &buf);
+    drive->read_sector(2, &buf, beyond_eof);
+    if (beyond_eof)
+      {
+	throw BadFileSystem("File system image contains just one sector (i.e. "
+			    "the catalog would be incomplete if it were a DFS  "
+			    "image)\n");
+      }
+
     if (std::all_of(buf.cbegin(), buf.cbegin()+0x08,
 		    [](byte b) { return b == 0xAA; }))
       {
@@ -76,10 +89,11 @@ namespace DFS
     : format_(identify_format(drive))
   {
     AbstractDrive::SectorBuffer s;
-    drive->read_sector(0, &s);
+    bool beyond_eof = false;
+    drive->read_sector(0, &s, beyond_eof);
     const byte title_initial = s[0];
     std::transform(&s[0], &s[8], std::back_inserter(title_), byte_to_ascii7);
-    drive->read_sector(1, &s);
+    drive->read_sector(1, &s, beyond_eof);
     std::transform(&s[0], &s[4], std::back_inserter(title_), byte_to_ascii7);
     if (format_ != Format::HDFS)
       {
@@ -160,10 +174,16 @@ namespace DFS
       }
 
     // Add any second catalog now.
+    beyond_eof = false;
     switch (format_)
       {
       case Format::WDFS:
-	drive->read_sector(3, &s);
+	drive->read_sector(3, &s, beyond_eof);
+	if (beyond_eof)
+	  {
+	    throw BadFileSystem("to be a valid Watford Electronics DFS file "
+				"system, there must be at least 4 sectors");
+	  }
 	assert(position_of_last_catalog_entry_.size()
 	       < std::numeric_limits<unsigned int>::max());
 	position_of_last_catalog_entry_.push_back(s[5]);
@@ -186,7 +206,10 @@ namespace DFS
   {
     assert(offset < DFS::SECTOR_BYTES);
     AbstractDrive::SectorBuffer buf;
-    media_->read_sector(sector, &buf);
+    bool beyond_eof = false;
+    media_->read_sector(sector, &buf, beyond_eof);
+    if (beyond_eof)
+      throw eof_in_catalog;
     return buf[offset];
   }
 
@@ -213,10 +236,15 @@ CatalogEntry::CatalogEntry(AbstractDrive* media,
   const sector_count_type name_sec = sector_count(catalog_instance * 2u);
   const sector_count_type md_sec = sector_count(name_sec + 1u);
   DFS::AbstractDrive::SectorBuffer buf;
-  media->read_sector(name_sec, &buf);
+  bool beyond_eof = false;
+  media->read_sector(name_sec, &buf, beyond_eof);
+  if (beyond_eof)
+    throw eof_in_catalog;
   std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	    raw_name_.begin());
-  media->read_sector(md_sec, &buf);
+  media->read_sector(md_sec, &buf, beyond_eof);
+  if (beyond_eof)
+    throw eof_in_catalog;
   std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	    raw_metadata_.begin());
 }
@@ -379,7 +407,10 @@ bool FileSystem::visit_file_body_piecewise
     {
       assert(sec <= end);
       DFS::AbstractDrive::SectorBuffer buf;
-      media_->read_sector(sec, &buf);
+      bool beyond_eof = false;
+      media_->read_sector(sec, &buf, beyond_eof);
+      if (beyond_eof)
+	throw BadFileSystem("end of media during body of file");
       unsigned long visit_len = len > SECTOR_BYTES ? SECTOR_BYTES : len;
       if (!visitor(buf.begin(), buf.begin() + visit_len))
 	return false;
