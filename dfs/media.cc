@@ -40,6 +40,39 @@ namespace
     return true;
   }
 
+  class SectorCache
+  {
+  public:
+    explicit SectorCache(DFS::sector_count_type initial_sectors)
+    {
+      cache_.resize(initial_sectors);
+    }
+
+    bool has(DFS::sector_count_type sec) const
+    {
+      return sec < cache_.size() && cache_[sec].get() != 0;
+    }
+
+    bool get(DFS::sector_count_type sec, DFS::AbstractDrive::SectorBuffer *buf) const
+    {
+      if (!has(sec))
+	return false;
+      *buf = *(cache_[sec].get());
+      return true;
+    }
+
+    void put(DFS::sector_count_type sec, const DFS::AbstractDrive::SectorBuffer *buf)
+    {
+      if (sec >= cache_.size())
+	return;
+      cache_[sec] = std::make_unique<DFS::AbstractDrive::SectorBuffer>();
+      std::copy(buf->begin(), buf->end(), cache_[sec]->begin());
+    }
+
+  private:
+    std::vector<std::unique_ptr<DFS::AbstractDrive::SectorBuffer>> cache_;
+  };
+
   class ImageFile : public DFS::AbstractDrive
   {
   public:
@@ -80,12 +113,44 @@ namespace
       return std::string("image file ") + name_;
     }
 
-
-
   private:
     std::string name_;
     std::unique_ptr<std::ifstream> f_;
     unsigned long int file_size_;
+  };
+
+  class CachedDevice : public DFS::AbstractDrive
+  {
+  public:
+    CachedDevice(std::unique_ptr<AbstractDrive> underlying,
+		 DFS::sector_count_type cached_sectors)
+      : underlying_(std::move(underlying)),
+	cache_(cached_sectors)
+    {
+    }
+
+    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
+			     bool& beyond_eof) override
+    {
+      if (cache_.get(sector, buf))
+	return;
+      underlying_->read_sector(sector, buf, beyond_eof);
+      cache_.put(sector, buf);
+    }
+
+    sector_count_type get_total_sectors() const override
+    {
+      return underlying_->get_total_sectors();
+    }
+
+    std::string description() const override
+    {
+      return underlying_->description();
+    }
+
+  private:
+    std::unique_ptr<DFS::AbstractDrive> underlying_;
+    SectorCache cache_;
   };
 
   DFS::AbstractDrive* dsd_unsupported()
@@ -105,10 +170,23 @@ namespace
 
 namespace DFS
 {
+  std::unique_ptr<AbstractDrive> cached_device(std::unique_ptr<AbstractDrive> underlying,
+					       DFS::sector_count_type cached_sectors)
+  {
+    return std::make_unique<CachedDevice>(std::move(underlying), cached_sectors);
+  }
+
+  std::unique_ptr<AbstractDrive> cached_image_file(const std::string& name,
+						   std::unique_ptr<std::ifstream>&& infile,
+						   DFS::sector_count_type cached_sectors)
+  {
+    return cached_device(std::make_unique<ImageFile>(name, std::move(infile)), cached_sectors);
+  }
 
   std::unique_ptr<AbstractDrive> make_image_file(const std::string& name)
   {
     std::unique_ptr<std::ifstream> infile(std::make_unique<std::ifstream>(name, std::ifstream::in));
+    const unsigned cache_sectors = 4;
     unsigned long int len;
     if (!get_file_size(*infile, &len))
       throw OsError(errno);	// TODO: include file name
@@ -118,7 +196,7 @@ namespace DFS
     std::unique_ptr<ImageFile> failed;
     if (ends_with(name, ".ssd"))
       {
-	return std::make_unique<ImageFile>(name, std::move(infile));
+	return cached_image_file(name, std::move(infile), cache_sectors);
       }
     if (ends_with(name, ".dsd"))
       {
@@ -136,7 +214,7 @@ namespace DFS
 
 	// DFS 40 tracks * 10 sectors * 2 sides * 256 bytes/sector
       case 200 * 1024:
-	return std::make_unique<ImageFile>(name, std::move(infile));
+	return cached_image_file(name, std::move(infile), cache_sectors);
 
       default:
 	std::cerr << "Don't know how to handle an image file " << len
