@@ -9,6 +9,7 @@
 #include <zlib.h>
 
 #include "cleanup.h"
+#include "exceptions.h"
 
 namespace
 {
@@ -84,7 +85,9 @@ namespace
 	throw FixedDecompressionError("a pre-set zlib dictionary is required "
 				      "to decompress this data");
       case Z_ERRNO:
-	throw DFS::OsError(errno);
+	// This is not a file I/O error because zlib isn't performing the
+	// file I/O.
+	throw DFS::NonFileOsError(errno);
       case Z_STREAM_ERROR:
 	throw FixedDecompressionError("invalid compressed data stream");
       case Z_DATA_ERROR:
@@ -108,14 +111,14 @@ namespace
     FILE *f = fopen(name.c_str(), "rb");
     if (0 == f)
       {
-	throw DFS::OsError(errno);
+	throw DFS::FileIOError(name, errno);
       }
-    cleanup closer([&f]()
+    cleanup closer([&f, &name]()
 		   {
 		     errno = 0;
 		     if (EOF == fclose(f))
 		       {
-			 throw DFS::OsError(errno);
+			 throw DFS::FileIOError(name, errno);
 		       }
 		   });
 
@@ -164,7 +167,7 @@ namespace
 	stream.avail_in = static_cast<avail_in_type>(fread(input_buffer, 1, input_buf_size, f));
 	if (ferror(f))
 	  {
-	    throw DFS::OsError(errno);
+	    throw DFS::FileIOError(name, errno);
 	  }
 	if (stream.avail_in == 0)
 	  break;

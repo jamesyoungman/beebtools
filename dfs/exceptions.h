@@ -17,14 +17,26 @@ class BadFileSystem : public std::exception
   std::string error_message_;
 };
 
-class OsError : public std::exception
+class FileIOError : public std::exception
 {
-  public:
-    explicit OsError(int errno_value);
+public:
+  explicit FileIOError(const std::string& file_name, int errno_value);
     const char *what() const throw();
 
-  private:
-    int errno_value_;
+private:
+  const std::string msg_;
+};
+
+class NonFileOsError : public std::exception
+{
+public:
+  // NonFileOsError is only for operations which don't involve a
+  // file. For operations involving a file, use FileIOError instead.
+  explicit NonFileOsError(int errno_value);
+  const char *what() const throw();
+
+private:
+  const int errno_value_;
 };
 
 }  // namespace DFS

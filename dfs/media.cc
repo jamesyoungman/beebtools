@@ -80,10 +80,10 @@ namespace
       errno = 0;
       if (!f_->seekg(pos, f_->beg))
 	{
-	  throw DFS::OsError(errno);
+	  throw DFS::FileIOError(name_, errno);
 	}
       if (!f_->read(reinterpret_cast<char*>(buf->data()), DFS::SECTOR_BYTES).good())
-	throw DFS::OsError(errno);
+	throw DFS::FileIOError(name_, errno);
     }
 
     sector_count_type get_total_sectors() const override
@@ -180,7 +180,7 @@ namespace DFS
     const unsigned cache_sectors = 4;
     unsigned long int len;
     if (!get_file_size(*infile, &len))
-      throw OsError(errno);	// TODO: include file name
+      throw FileIOError(name, errno);	// TODO: include file name
 
     if (len < DFS::SECTOR_BYTES * 2)
       throw DFS::BadFileSystem("disk image is too short to contain a valid catalog");
@@ -216,4 +216,3 @@ namespace DFS
 
 
 }  // namespace DFS
-
