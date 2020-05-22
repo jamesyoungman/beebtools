@@ -19,3 +19,21 @@ mkdir _build
 cd _build
 cmake .. && make && ctest -N
 ```
+
+## Code Coverage
+
+To measure code coverage you will need to download
+[CodeCoverage.cmake](https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake)
+into a directory that you put in CMAKE_MODULE_PATH.   Here is a worked example:
+
+```sh
+mkdir -p /tmp/coverage &&
+wget -O /tmp/coverage/CodeCoverage.cmake \
+  'https://github.com/bilke/cmake-modules/raw/master/CodeCoverage.cmake' &&
+( mkdir -p _build && cd _build &&
+  cmake -DCMAKE_MODULE_PATH=/tmp/coverage/ -DOPT_COVERAGE=1 -DCMAKE_BUILD_TYPE=Debug .. &&
+  make && make coverage
+)
+```
+
+The coverage report ends up in `_build/coverage/index.html`.
