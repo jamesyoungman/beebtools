@@ -5,12 +5,30 @@
 #include <memory>
 #include <string>
 
+#include <string.h>
+
 #include "dfstypes.h"
 
 
 namespace DFS
 {
   constexpr unsigned int SECTOR_BYTES = 256;
+
+  class OsError : public std::exception
+  {
+  public:
+    explicit OsError(int errno_value)
+      : errno_value_(errno_value)
+    {
+      assert(errno_value_ != 0);
+    }
+    const char *what() const throw()
+    {
+      return strerror(errno_value_);
+    }
+  private:
+    int errno_value_;
+  };
 
   class MediaReadFailure : public std::exception
   {
@@ -43,6 +61,8 @@ namespace DFS
   };
 
   std::unique_ptr<AbstractDrive> make_image_file(const std::string& file_name);
-
+#if USE_ZLIB
+  std::unique_ptr<AbstractDrive> compressed_image_file(const std::string& name);
+#endif
 }  // namespace DFS
 #endif

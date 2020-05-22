@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "dfsimage.h"
 #include "dfstypes.h"
@@ -13,22 +14,6 @@
 namespace
 {
   using DFS::sector_count_type;
-
-  class OsError : public std::exception
-  {
-  public:
-    explicit OsError(int errno_value)
-      : errno_value_(errno_value)
-    {
-      assert(errno_value_ != 0);
-    }
-    const char *what() const throw()
-    {
-      return strerror(errno_value_);
-    }
-  private:
-    int errno_value_;
-  };
 
   bool get_file_size(std::ifstream& infile, unsigned long int* size_in_bytes)
   {
@@ -95,10 +80,10 @@ namespace
       errno = 0;
       if (!f_->seekg(pos, f_->beg))
 	{
-	  throw OsError(errno);
+	  throw DFS::OsError(errno);
 	}
       if (!f_->read(reinterpret_cast<char*>(buf->data()), DFS::SECTOR_BYTES).good())
-	throw OsError(errno);
+	throw DFS::OsError(errno);
     }
 
     sector_count_type get_total_sectors() const override
@@ -165,7 +150,6 @@ namespace
       return false;
     return std::equal(suffix.rbegin(), suffix.rend(), s.rbegin());
   }
-
 }  // namespace
 
 namespace DFS
@@ -185,6 +169,13 @@ namespace DFS
 
   std::unique_ptr<AbstractDrive> make_image_file(const std::string& name)
   {
+#if USE_ZLIB
+    if (ends_with(name, ".ssd.gz"))
+      {
+	return compressed_image_file(name);
+      }
+#endif
+
     std::unique_ptr<std::ifstream> infile(std::make_unique<std::ifstream>(name, std::ifstream::in));
     const unsigned cache_sectors = 4;
     unsigned long int len;

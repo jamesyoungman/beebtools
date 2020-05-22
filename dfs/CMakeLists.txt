@@ -1,6 +1,12 @@
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+find_package( ZLIB REQUIRED )
+if ( ZLIB_FOUND )
+    include_directories( ${ZLIB_INCLUDE_DIRS} )
+    add_definitions(-DUSE_ZLIB)
+endif( ZLIB_FOUND )
+
 add_library(dfsbase OBJECT)
 target_sources(dfsbase
   PRIVATE
@@ -51,7 +57,13 @@ target_sources(dfs
   afsp.cc
   ${HEADERS}
   )
+if ( ZLIB_FOUND )
+  target_sources(dfs PRIVATE gzmedia.cc)
+  target_link_libraries(dfs ${ZLIB_LIBRARIES})
+endif (ZLIB_FOUND)
 target_link_libraries(dfs dfsbase)
+if ( ZLIB_FOUND )
+endif( ZLIB_FOUND )
 
 ######################################## Unit Tests
 
