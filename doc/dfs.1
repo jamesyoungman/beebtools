@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-05-18 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-05-22 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -23,10 +23,15 @@ followed by a command name (for example
 .SH OPTIONS
 
 The following options are undersood:
+
 .IP "\-\-file \fINAME\fR"
 Specifies the name of the disc image to read.
 If this option is specified more than once, each image file is
 "inserted" into the next free "drive".
+See
+.B DISC IMAGE FILE FORMAT
+for a description of the supported image files.
+
 .IP "\-\-dir \fID\fR"
 Specifies the current directory to assume when reading the disc image,
 as if the user had executed the command
@@ -91,11 +96,10 @@ disc image.  The output might look like this:
 The sector counts are in hexadecimal.  The file and byte counts are in
 decimal.
 
-Since the disc image is in the a regular Acorn DFS format, the total
-number of catalogue slots is 31, and so the used file count and the
-free file count sum to 31.
-The sector counts are given in hex and sum to 190 hex, which is 400 in
-decimal.
+Since the disc image used in the example above is in the a regular
+Acorn DFS format, the total number of catalogue slots is 31, and so
+the used file count and the free file count sum to 31.  The sector
+counts are given in hex and sum to 190 hex, which is 400 in decimal.
 This is because this disc image is of a 40-track single-sided disc and
 each track holds 10 sectors.
 
@@ -456,6 +460,25 @@ such files you should probably accept any reasonable line separator.
 .SH "EXIT STATUS"
 
 Zero if no error has occurred, non-zero otherwise.
+
+If the exit status is non-zero but no error message is issued on the
+standard error stream, that is a bug (see
+.BR BUGS ).
+
+.SH DISC IMAGE FILE FORMAT
+
+Curently only the ".ssd" disc image format is supported.
+
+SSD disc images should have the file extension ".ssd" (for example
+.BR foo.ssd ).
+Disc images compressed with GNU
+.B gzip
+are also accepted and should have the file extension ".ssd.gz".
+
+The data in an ssd-format file contains all the sectors of a disc
+image starting with the initial sector, followed by the rest of the
+initial track, and so on up that surface of the disc.  No sectors from
+the other side of the disc are included in the image file.
 
 .SH CONFORMING TO
 
