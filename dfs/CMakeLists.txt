@@ -22,6 +22,7 @@ target_compile_options(dfs PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 set(HEADERS
   afsp.h
+  cleanup.h
   commands.h
   dfscontext.h
   dfs.h
@@ -102,3 +103,18 @@ foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
     ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/testdata
     WORKING_DIRECTORY ${SH_TEST_CWD})
 endforeach()
+
+configure_file(
+  # This is a valid disc image.
+  testdata/acorn-dfs-sd-80t-empty.ssd
+  # But it's not a valid gzipped file.
+  testdata/not-gzipped.ssd.gz
+  COPYONLY)
+add_test(
+  NAME invalid_compressed_data
+  # not-gzipped.ssd.gz is not a valid gzip data file, despite its
+  # name.  We require this problem to be detected (which this test
+  # checks) and to be certain we detect unwanted pass-through, the
+  # input file happens to be a valid (but empty) disc image.
+  COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/mustfail.sh
+  $<TARGET_FILE:dfs> --file testdata/not-gzipped.ssd.gz cat)
