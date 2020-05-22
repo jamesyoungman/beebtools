@@ -10,7 +10,9 @@ endif( ZLIB_FOUND )
 add_library(dfsbase OBJECT)
 target_sources(dfsbase
   PRIVATE
+  exceptions.cc
   stringutil.cc
+  exceptions.h
   stringutil.h)
 target_compile_options(dfsbase PRIVATE ${EXTRA_WARNING_OPTIONS})
 
@@ -28,6 +30,7 @@ set(HEADERS
   dfs.h
   dfsimage.h
   dfstypes.h
+  exceptions.h
   fsp.h
   media.h
   regularexpression.h

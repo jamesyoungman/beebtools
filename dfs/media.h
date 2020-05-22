@@ -8,45 +8,12 @@
 #include <string.h>
 
 #include "dfstypes.h"
+#include "exceptions.h"
 
 
 namespace DFS
 {
   constexpr unsigned int SECTOR_BYTES = 256;
-
-  class OsError : public std::exception
-  {
-  public:
-    explicit OsError(int errno_value)
-      : errno_value_(errno_value)
-    {
-      assert(errno_value_ != 0);
-    }
-    const char *what() const throw()
-    {
-      return strerror(errno_value_);
-    }
-  private:
-    int errno_value_;
-  };
-
-  class MediaReadFailure : public std::exception
-  {
-  public:
-    explicit MediaReadFailure(unsigned sector)
-      : msg_(make_message(sector, "read")), sector_(sector)
-    {
-    }
-
-    const char *what() const throw()
-    {
-      return msg_.c_str();
-    }
-  private:
-    static std::string make_message(unsigned sector, const char *activity);
-    std::string msg_;
-    unsigned sector_;
-  };
 
   class AbstractDrive
   {

@@ -13,6 +13,7 @@
 
 #include "dfscontext.h"
 #include "dfstypes.h"
+#include "exceptions.h"
 #include "media.h"
 #include "stringutil.h"
 #include "fsp.h"
@@ -37,24 +38,6 @@ enum class Format
   };
   Format identify_format(AbstractDrive* device);
   std::string format_name(Format f);
-
-class BadFileSystem : public std::exception
-{
- public:
- BadFileSystem(const std::string& msg)
-   : error_message_(std::string("bad disk image: ") + msg)
-    {
-    }
-
-  const char *what() const throw()
-  {
-    return error_message_.c_str();
-  }
- private:
-  std::string error_message_;
-};
-
-
 
 class CatalogEntry
 {
