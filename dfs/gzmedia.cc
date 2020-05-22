@@ -64,54 +64,61 @@ namespace
     std::string msg_;
   };
 
+  std::vector<DFS::byte> decompress_image_file(const std::string& name)
+  {
+    std::vector<DFS::byte> result;
+    errno = 0;
+    gzFile f = gzopen(name.c_str(), "r");
+    if (f == 0)
+      throw DFS::OsError(errno);
+    static char buf[DFS::SECTOR_BYTES];
+    for (;;)
+      {
+	int count = gzread(f, buf, DFS::SECTOR_BYTES);
+	if (count < 0)
+	  {
+	    throw DecompressionError(f);
+	  }
+	else if (count)
+	  {
+	    const bool short_read = static_cast<unsigned>(count) < DFS::SECTOR_BYTES;
+	    if (short_read)
+	      {
+		std::fill(buf+count, buf+DFS::SECTOR_BYTES, '\0');
+		std::copy(buf, buf+DFS::SECTOR_BYTES, std::back_inserter(result));
+		break;	// EOF
+	      }
+	    else
+	      {
+		std::copy(buf, buf+DFS::SECTOR_BYTES, std::back_inserter(result));
+	      }
+	  }
+	else
+	  {
+	    break;		// EOF
+	  }
+      }
+    const int err = gzclose_r(f);
+    if (err == Z_OK)
+      return result;
+    if (err == Z_STREAM_ERROR)
+      throw FixedDecompressionError("invalid compressed data stream");
+    if (err == Z_ERRNO)
+      throw DFS::OsError(errno);
+    if (err == Z_MEM_ERROR)
+      throw out_of_memory;	// avoids allocation
+    if (err == Z_BUF_ERROR)
+      throw FixedDecompressionError("compressed input is incomplete");
+    throw FixedDecompressionError("unknown decompression error");
+  }
+
   class CompressedImageFile : public DFS::AbstractDrive
   {
   public:
     explicit CompressedImageFile(const std::string& name)
     {
-      errno = 0;
-      gzFile f = gzopen(name.c_str(), "r");
-      if (f == 0)
-	throw DFS::OsError(errno);
-      static char buf[DFS::SECTOR_BYTES];
-      for (;;)
-	{
-	  int count = gzread(f, buf, DFS::SECTOR_BYTES);
-	  if (count < 0)
-	    {
-	      throw DecompressionError(f);
-	    }
-	  else if (count)
-	    {
-	      const bool short_read = static_cast<unsigned>(count) < DFS::SECTOR_BYTES;
-	      if (short_read)
-		{
-		  std::fill(buf+count, buf+DFS::SECTOR_BYTES, '\0');
-		  std::copy(buf, buf+DFS::SECTOR_BYTES, std::back_inserter(data_));
-		  break;	// EOF
-		}
-	      else
-		{
-		  std::copy(buf, buf+DFS::SECTOR_BYTES, std::back_inserter(data_));
-		}
-	    }
-	  else
-	    {
-	      break;		// EOF
-	    }
-	}
-      const int err = gzclose_r(f);
-      if (err == Z_OK)
-	return;
-      if (err == Z_STREAM_ERROR)
-	throw FixedDecompressionError("invalid compressed data stream");
-      if (err == Z_ERRNO)
-	throw DFS::OsError(errno);
-      if (err == Z_MEM_ERROR)
-	throw out_of_memory;	// avoids allocation
-      if (err == Z_BUF_ERROR)
-	throw FixedDecompressionError("compressed input is incomplete");
-      throw FixedDecompressionError("unknown decompression error");
+      std::vector<DFS::byte> data = decompress_image_file(name);
+      std::swap(data, data_);
     }
 
     virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
