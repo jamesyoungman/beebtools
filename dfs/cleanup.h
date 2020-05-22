@@ -7,20 +7,15 @@ class cleanup
 {
  public:
   cleanup(std::function<void()> cleaner)
-    : run_(cleaner), running_(false) {}
+    : run_(cleaner) {}
 
   ~cleanup()
     {
-      if (!running_)
-	{
-	  running_ = true;
-	  run_();
-	}
+      run_();
     }
 
  private:
   std::function<void()> run_;
-  bool running_;
 };
 
 
