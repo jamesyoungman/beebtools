@@ -32,8 +32,8 @@ bool case_insensitive_less(const string& left,
     }
   if (result.first == left.cend())
     {
-      // Equal, so left cannot be less.
-      return false;
+      // Cannot be equal as that was the previous case.
+      return true;
     }
   return tolower(*result.first) < tolower(*result.second);
 }

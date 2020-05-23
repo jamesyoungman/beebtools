@@ -18,7 +18,7 @@ cleanup() {
 dfs() {
     echo "${DFS}" --file "${input}" "$@" > last.command
     "${DFS}" --file "${input}" "$@"
-    
+
 }
 
 expect_got() {
@@ -33,13 +33,25 @@ expect_got() {
 }
 
 (
-    init; expect_got type_50  "$(printf 'FIFTY\n')" "$(dfs type          'FILE50')"
-    init; expect_got type_50b "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50')"
-    init; expect_got dir      "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50')"
-    init; expect_got drive    "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
+    init; expect_got type_50   "$(printf 'FIFTY\n')" "$(dfs type          'FILE50')"
+    init; expect_got type_50b  "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50')"
+    init; expect_got type_50bb "$(printf 'FIFTY\r')" "$(dfs type --binary --binary 'FILE50')"
+    init; expect_got dir       "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50')"
+    init; expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50')"
+    init; expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
+
+    # Some usage errors and similar.
+    if dfs type  --not-an-option 'FILE50'
+    then
+	echo "FAIL: type command does not reject non-options" >&2
+	exit 1
+    fi
+    if dfs type '' 'FILE50'
+    then
+	echo "FAIL: type command does not reject empty arguments" >&2
+	exit 1
+    fi
 )
 rv=$?
 cleanup
 ( exit $rv )
-
-
