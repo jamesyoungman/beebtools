@@ -86,6 +86,17 @@ target_compile_options(test_afsp
 target_link_libraries(test_afsp dfsbase)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
 
+add_executable(test_regularexpression)
+target_sources(test_regularexpression
+  PRIVATE
+  tests/test_regularexpression.cc
+  regularexpression.h)
+target_compile_options(test_regularexpression
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME test_regularexpression_passes COMMAND test_regularexpression)
+
+
 add_executable(test_stringutil)
 target_sources(test_stringutil
   PRIVATE

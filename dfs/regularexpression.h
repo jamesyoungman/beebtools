@@ -3,7 +3,9 @@
 
 #include <regex.h>
 
+#include <algorithm>
 #include <string>
+#include <vector>
 
 namespace DFS
 {
