@@ -191,6 +191,7 @@ namespace
   {
   public:
     explicit CompressedImageFile(const std::string& name)
+      : name_(name)
     {
       std::vector<DFS::byte> data = decompress_image_file(name);
       std::swap(data, data_);
