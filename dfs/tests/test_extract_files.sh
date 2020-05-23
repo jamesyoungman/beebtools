@@ -39,7 +39,9 @@ check_extract() {
 	cleanup
 	gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
-	if ! dfs extract-files "${extract_dfs}"
+	# This time the output directory has a trailing slash.
+	# When we do this again later, it's missing.
+	if ! dfs extract-files "${extract_dfs}/"
 	then
 	    echo "FAILED: extract-files returned nonzero" >&2
 	    exit 1
@@ -94,6 +96,8 @@ check_extract() {
 	    echo "FAILED: could not extract ${zipfile}" >&2
 	    exit 1
 	fi
+	# Importantly, ${extract_dfs} lacks a trailing slash here (we need to
+	# verify that this works with or without one).
 	if ! dfs extract-files "${extract_dfs}"
 	then
 	    echo "FAILED: extract-files returned nonzero" >&2
@@ -128,6 +132,33 @@ check_extract() {
 	then
 		    echo "FAILED: extracted .inf files differ" >&2
 		    exit 1
+	fi
+
+	# Now test a small number of usage errors.
+	if dfs extract-files # no output directory
+	then
+	    echo "FAILED: extract-files succeeds even without an output directory" >&2
+	    exit 1
+	fi
+	if dfs extract-files # no output directory
+	then
+	    echo "FAILED: extract-files succeeds even without an output directory" >&2
+	    exit 1
+	fi
+	if dfs extract-files "${extract_dfs}" extra-arg # too many arguments
+	then
+	    echo "FAILED: extract-files succeeds with spurious extra arguments" >&2
+	    exit 1
+	fi
+	if dfs extract-files --drive=1   # no media in that drive
+	then
+	    echo "FAILED: extract-files --drive=1 succeeds even with no media in drive 1" >&2
+	    exit 1
+	fi
+	if "${DFS}" extract-files "${extract_dfs}" # no media at all
+	then
+	    echo "FAILED: extract-files succeeds even with no media" >&2
+	    exit 1
 	fi
 
 
