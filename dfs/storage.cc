@@ -97,8 +97,9 @@ namespace DFS
       }
     else
       {
-	std::cerr << "warning: " << afsp << " doesn't look like a drive specification, "
-		  << "defaulting to drive " << current << "\n";
+	std::cerr << "warning: " << afsp
+		  << " doesn't look like a wildcard containing a drive "
+		  << "specification, defaulting to drive " << current << "\n";
 	drive_wanted = current;
       }
     return select_drive(drive_wanted, pp);

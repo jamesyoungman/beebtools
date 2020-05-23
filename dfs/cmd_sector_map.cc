@@ -42,6 +42,7 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
+    unsigned drive_number;
     DFS::AbstractDrive *drive;
     if (args.size() > 2)
       {
@@ -50,14 +51,15 @@ public:
       }
     else if (args.size() == 2)
       {
-	if (!storage.select_drive_by_afsp(args[1], &drive, ctx.current_drive))
+	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_number))
 	  return false;
       }
     else
       {
-	if (!storage.select_drive(ctx.current_drive, &drive))
-	  return false;
+	drive_number = ctx.current_drive;
       }
+    if (!storage.select_drive(drive_number, &drive))
+      return false;
     DFS::FileSystem fs(drive);
     const std::vector<int> occupied_by = fs.sector_to_catalog_entry_mapping();
 
