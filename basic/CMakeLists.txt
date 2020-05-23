@@ -21,14 +21,14 @@ install(TARGETS bbcbasic_to_text
 
 enable_testing()
 
-add_executable(tokens_test tokens_test.c)
-target_compile_options(tokens_test PRIVATE ${EXTRA_WARNING_OPTIONS})
-target_link_libraries(tokens_test decoder)
-add_test(NAME basic_tokens_test_passes COMMAND tokens_test)
+add_executable(test_tokens tests/test_tokens.c)
+target_compile_options(test_tokens
+  PRIVATE ${EXTRA_WARNING_OPTIONS} -I${CMAKE_CURRENT_SOURCE_DIR} )
+target_link_libraries(test_tokens decoder)
+add_test(NAME basic_tokens_test_passes COMMAND test_tokens)
 
 add_test(NAME basic_golden
   COMMAND
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/run_golden_tests.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
-
