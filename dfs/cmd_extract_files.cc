@@ -30,7 +30,7 @@ namespace
     // The NEXT field is missing because our source is not tape.
     using std::setw;
     using std::setfill;
-    inf_file << entry.directory() << '.' << entry.name()
+    inf_file << entry.directory() << '.' << entry.name() << ' '
 	     << setw(6) << setfill('0') << load_addr << " "
 	     << setw(6) << setfill('0') << exec_addr << " "
 	     << setw(6) << setfill('0') << entry.file_length() << " " // no sign-extend
