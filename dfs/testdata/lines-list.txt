@@ -1,0 +1,8 @@
+   1 This is a file which
+   2 contains several lines
+   3 of text.  It also has
+   4 one blank line, here:
+   5 
+   6 After the blank line,
+   7 some other content of
+   8 no particular significance.
