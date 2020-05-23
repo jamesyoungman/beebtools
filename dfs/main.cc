@@ -95,9 +95,9 @@ namespace
 			      << "argument to --drive: " << end << "\n";
 		    return false;
 		  }
-		if (v < 0 || v > 2)
+		if (v < 0 || v > 3)
 		  {
-		    std::cerr << "Drive number should be between 0 and 2.\n ";
+		    std::cerr << "Drive number should be between 0 and 3.\n ";
 		    return false;
 		  }
 		return true;
