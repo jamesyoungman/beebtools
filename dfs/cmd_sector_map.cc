@@ -21,7 +21,7 @@ class CommandSectorMap : public DFS::CommandInterface
 public:
   const std::string name() const override
   {
-    return "sector_map";
+    return "sector-map";
   }
 
   const std::string usage() const override

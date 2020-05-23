@@ -13,7 +13,7 @@ if ! t=$(mktemp); then
 fi
 (
     rv=0
-    commands="cat dump extract-files extract-unused free help info list sector_map space type"
+    commands="cat dump extract-files extract-unused free help info list sector-map space type"
 
     check() {
 	for c in $commands
