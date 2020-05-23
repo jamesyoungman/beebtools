@@ -63,3 +63,49 @@ check_space watford-sd-62-with-holes.ssd \
 Total space free = 2FD sectors
 "
 
+## Check various usage errors.
+input="${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz"
+if ! [ -f "${input}" ]
+then
+    echo "Input file ${input} is missing" >&2
+    exit 1
+fi
+# No media at all.
+if "${DFS}" space
+then
+    echo "FAIL: spurious success status when no media is present" >&2
+    exit 1
+fi
+
+# Default drive has no media.
+if "${DFS}" --file "${input}" --drive 1 space
+then
+    echo "FAIL: spurious success status when default drive has no media" >&2
+    exit 1
+fi
+
+# Explicitly specified drive has no media.
+if "${DFS}" --file "${input}" space 1
+then
+    echo "FAIL: spurious success status when specified drive has no media" >&2
+    exit 1
+fi
+
+# Explicitly specified drive is not a valid drive number
+if "${DFS}" --file "${input}" space X
+then
+    echo "FAIL: spurious success status when specified drive is not a number" >&2
+    exit 1
+fi
+if "${DFS}" --file "${input}" space 4
+then
+    echo "FAIL: spurious success status when specified drive is not a valid drive number" >&2
+    exit 1
+fi
+
+# Spurious argument
+if "${DFS}" --file "${input}" space 0 0
+then
+    echo "FAIL: spurious success status with extra argument" >&2
+    exit 1
+fi
