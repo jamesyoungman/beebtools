@@ -76,19 +76,24 @@ enable_testing()
 add_executable(test_afsp)
 target_sources(test_afsp
   PRIVATE
-  test_afsp.cc afsp.cc
+  tests/test_afsp.cc
+  afsp.cc
   stringutil.h
   afsp.h dfscontext.h)
-target_compile_options(test_afsp PRIVATE ${EXTRA_WARNING_OPTIONS})
+target_compile_options(test_afsp
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test_afsp dfsbase)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
 
 add_executable(test_stringutil)
 target_sources(test_stringutil
   PRIVATE
-  test_stringutil.cc
+  tests/test_stringutil.cc
   stringutil.h)
-target_compile_options(test_stringutil PRIVATE ${EXTRA_WARNING_OPTIONS})
+target_compile_options(test_stringutil
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test_stringutil dfsbase)
 add_test(NAME dfs_test_stringutil_passes COMMAND test_stringutil)
 
