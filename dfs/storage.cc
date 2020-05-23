@@ -71,9 +71,15 @@ namespace DFS
 	*num = (drive_arg[0] - '0');
 	return true;
       }
+    else if (drive_arg.size() > 1 && drive_arg[0] == ':' && isdigit(drive_arg[1]))
+      {
+	*num = (drive_arg[1] - '0');
+	return true;
+      }
     else
       {
-	std::cerr << "Please specify a drive number\n";
+	std::cerr << "Please specify a drive number (" << drive_arg
+		  << " doesn't look like a drive number)\n";
 	return false;
       }
   }
@@ -87,11 +93,11 @@ namespace DFS
       }
     else
       {
+	std::cerr << "warning: " << afsp << " doesn't look like a drive specification, "
+		  << "defaulting to drive " << current << "\n";
 	drive_wanted = current;
       }
     return select_drive(drive_wanted, pp);
   }
 
 }  // namespace DFS
-
-

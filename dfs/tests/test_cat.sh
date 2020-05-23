@@ -13,7 +13,7 @@ check_cat() {
     shift
 
     cleanup() {
-	rm -f "${input}" expected.txt actual.txt
+	rm -f "${input}" actual.txt actual0.txt
     }
 
     dfs() {
@@ -25,6 +25,43 @@ check_cat() {
     (
 	rv=0
 	dfs cat > actual.txt
+	dfs cat 0 > actual0.txt
+	if diff actual.txt actual0.txt >&2
+	then
+	    echo "Specifying drive 0 produces the same output, good."
+	else
+	    echo "FAIL Specifying drive 0 produces different output."
+	    rv=1
+	fi
+	if dfs cat :0ignored > actual00.txt
+	then
+	    if diff actual0.txt actual00.txt >&2
+	    then
+		echo "Specifying drive 0 as :0ignored produces the same output, good."
+	    else
+		echo "FAIL Specifying drive 0 as :0ignored produces different output."
+		rv=1
+	    fi
+	else
+	    echo "FAIL specifying drive 0 as :0ignored fails, which it should not." >&2
+	    rv=1
+	fi
+
+	if dfs cat 1 2>/dev/null
+	then
+	    echo "FAIL Specifying drive 1 (which should be empty) doesn't fail." >&2
+	    rv=1
+	fi
+
+	if dfs cat 0 0 2>/dev/null
+	then
+	    # NOTE: Watford DFS at least allows this.  For example
+	    #   *CAT 0 0
+	    # produces a catalogue of disc 0, just once.
+	    echo "FAIL Specifying more than one drive argument doesn't fail." >&2
+	    rv=1
+	fi
+
 	for expected
 	do
 	    if egrep -q -e "${expected}" actual.txt

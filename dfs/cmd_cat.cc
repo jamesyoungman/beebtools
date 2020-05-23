@@ -46,6 +46,7 @@ namespace
 		    const std::vector<std::string>& args) override
     {
       DFS::AbstractDrive *drive;
+      unsigned int d;
       if (args.size() > 2)
 	{
 	  std::cerr << "Please specify at most one argument, the drive number\n";
@@ -53,14 +54,16 @@ namespace
 	}
       else if (args.size() == 2)
 	{
-	  if (!storage.select_drive_by_afsp(args[1], &drive, ctx.current_drive))
+	  if (!DFS::StorageConfiguration::decode_drive_number(args[1], &d))
 	    return false;
 	}
       else
 	{
-	  if (!storage.select_drive(ctx.current_drive, &drive))
-	    return false;
+	  d = ctx.current_drive;
 	}
+      if (!storage.select_drive(d, &drive))
+	return false;
+
       FileSystem file_system(drive);
       const FileSystem* fs = &file_system; // TODO: this is a bit untidy
 

@@ -509,6 +509,32 @@ single-sided disc images is handled, changing the drive ordering from
 This would better mimic what happens when you insert physical floppies
 on a real system.
 
+The
+.BR dfs (1)
+program tries to follow the conventions of DFS when handling drive
+number, wildcard and drive number arguments.  This means that
+validation is in some cases less strict than is common in the Unix
+user experience.  For example, the command
+
+.EX
+dfs --file foo.ssd cat :0junk
+.EE
+
+produces a catalog of disc 0 without error, even though
+.I :0junk
+is not a valid DFS file name.
+However there are cases where it doesn't seem helpful to
+be lax, and so the command
+
+.EX
+dfs --file foo.ssd cat 0 0
+.EE
+
+produces an error message.  Please do not rely on future versions of
+the program accepting arguments which might reasonably be considered
+to contain an error.
+
+
 .SH "BUGS"
 Please report bugs to james@youngman.org.
 
