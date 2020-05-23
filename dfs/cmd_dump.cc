@@ -18,15 +18,18 @@ namespace
     for (size_t i = 0; i < HexdumpStride; ++i)
       {
 	if (i < len)
-	  cout << ' ' << std::setw(2) << std::setfill('0') << unsigned(data[pos + i]);
+	  cout << ' ' << std::setw(2) << std::setfill('0') << std::uppercase << unsigned(data[pos + i]);
 	else
-	  cout << std::setw(3) << std::setfill(' ') << ' ';
+	  cout << " **";
       }
     cout << ' ';
     for (size_t i = 0; i < len; ++i)
       {
 	const char ch = data[pos + i];
-	if (isgraph(ch))
+	// TODO: generate a test file which verifies that all the
+	// members of the character set are correctly characterised as
+	// being printed directly or as '.'.
+	if (ch == ' ' || isgraph(ch))
 	  cout << ch;
 	else
 	  cout << '.';
@@ -83,4 +86,3 @@ public:
 REGISTER_COMMAND(CommandDump);
 
 }  // namespace DFS
-
