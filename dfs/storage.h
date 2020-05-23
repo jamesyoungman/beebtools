@@ -24,7 +24,7 @@ namespace DFS
   class StorageConfiguration
   {
   public:
-    StorageConfiguration() {}
+    StorageConfiguration();
     bool connect_drive(std::unique_ptr<AbstractDrive>&&);
 
     bool is_drive_connected(unsigned drive) const
@@ -37,23 +37,7 @@ namespace DFS
     static bool decode_drive_number(const std::string& s, unsigned int *result);
     bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, int current) const;
     bool select_drive(unsigned int drive, AbstractDrive **pp) const;
-
-    void show_drive_configuration(std::ostream& os) const
-    {
-      unsigned drive;
-      using std::cout;
-      for (drive = 0; drive < drives_.size(); ++drive)
-	{
-	  os << "Drive " << drive << ": "
-	     << (drives_[drive] ? "occupied" : "empty");
-	  auto image = drives_[drive].get();
-	  if (0 != image)
-	    {
-	      os << ", " << image->description();
-	    }
-	  os << "\n";
-	}
-    }
+    void show_drive_configuration(std::ostream& os) const;
 
   private:
     std::array<std::unique_ptr<AbstractDrive>, MAX_DRIVES> drives_;

@@ -33,6 +33,10 @@ namespace
 
 namespace DFS
 {
+  StorageConfiguration::StorageConfiguration()
+  {
+  }
+
   bool StorageConfiguration::connect_drive(std::unique_ptr<AbstractDrive>&& media)
   {
     // Attach at the next free spot.
@@ -98,6 +102,23 @@ namespace DFS
 	drive_wanted = current;
       }
     return select_drive(drive_wanted, pp);
+  }
+
+  void StorageConfiguration::show_drive_configuration(std::ostream& os) const
+  {
+    unsigned drive;
+    using std::cout;
+    for (drive = 0; drive < drives_.size(); ++drive)
+      {
+	os << "Drive " << drive << ": "
+	   << (drives_[drive] ? "occupied" : "empty");
+	auto image = drives_[drive].get();
+	if (0 != image)
+	  {
+	    os << ", " << image->description();
+	  }
+	os << "\n";
+      }
   }
 
 }  // namespace DFS
