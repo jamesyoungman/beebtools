@@ -12,7 +12,8 @@ if (OPT_COVERAGE)
   append_coverage_compiler_flags()
   setup_target_for_coverage_gcovr_html(
     NAME coverage
-    EXECUTABLE ctest -VV)
+    EXECUTABLE ctest -VV
+    EXCLUDE "dfs/tests/*" "basic/tests/*")
 endif (OPT_COVERAGE)
 find_program(BOURNE_SHELL sh)
 set(EXTRA_WARNING_OPTIONS
