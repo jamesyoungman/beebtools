@@ -116,27 +116,40 @@ namespace
 
   std::vector<DFS::byte> decompress_image_file(const std::string& name)
   {
-    std::vector<DFS::byte> compressed;
     errno = 0;
+    // We use both a local buffer for zlib and a stdio buffer here.
+    // See the comment at input_buf_size for an explanation.  Before
+    // moving this declaration, note that this must live longer than
+    // the FILE object which references it.
+    std::vector<char> readbuf(32768, '\0');
     FILE *f = fopen(name.c_str(), "rb");
     if (0 == f)
       {
 	throw DFS::FileIOError(name, errno);
       }
-    cleanup closer([&f, &name]()
+    // NOTE: We rely on C++ destroying |closer| (which closes f)
+    // before destroying |readbuf| (which f holds a pointer to).
+    // Section 6.6 [stmt.jump] of the ISO C++ 2003 standard specifies
+    // that objects with automatic storage duration are destroyed in
+    // reverse order of their declaration.
+    //
+    // NOTE: the capture for readbuf in the lambda used by closer is
+    // there so that we get a compiler error if the declaration (and
+    // thus destruction) order becomes incorrect.
+    cleanup closer([&f, &name, &readbuf]()
 		   {
+		     (void)readbuf; // see NOTE above
 		     errno = 0;
 		     if (EOF == fclose(f))
 		       {
 			 throw DFS::FileIOError(name, errno);
 		       }
 		   });
+    setbuffer(f, readbuf.data(), readbuf.size());
 
     std::vector<DFS::byte> result;
     z_stream stream;
     gz_header header;
-    // We're decompressing a foo.gz file, so permit only gzip-compressed streams
-    // by passing 16+MAX_WBITS as the second arg to inflateInit2.
     memset(&stream, 0, sizeof(stream));
     stream.zalloc = Z_NULL;
     stream.zfree = Z_NULL;
@@ -144,6 +157,8 @@ namespace
     stream.avail_in = 0;
     stream.next_in = Z_NULL;
 
+    // We're decompressing a foo.gz file, so permit only gzip-compressed streams
+    // by passing 16+MAX_WBITS as the second arg to inflateInit2.
     int zerr = inflateInit2(&stream, 16+MAX_WBITS);
     check_zlib_error_code(zerr);
 
@@ -158,11 +173,19 @@ namespace
     header.done = 0;
     check_zlib_error_code(inflateGetHeader(&stream, &header));
 
-    // zlib's inflate() requires to be able to write to a contiguous
-    // buffer, so we have to provide one.
-    const int input_buf_size = 409600;
+    // If input_buf_size (and the stdio buffer size) is too small, we
+    // perform too many read operations.  But keeping input_buf_size
+    // low ensures that we handle all the various cases around buffer
+    // filling and emptying.  Therefore to avoid input_buf_size
+    // causing I/O read performance problems, we use a large stdio
+    // buffer.
+    const int input_buf_size = 512;
+    // If output_buf_size is too small, we just call inflate() too
+    // many times.
     const int output_buf_size = 1024;
     unsigned char input_buffer[input_buf_size];
+    // zlib's inflate() requires to be able to write to a contiguous
+    // buffer, so we have to provide one.
     unsigned char output_buffer[output_buf_size];
     // These static assertions ensure that the static casts within the
     // loop are safe.
@@ -179,8 +202,15 @@ namespace
 	  {
 	    throw DFS::FileIOError(name, errno);
 	  }
-	if (stream.avail_in == 0)
-	  break;
+	// We rely on zlib to detect the end of the input stream.  If
+	// there is no more input here we will pass avail_in=0 to
+	// inflate() which tells it there is no more input.  If that
+	// means the input is incomplete, it will return zerr != Z_OK
+	// and we will issue a diagnostic.  However, if we were
+	// reading a file compressed with compress(1) (e.g. foo.ssd.Z)
+	// then we might have to recognise the end of the input stream
+	// with physical EOF.   I don't think it's possible to identify
+	// when a foo.Z file has been truncated.
 	stream.next_in = input_buffer;
 	do  // decompress some data from the input buffer.
 	  {
