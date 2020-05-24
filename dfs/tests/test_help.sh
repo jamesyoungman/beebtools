@@ -32,6 +32,8 @@ fi
 
     "${DFS}" help >| "${t}"
     check
+    "${DFS}" --help >| "${t}"
+    check
     "${DFS}" help $commands >| "${t}"
     check
 
