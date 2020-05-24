@@ -37,13 +37,13 @@ const char end_marker[] = "__end__";
  * to |identity|. This tells the intialisation code to use
  * a value from ascii[] instead of the value in base_map.
  */
-struct multi_mapping 
+struct multi_mapping
 {
   unsigned int token_value;
   /* -1 since Mac is missing. */
-  const char* dialect_mappings[NUM_DIALECTS-1]; 
+  const char* dialect_mappings[NUM_DIALECTS-1];
 };
-  
+
 static const struct multi_mapping base_map[NUM_TOKENS] = {
 /*
         6502                   Z80               ARM                 Windows
@@ -205,85 +205,6 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0x100,{end_marker,           end_marker,       end_marker,         end_marker       }},
 };
 
-
-/*
-  compound mappings
-
-0x42 59:BAD,               BAD,               "BY                             |
-0x91 24:" TIME$",           "TIME$",          "TIME$           TIME$          |
-0xB8 50:" TOP",             "TOP",            "TOP             TOP            |
-0xC9 4F:" LISTO",           "LISTO         |                                    |
-0xD1 24:" TIME$",           "TIME$             TIME$             TIME$          |
-0xF6 24:" REPORT$",         "REPORT$           REPORT$           REPORT$        |
-*/
-
-/* Multi-byte mappings
-0xC6 A9:BAD,                "              |                     SUMLEN         |
-0xC6 8E:BAD,                "              |   SUM                              |
-0xC6 8E A"9:",              "              |   SUMLEN                           |
-0xC6 8F:BAD,                "              |   BEAT                             |
-                                   +-------+-  --------------+                  |
-                                   | Extra Apple Mac tokens  |                  |
-0xC6:"    AUTO",            "AUTO  |                         |   SUM            |
-0xC6 90:BAD,                "      |  ASK                    |                  |
-0xC6 91:BAD,                "      |  ANSWER                 |                  |
-0xC6 92:BAD,                "      |  SFOPENI  N             |                  |
-0xC6 93:BAD,                "      |  SFOPENO  UT            |                  |
-0xC6 94:BAD,                "      |  SFOPENU  P             |                  |
-0xC6 95:BAD,                "      |  SFNAME$                |                  |
-0xC6 96:BAD,                "      |  MENU                   |                  |
-                            "      +-------------------------+------------------+
-                            "      |  Extra Immediate Cmds   |                  |
-                            "      +------------------------ |                  |
-0xC7:"    DELETE",          "DELETE                          |   WHILE          |
-0xC7 8E:BAD,                "                  APPEND        |                  |
-0xC7 8F:BAD,                "                  AUTO          |                  |
-0xC7 90:BAD,                "                  CRUNCH        |                  |
-0xC7 91:BAD,                "                  DELETE        |                  |
-0xC7 92:BAD,                "                  EDIT          |                  |
-0xC7 92 4"F:",              "                  EDITO         |                  |
-0xC7 93:BAD,                "                  HELP          |                  |
-0xC7 94:BAD,                "                  LIST          |                  |
-0xC7 94 4"F:",              "                  LISTO         |                  |
-0xC7 95:BAD,                "                  LOAD          |                  |
-0xC7 96:BAD,                "                  LVAR          |                  |
-0xC7 97:BAD,                "                  NEW           |                  |
-0xC7 98:BAD,                "                  OLD           |                  |
-0xC7 99:BAD,                "                  RENUMBER      |                  |
-0xC7 9A:BAD,                "                  SAVE          |                  |
-0xC7 9B:BAD,                "                  TEXTLOAD      |                  |
-0xC7 9C:BAD,                "                  TEXTSAVE      |                  |
-0xC7 9D:BAD,                "                  TWIN          |                  |
-0xC7 9E:BAD,                "                  TWINO         |                  |
-0xC7 9F:BAD,                "                  INSTALL       |                  |
-0xC8:"LOAD",                "LOAD          |                     CASE           |
-0xC8 8E:BAD,                "              |   CASE                             |
-0xC8 8F:BAD,                "              |   CIRCLE                           |
-0xC8 90:BAD,                "              |   FILL                             |
-0xC8 91:BAD,                "              |   ORIGIN                           |
-0xC8 92:BAD,                "              |   POINT                            |
-0xC8 93:BAD,                "              |   RECTANGLE                        |
-0xC8 94:BAD,                "              |   SWAP                             |
-0xC8 95:BAD,                "              |   WHILE                            |
-0xC8 96:BAD,                "              |   WAIT                             |
-0xC8 97:BAD,                "              |   MOUSE                            |
-0xC8 98:BAD,                "              |   QUIT                             |
-0xC8 99:BAD,                "              |   SYS                              |
-0xC8 9A:BAD,                "              |   INSTALL                          |
-0xC8 9B:BAD,                "              |   LIBRARY                          |
-0xC8 9C:BAD,                "              |   TINT                             |
-0xC8 9D:BAD,                "              |   ELLIPSE                          |
-0xC8 9E:BAD,                "              |   BEATS                            |
-0xC8 9F:BAD,                "              |   TEMPO                            |
-0xC8 A0:BAD,                "              |   VOICES                           |
-0xC8 A1:BAD,                "              |   VOICE                            |
-0xC8 A2:BAD,                "              |   STEREO                           |
-0xC8 A3:BAD,                "              |   OVERLAY                          |
-0xC8 A4:BAD,                "              |   MANDEL                           |
-0xC8 A5:BAD,                "              |   PRIVATE                          |
-0xC8 A6:BAD,                "              |   EXIT                             |
-*/
-
 void please_submit_bug_report()
 {
   fprintf(stderr,
@@ -323,7 +244,7 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
   if (dialect == Mac)
     {
       /* We have no entries in base_map for Mac, but it is
-       * similar to ARM except for the extension mappings 
+       * similar to ARM except for the extension mappings
        * which are not in base_map anyway.
        */
       base_dialect = ARM;
@@ -426,7 +347,7 @@ void build_map_c7(enum Dialect d, const char **output)
 {
   bool arm = (d == ARM);
   build_invalid_map(output);
-  if (d == ARM || d == Mac) 
+  if (d == ARM || d == Mac)
     {
       output[0x8E] = "APPEND";
       output[0x8F] = "AUTO";
@@ -436,7 +357,7 @@ void build_map_c7(enum Dialect d, const char **output)
       output[0x92] = arm ? "EDIT"     : "HELP";
       output[0x93] = arm ? "HELP"     : "LIST";
       output[0x94] = arm ? "LIST"     : "LOAD";
-      output[0x95] = arm ? "LOAD"     : "LVAR";     
+      output[0x95] = arm ? "LOAD"     : "LVAR";
       output[0x96] = arm ? "LVAR"     : "NEW";
       output[0x97] = arm ? "NEW"      : "OLD";
       output[0x98] = arm ? "OLD"      : "RENUMBER";
