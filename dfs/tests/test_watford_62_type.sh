@@ -37,6 +37,19 @@ expect_got() {
     expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50')"
     expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
 
+    # Use type on an uncompressed image file so that we exercise a call to
+    # ImageFile::get_total_sectors().
+    gunzip \
+	< "${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" \
+	> 'watford-sd-62-with-62-files.ssd' || exit 1
+    if ! (expect_got type_50   "$(printf 'FIFTY\n')" \
+       "$(${DFS} --file watford-sd-62-with-62-files.ssd type 'FILE50')" )
+    then
+	rm -f 'watford-sd-62-with-62-files.ssd'
+	exit 1
+    fi
+    rm -f 'watford-sd-62-with-62-files.ssd'
+
     # Some usage errors and similar.
     if dfs type  --not-an-option 'FILE50'
     then
