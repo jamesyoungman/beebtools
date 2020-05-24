@@ -26,6 +26,7 @@ set(HEADERS
   afsp.h
   cleanup.h
   commands.h
+  crc.h
   dfscontext.h
   dfs.h
   dfsimage.h
@@ -40,7 +41,7 @@ set(HEADERS
 
 target_sources(dfs
   PRIVATE
-  dfs.cc
+  crc.cc
   cmd_cat.cc
   cmd_dump.cc
   cmd_extract_files.cc

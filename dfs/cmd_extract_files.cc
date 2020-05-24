@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "crc.h"
 #include "dfs.h"
 #include "dfsimage.h"
 #include "media.h"
