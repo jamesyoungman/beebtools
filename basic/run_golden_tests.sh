@@ -21,8 +21,20 @@ do
 	fi
 	found_golden=false
 	goldens_missing=""
-	for listo in 0 1 2 3 4 5 6 7
+	for how in 0 STDIN_0 1 2 3 4 5 6 7 STDIN_7
 	do
+	    listo="${how}"
+	    use_stdin=false
+	    case ${how} in
+		STDIN_*)
+		    listo="${how##STDIN_}"
+		    use_stdin=true
+		    ;;
+		*)
+		    listo="${how}"
+		    ;;
+	    esac
+
 	    g_txt="${in_dir}/golden/${dialect}/${infile}_listo${listo}.txt"
 	    g_bin="${in_dir}/golden/${dialect}/${infile}_listo${listo}.bin"
 	    if [ -e "${g_txt}" ]
@@ -43,7 +55,17 @@ do
 	    fi
 
 	    out="$(mktemp)"
-	    if "${formatter}" --listo="${listo}" --dialect="${dialect}" "${infile_path}" >| "${out}"
+
+	    run_formatter() {
+		if $use_stdin
+		then
+		    "${formatter}" --listo="${listo}" --dialect="${dialect}" - < "${infile_path}"
+		else
+		    "${formatter}" --listo="${listo}" --dialect="${dialect}" "${infile_path}"
+		fi >| "${out}"
+	    }
+
+	    if run_formatter
 	    then
 	    	if "${differ}" ${diff_opts} "${g}" "${out}"
 	    	then
