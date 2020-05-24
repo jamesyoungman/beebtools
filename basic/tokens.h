@@ -17,9 +17,9 @@ void build_map_c8(enum Dialect d, const char **output);
 bool is_fastvar(unsigned int i);
 bool set_dialect(const char* name, enum Dialect* d);
 bool print_dialects(FILE*, const char *default_dialect_name);
-bool decode_len_leading_program(FILE *f, const char *filename,
-				const struct expansion_map *m, int listo);
-bool decode_cr_leading_program(FILE *f, const char *filename,
+bool decode_little_endian_program(FILE *f, const char *filename,
+				  const struct expansion_map *m, int listo);
+bool decode_big_endian_program(FILE *f, const char *filename,
 			       const struct expansion_map *m, int listo);
 void please_submit_bug_report();
 

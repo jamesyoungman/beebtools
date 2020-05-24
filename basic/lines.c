@@ -281,8 +281,8 @@ static bool expect_char(FILE *f, unsigned char val_expected)
   return true;
 }
 
-bool decode_len_leading_program(FILE *f, const char *filename,
-				const struct expansion_map *m, int listo)
+bool decode_little_endian_program(FILE *f, const char *filename,
+				  const struct expansion_map *m, int listo)
 {
   // In this file format lines look like this:
   // <len> <lo> <hi> tokens... 0x0D
@@ -387,7 +387,7 @@ bool decode_len_leading_program(FILE *f, const char *filename,
     }
 }
 
-bool decode_cr_leading_program(FILE *f, const char *filename,
+bool decode_big_endian_program(FILE *f, const char *filename,
 			       const struct expansion_map *m, int listo)
 {
   // In this file format lines look like this:
@@ -482,4 +482,3 @@ bool decode_cr_leading_program(FILE *f, const char *filename,
 	return false;
     }
 }
-

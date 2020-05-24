@@ -34,7 +34,6 @@ bool decode_file(struct decoder*dec, const char *filename, FILE* f)
   bool (*line_decoder)(FILE *f, const char *filename,
 		       const struct expansion_map* m,
 		       int listo) = dialect_has_leading_cr(dec->dialect)
-    ? decode_cr_leading_program : decode_len_leading_program;
+    ? decode_big_endian_program : decode_little_endian_program;
   return line_decoder(f, filename, &dec->xmap, dec->listo);
 }
-
