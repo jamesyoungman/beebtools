@@ -48,7 +48,7 @@ static bool set_listo(const char *s, int *listo)
 }
 
 
-int main(int argc, char *argv[])
+int wrapped_main(int argc, char *argv[])
 {
   int exitval = 0;
   unsigned dialect;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
 	case 'l':
 	  if (!set_listo(optarg, &listo))
-	    return 1;		/* error message alreay issued. */
+	    return 1;		/* error message already issued. */
 	  break;
 
 	case 'd':
@@ -155,6 +155,16 @@ int main(int argc, char *argv[])
 	    exitval = 1;
 	}
     }
+  return exitval;
+}
+
+int main(int argc, char *argv[])
+{
+  /* We use a wrapper like this to that various parts of the main
+   * function can just "return 0" and still take advantage of the I/O
+   * failure detection below.
+   */
+  int exitval = wrapped_main(argc, argv);
 
   /* Our formatted program went to stdout, so there is likely some
    * buffered data to be flushed.  The C library's exit handling would

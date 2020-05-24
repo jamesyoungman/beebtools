@@ -39,6 +39,10 @@ dialect_help_stderr_is_full_test() {
     should_fail "${BBCBASIC_TO_TEXT}" --dialect help 2>"${FULL}"
 }
 
+help_stdout_is_full_test() {
+    should_fail "${BBCBASIC_TO_TEXT}" --help >"${FULL}"
+}
+
 run_test() {
     echo
     echo "TEST CASE: $@"
@@ -55,7 +59,8 @@ full_tests() {
     true &&
 	run_test dialect_help_stdout_is_full_test &&
 	run_test dialect_help_stderr_is_full_test &&
-	run_test format_program_stdout_is_full_test
+	run_test format_program_stdout_is_full_test &&
+	run_test help_stdout_is_full_test
 }
 
 main() {
