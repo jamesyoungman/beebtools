@@ -80,8 +80,13 @@ namespace
       case Z_OK:
 	return;
       case Z_STREAM_END:
+	// We should never see this case, because the loop in which
+	// we call inflate should terminate when we see Z_STREAM_END
+	// without callign check_zlib_error_code().
 	throw FixedDecompressionError("reached end of comressed data");
       case Z_NEED_DICT:
+	// I don't think this occurs in gzip-formatted inputs,
+	// which is all we support.
 	throw FixedDecompressionError("a pre-set zlib dictionary is required "
 				      "to decompress this data");
       case Z_ERRNO:
@@ -89,7 +94,12 @@ namespace
 	// file I/O.
 	throw DFS::NonFileOsError(errno);
       case Z_STREAM_ERROR:
-	throw FixedDecompressionError("invalid compressed data stream");
+	// This generally means that the data in the z_stream struct
+	// is inconsistent with the data in the incoming stream, or
+	// bad parameters were passed to a zlib gunction.  It seems
+	// hard to reproduce these problems in a correct program.
+	throw FixedDecompressionError("invalid compressed data stream or "
+				      "inconsistent program state (i.e. bug)");
       case Z_DATA_ERROR:
 	throw FixedDecompressionError("input data was corrupted, "
 				      "are you sure it was created with gzip?");
