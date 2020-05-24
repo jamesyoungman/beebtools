@@ -33,6 +33,8 @@ check_config() {
 }
 
 
+# We have to decompress the image here, to verify that --show-config
+# can distinguished compressed and uncompressed image files.
 gunzip < "${TEST_DATA_DIR}"/acorn-dfs-sd-40t.ssd.gz > acorn-dfs-sd-40t.ssd
 "${DFS}" --show-config --file 'acorn-dfs-sd-40t.ssd' info ':0.no-file' > actual.txt 2>&1 || (
 	 rm -f acorn-dfs-sd-40t.ssd

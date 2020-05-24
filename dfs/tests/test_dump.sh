@@ -17,8 +17,6 @@ check_dump() {
 	rm -f "${input}" expected.txt actual.txt
     }
 
-    gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
-
     (
 	rv=0
 	while [ $# -gt 0 ]
@@ -26,7 +24,7 @@ check_dump() {
 	    filename="$1"
 	    regex="$2"
 	    shift 2
-	    ${DFS}  --file "${input}" dump "${filename}" > actual.txt
+	    ${DFS}  --file "${TEST_DATA_DIR}/${input}.gz" dump "${filename}" > actual.txt
 	    if egrep -q -e "${regex}" actual.txt
 	    then
 		echo "dump ${filename} output matches extended regular expression ${regex}, good"

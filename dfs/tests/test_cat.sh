@@ -13,14 +13,12 @@ check_cat() {
     shift
 
     cleanup() {
-	rm -f "${input}" actual.txt actual0.txt
+	rm -f actual.txt actual0.txt
     }
 
     dfs() {
-	"${DFS}" --file "${input}" "$@"
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
-
-    gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
     (
 	rv=0
@@ -81,11 +79,11 @@ check_cat() {
 
 # NOTHING should not be qualified with $ as that is the current
 # directory.  INIT should be shown as locked.
-check_cat acorn-dfs-sd-40t.ssd \
+check_cat acorn-dfs-sd-40t.ssd.gz \
 	  '[ ]NOTHING' \
 	  'INIT +L'
 
-check_cat watford-sd-62-with-62-files.ssd \
+check_cat watford-sd-62-with-62-files.ssd.gz \
 	  'Option 0 [(]off[)]' \
 	  '^ *62 files of 62$' \
 	  "^ +FILE01 +FILE02 *$" \

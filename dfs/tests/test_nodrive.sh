@@ -7,18 +7,14 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
-input='watford-sd-62-with-62-files.ssd'
-init() {
-    gunzip < "${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" > "${input}"
-}
+input='watford-sd-62-with-62-files.ssd.gz'
 cleanup() {
-    rm -f "${input}" last.command
+    rm -f last.command
 }
 
 dfs() {
-    echo "${DFS}" --file "${input}" "$@" > last.command
-    "${DFS}" --file "${input}" "$@"
-    
+    echo "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" > last.command
+    "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
 }
 
 expect_got() {
@@ -26,24 +22,24 @@ expect_got() {
     shift
     if test "$1" != "$2"
     then
-	printf 'test %s: expected:\n%s\ngot:\n%s\n' "${label}" "$1" "$2"
-	( printf "last dfs command was: " ; cat last.command ) >&2
+	{
+	    printf 'test %s: expected:\n%s\ngot:\n%s\n' "${label}" "$1" "$2"
+	    printf "last dfs command was: "
+	    cat last.command
+	} >&2
 	exit 1
     fi
 }
 
 (
-    init
     expect_got drive0    "$(printf 'FIFTY\n')" "$(dfs type ':0.$.FILE50')"
     init
     if dfs type ':1.$.FILE50'
     then
 	echo 'expected non-zero return value for ":1.$.FILE50", got zero' >&2
 	exit 1
-    fi   
+    fi
 )
 rv=$?
 cleanup
 ( exit $rv )
-
-

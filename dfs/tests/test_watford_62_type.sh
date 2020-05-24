@@ -7,18 +7,15 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
-input='watford-sd-62-with-62-files.ssd'
-init() {
-    gunzip < "${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" > "${input}"
-}
+input='watford-sd-62-with-62-files.ssd.gz'
+
 cleanup() {
-    rm -f "${input}" last.command
+    rm -f last.command
 }
 
 dfs() {
-    echo "${DFS}" --file "${input}" "$@" > last.command
-    "${DFS}" --file "${input}" "$@"
-
+    echo "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" > last.command
+    "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
 }
 
 expect_got() {
@@ -33,12 +30,12 @@ expect_got() {
 }
 
 (
-    init; expect_got type_50   "$(printf 'FIFTY\n')" "$(dfs type          'FILE50')"
-    init; expect_got type_50b  "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50')"
-    init; expect_got type_50bb "$(printf 'FIFTY\r')" "$(dfs type --binary --binary 'FILE50')"
-    init; expect_got dir       "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50')"
-    init; expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50')"
-    init; expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
+    expect_got type_50   "$(printf 'FIFTY\n')" "$(dfs type          'FILE50')"
+    expect_got type_50b  "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50')"
+    expect_got type_50bb "$(printf 'FIFTY\r')" "$(dfs type --binary --binary 'FILE50')"
+    expect_got dir       "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50')"
+    expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50')"
+    expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
 
     # Some usage errors and similar.
     if dfs type  --not-an-option 'FILE50'

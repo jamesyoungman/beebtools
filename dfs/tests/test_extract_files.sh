@@ -28,16 +28,15 @@ check_extract() {
     shift
 
     cleanup() {
-	rm -f "${input}" "${extract_dfs}"/* "${extract_zip}"/*
+	rm -f "${extract_dfs}"/* "${extract_zip}"/*
     }
 
     dfs() {
-	"${DFS}" --file "${input}" "$@"
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@"
     }
 
     (
 	cleanup
-	gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
 	# This time the output directory has a trailing slash.
 	# When we do this again later, it's missing.
@@ -89,8 +88,6 @@ check_extract() {
 	# all the files other than the .inf files, so that we can
 	# compare just those.
 	cleanup
-	gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
-
 	if ! ( cd "${extract_zip}" && unzip "${zipfile}" )
 	then
 	    echo "FAILED: could not extract ${zipfile}" >&2

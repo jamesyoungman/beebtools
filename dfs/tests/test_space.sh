@@ -17,11 +17,9 @@ check_space() {
     }
 
     dfs() {
-	echo Running: "${DFS}" --file "${input}" "$@" >&2
-	"${DFS}" --file "${input}" "$@"
+	echo Running: "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" >&2
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
-
-    gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
     (
 	dfs space > actual.txt || exit 1
@@ -42,21 +40,21 @@ check_space() {
 }
 
 
-check_space acorn-dfs-sd-40t.ssd \
+check_space acorn-dfs-sd-40t.ssd.gz \
 "Gap sizes on disc 0:
 18A
 
 Total space free = 18A sectors
 "
 
-check_space watford-sd-62-with-62-files.ssd \
+check_space watford-sd-62-with-62-files.ssd.gz \
 "Gap sizes on disc 0:
 2DE
 
 Total space free = 2DE sectors
 "
 
-check_space watford-sd-62-with-holes.ssd \
+check_space watford-sd-62-with-holes.ssd.gz \
 "Gap sizes on disc 0:
 001 002 009 002 002 2DE 001 002 002 00A
 

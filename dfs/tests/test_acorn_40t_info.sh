@@ -7,7 +7,10 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# We uncompress here to ensure that there is at least one test which
+# operates on an uncompressed input file.
 input='acorn-dfs-sd-40t.ssd'
+gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
 cleanup() {
     rm -f "${input}" last.command got.txt expected.txt
@@ -18,7 +21,6 @@ dfs() {
     "${DFS}" --file "${input}" "$@"
 }
 
-gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}"
 printf  >expected.txt '%s' \
 '$.!BOOT       000000 FFFFFF 00000A 005
 $.INIT     L  FF1900 FF8023 000012 004

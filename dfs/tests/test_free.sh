@@ -13,14 +13,12 @@ check_free() {
     expected="$2"
 
     cleanup() {
-	rm -f "${input}" expected.txt actual.txt
+	rm -f expected.txt actual.txt
     }
 
     dfs() {
-	"${DFS}" --file "${input}" "$@"
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@"
     }
-
-    gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
     (
 	dfs free > actual.txt

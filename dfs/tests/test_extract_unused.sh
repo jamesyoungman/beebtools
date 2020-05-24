@@ -23,11 +23,9 @@ check_extract_unused() {
     }
 
     dfs() {
-	echo Running: "${DFS}" --file "${input}" "$@" >&2
-	"${DFS}" --file "${input}" "$@"
+	echo Running: "${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@" >&2
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@"
     }
-
-    gunzip < "${TEST_DATA_DIR}/${input}.gz" > "${input}" || exit 1
 
     (
 	# Positive case
