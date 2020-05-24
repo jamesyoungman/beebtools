@@ -32,3 +32,9 @@ add_test(NAME basic_golden
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/run_golden_tests.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+
+add_test(NAME basic_io_failure_test
+  COMMAND
+  ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/io_failure_test.sh
+  ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
+  ${CMAKE_CURRENT_SOURCE_DIR}/testdata )

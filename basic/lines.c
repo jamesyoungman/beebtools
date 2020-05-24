@@ -232,7 +232,8 @@ static bool decode_line(unsigned char line_hi, unsigned char line_lo,
 	     (where in mode 7 it would turn text cyan) while outside
 	     a string it would expand to the keyword LINE.
 	  */
-	  putchar(uch);
+	  if (EOF == putchar(uch))
+	    return stdout_write_error();
 	}
       else
 	{

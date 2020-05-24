@@ -10,23 +10,23 @@
 #include "decoder.h"
 
 
-static void usage(FILE *f, const char *progname)
+static bool usage(FILE *f, const char *progname)
 {
-  fprintf(f, "usage: %s [--listo=N] [--dialect=NAME] [input-file]...\n"
-	  "Use the option --help to see the program's usage in more detail.\n",
-	  progname);
+  return fprintf(f, "usage: %s [--listo=N] [--dialect=NAME] [input-file]...\n"
+		 "Use the option --help to see the program's usage in more detail.\n",
+		 progname) >= 0;
 }
 
-static void help(FILE *f, const char *progname)
+static bool help(FILE *f, const char *progname)
 {
-  fprintf(f, "usage: %s [--listo=N] [--dialect=NAME] [input-file]...\n"
-	  "If no input-file is listed, issue a usage message and exit.\n"
-	  "If input-file is \"-\", read standard input.\n"
-	  "Valid values for --listo are 0..7 inclusive.\n"
-	  "You can list valid dialect names by specifying --dialect=help.\n"
-	  "If the option --help is given, this usage message is printed and "
-	  "nothing else is done.\n",
-	  progname);
+  return fprintf(f, "usage: %s [--listo=N] [--dialect=NAME] [input-file]...\n"
+		 "If no input-file is listed, issue a usage message and exit.\n"
+		 "If input-file is \"-\", read standard input.\n"
+		 "Valid values for --listo are 0..7 inclusive.\n"
+		 "You can list valid dialect names by specifying --dialect=help.\n"
+		 "If the option --help is given, this usage message is printed and "
+		 "nothing else is done.\n",
+		 progname) >= 0;
 }
 
 static bool set_listo(const char *s, int *listo)
@@ -80,7 +80,8 @@ int main(int argc, char *argv[])
 	  return 1;
 
 	case 'h':
-	  help(stdout, progname);
+	  if (!help(stdout, progname))
+	    return 1;
 	  return 0;
 
 	case 'l':
@@ -91,7 +92,8 @@ int main(int argc, char *argv[])
 	case 'd':
 	  if (0 == strcmp(optarg, "help"))
 	    {
-	      print_dialects(stdout, default_dialect_name);
+	      if (!print_dialects(stdout, default_dialect_name))
+		return 1;
 	    }
 	  else if (!set_dialect(optarg, &dialect))
 	    {
@@ -152,6 +154,24 @@ int main(int argc, char *argv[])
 	  if (exitval < 1)
 	    exitval = 1;
 	}
+    }
+
+  /* Our formatted program went to stdout, so there is likely some
+   * buffered data to be flushed.  The C library's exit handling would
+   * flush it, but if those operations fail they won't change the exit
+   * status of the program.  We, on the other hand, would want to let
+   * the user know there was a problem, so we flush the data
+   * ourselves.
+   */
+  if (0 != fflush(stdout))
+    {
+      perror("stdout");
+      exitval = 1;
+    }
+  if (0 != fflush(stderr))
+    {
+      perror("stderr");  /* likely useless, but worthwhile attempt */
+      exitval = 1;       /* but this is useful */
     }
   return exitval;
 }
