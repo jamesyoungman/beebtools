@@ -38,3 +38,8 @@ add_test(NAME basic_io_failure_test
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/io_failure_test.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+add_test(NAME basic_usage_error_test
+  COMMAND
+  ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/usage_error_test.sh
+  ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
+  ${CMAKE_CURRENT_SOURCE_DIR}/testdata )

@@ -36,8 +36,18 @@ static bool set_listo(const char *s, int *listo)
 
   /* There is no need to clear errno to distinguish LONG_MAX from
      overflow, since LONG_MAX is already greater than 7 on all ISO C
-     compiant platforms. */
+     compiant platforms.   Likewise 0 and LONG_MIN. */
   converted = strtol(s, &end, 10);
+  if (s == end)
+    {
+      fprintf(stderr, "Value %s should be an integer.\n", s);
+      return false;
+    }
+  if (*end)
+    {
+      fprintf(stderr, "Value %s should be an integer, but it was followed by trailing junk %s.\n", s, end);
+      return false;
+    }
   if (converted >= 0 && converted <= 7)
     {
       *listo = (int)converted;
