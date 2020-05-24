@@ -1,5 +1,8 @@
 #include "regularexpression.h"
 
+// The whole point of this program is to test assertsions,
+// so enable assertsions in all curcumstances.
+#undef NDEBUG
 #include <assert.h>
 
 #include <iostream>
@@ -66,36 +69,44 @@ namespace
     return true;
   }
 
-  void assert_same_matches(const vector<string>& left,
-			   const vector<string>& right)
+  void assert_same_matches(const string& pattern,
+			   const string& input,
+			   const vector<string>& expected_matches,
+			   const vector<string>& got)
   {
-    const string& intro = "supposed to be the same but ";
-    if (left.size() != right.size())
+    std::cerr << "Pattern " << pattern << ", input " << input << ": ";
+    const string& intro = "matches are supposed to be the same but ";
+    if (expected_matches.size() != got.size())
       {
-	std::cerr << intro << "they're different lengths:\n"
-		  << left << "\nvs.\n" <<  right << "\n";
+	std::cerr << intro << "they're different lengths, expected "
+		  << expected_matches.size() << ":\n"
+		  << expected_matches << "\ngot " << got.size()
+		  << ":\n" <<  got << "\n";
 	abort();
       }
-    auto bzzt = std::mismatch(left.begin(), left.end(), right.begin());
-    if (bzzt.first != left.end())
+    auto bzzt = std::mismatch(expected_matches.begin(), expected_matches.end(), got.begin());
+    if (bzzt.first != expected_matches.end())
       {
-	std::cerr << intro << "these items are different: "
-		  << *bzzt.first << " vs " << *bzzt.second << "\n";
+	std::cerr << intro << "these items are different: expected "
+		  << *bzzt.first << " but got " << *bzzt.second << "\n";
 	abort();
       }
+    std::cerr << "ok\n";
   }
   void check_match(const string& pattern,
 		   const string& input,
-		   const vector<string>& matches)
+		   const vector<string>& expected_matches)
   {
     RegularExpression r(pattern);
     assert(r.compile());
-    auto result = r.match(input.c_str());
-    assert_same_matches(result, matches);
+    auto got = r.match(input.c_str());
+    assert_same_matches(pattern, input, expected_matches, got);
   }
 
   bool test_match()
   {
+    check_match("m", "mellow yellow ",
+		vector<string>({"m"}));
     check_match("^.ell", "mellow yellow ",
 		vector<string>({"mell"}));
     check_match("(.ell)", "mellow yellow ",
@@ -111,9 +122,29 @@ namespace
   }
 }
 
+bool raises_exception()
+{
+  throw 1;
+}
+
+void check_assertions_do_things()
+{
+  try
+    {
+      assert(raises_exception());
+      std::cerr << "FAIL: assertions are turned off, this test cannot work\n";
+      exit(1);
+    }
+  catch (int x)
+    {
+      // All is well.
+      return;
+    }
+}
 
 int main()
 {
+  check_assertions_do_things();
   const int rv = self_test() ? 0 : 1;
   if (rv != 0)
     {
