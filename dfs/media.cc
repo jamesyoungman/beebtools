@@ -189,6 +189,8 @@ namespace DFS
       {
 	return cached_image_file(name, std::move(infile), cache_sectors);
       }
+#if 0
+    /* We have no tests for this code at the moment. */
     if (ends_with(name, ".dsd"))
       {
 	dsd_unsupported();
@@ -212,6 +214,7 @@ namespace DFS
 		  << " bytes long\n";
 	return failed;
       }
+#endif
   }
 
 
