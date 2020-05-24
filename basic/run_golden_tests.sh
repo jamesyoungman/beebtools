@@ -28,22 +28,24 @@ do
 	    if [ -e "${g_txt}" ]
 	    then
 	        found_golden=true
-		differ=diff
+		differ="diff"
+		diff_opts="-u"
 		g="${g_txt}"
 	    elif [ -e "${g_bin}" ]
 	    then
 		 found_golden=true
 		 differ=cmp
+		 diff_opts=""
 		 g="${g_bin}"
 	    else
 		goldens_missing="${goldens_missing} ${g_txt} ${g_bin}"
 		continue
 	    fi
-	    
+
 	    out="$(mktemp)"
 	    if "${formatter}" --listo="${listo}" --dialect="${dialect}" "${infile_path}" >| "${out}"
 	    then
-	    	if "${differ}" "${g}" "${out}"
+	    	if "${differ}" ${diff_opts} "${g}" "${out}"
 	    	then
 	    		echo "PASS: ${g}"
 	    	else
