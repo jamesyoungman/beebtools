@@ -27,8 +27,14 @@ $.INIT     L  FF1900 FF8023 000012 004
 B.NOTHING     FF1900 FF8023 000064 003
 $.NOTHING     FF1900 FF8023 000064 002
 '
-dfs info '#.*' > got.txt
-diff -u expected.txt got.txt
-rv=$?
+rv=0
+
+dfs info '#.*' > got.txt || rv=1
+diff -u expected.txt got.txt || rv=1
+
+dfs info '*.*' > got.txt || rv=1
+diff -u expected.txt got.txt || rv=1
+
+
 cleanup
 ( exit $rv )
