@@ -422,6 +422,8 @@ static struct dialect_mapping dialects[] =
    {"8086", "Z80", Z80_80x86},
    {"ARM", NULL, ARM},
    {"Windows", NULL, Windows},
+   {"SDL", "Windows", Windows},
+   {"MacOSX", "Windows", Windows},
    {"Mac", NULL, Mac},
    {NULL, NULL, NUM_DIALECTS},
   };
