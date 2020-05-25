@@ -65,11 +65,18 @@ le_short_line_test() {
     expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/shortline.bbc
 }
 
+eol_in_line_number_test() {
+    expect_error "end-of-line in the middle of a line number" \
+		 "${BBCBASIC_TO_TEXT}" --dialect=6502 \
+		 "${TEST_DATA_DIR}/invalid/6502/goto-premature-eol.bbc"
+}
+
 
 run_all_tests() {
     true &&
 	run_test premature_eof_test &&
-	run_test le_short_line_test
+	run_test le_short_line_test &&
+	run_test eol_in_line_number_test
 }
 
 main() {
