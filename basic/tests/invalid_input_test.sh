@@ -61,8 +61,15 @@ premature_eof_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/SDL/end.missing-eof.bbc
 }
 
+le_short_line_test() {
+    expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/shortline.bbc
+}
+
+
 run_all_tests() {
-    run_test premature_eof_test
+    true &&
+	run_test premature_eof_test &&
+	run_test le_short_line_test
 }
 
 main() {
