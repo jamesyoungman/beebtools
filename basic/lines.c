@@ -258,11 +258,11 @@ static bool decode_line(unsigned char line_hi, unsigned char line_lo,
   return true;
 }
 
-static int premature_eof(FILE *f)
+static bool premature_eof(FILE *f)
 {
   fprintf(stderr, "premature end-of-file at position %ld, "
 	  "are you sure you specified the right format?\n", ftell(f));
-  return 1;
+  return false;
 }
 
 static bool expect_char(FILE *f, unsigned char val_expected)
@@ -320,8 +320,8 @@ bool decode_little_endian_program(FILE *f, const char *filename,
       if (0 == len)
 	{
 	  // This is logical EOF.  We still expect to see 0xFF 0xFF though.
-	  expect_char(f, 0xFF);
-	  expect_char(f, 0xFF);
+	  if (!expect_char(f, 0xFF) || !expect_char(f, 0xFF))
+	    return false;
 	  // This should be followed by the physical EOF.
 	  if ((ch = fgetc(f)) != EOF)
 	    {
