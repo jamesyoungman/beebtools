@@ -71,12 +71,18 @@ eol_in_line_number_test() {
 		 "${TEST_DATA_DIR}/invalid/6502/goto-premature-eol.bbc"
 }
 
+bad_c6_ext_map() {
+    expect_error "sequence.*0xC6.*are you sure you specified the right dialect[?]" \
+		 "${BBCBASIC_TO_TEXT}" --dialect=ARM \
+		 "${TEST_DATA_DIR}/invalid/ARM/bad-c6-ext-map.bbc"
+}
 
 run_all_tests() {
     true &&
 	run_test premature_eof_test &&
 	run_test le_short_line_test &&
-	run_test eol_in_line_number_test
+	run_test eol_in_line_number_test &&
+	run_test bad_c6_ext_map
 }
 
 main() {
