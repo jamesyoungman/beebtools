@@ -13,19 +13,20 @@
  * for this token value.  We interpret NULL to mean that the data
  * structure is incomplete, that is, we wrote a bug.
  */
-#define BAD "__invalid__"
-#define LINE_NUM "__line_num__"
-
-const char invalid[] = BAD;
-const char line_num[] = LINE_NUM;
+const char invalid[] = "__invalid__";
+const char line_num[] = "__line_num__";
 const char fastvar[] = "__fastvar__";
 const char identity[] = "__identity__";
 const char end_marker[] = "__end__";
+#define BAD invalid
 
-/* There are a number of other special tokens. */
-#define DO_C6 "__c6__"
-#define DO_C7 "__c7__"
-#define DO_C8 "__c8__"
+/* There are a number of other special extension tokens. */
+const char ext_c6[] = "__c6__";
+const char ext_c7[] = "__c7__";
+const char ext_c8[] = "__c8__";
+#define DO_C6 ext_c6
+#define DO_C7 ext_c7
+#define DO_C8 ext_c8
 
 
 /* multi_mapping describes the mapping from input byte to
@@ -86,7 +87,7 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0x8A, {"TAB(",               "TAB(",           "TAB(",             "TAB("           }},
 { 0x8B, {"ELSE",               "ELSE",           "ELSE",             "ELSE"           }},
 { 0x8C, {"THEN",               "THEN",           "THEN",             "THEN"           }},
-{ 0x8D, {LINE_NUM,             LINE_NUM,         LINE_NUM,           LINE_NUM         }},
+{ 0X8D, {line_num,             line_num,         line_num,           line_num         }},
 { 0x8E, {"OPENIN",             "OPENIN",         "OPENIN",           "OPENIN"         }},
 { 0x8F, {"PTR",                "PTR",            "PTR",              "PTR"            }},
 { 0x90, {"PAGE",               "PAGE",           "PAGE",             "PAGE"           }},

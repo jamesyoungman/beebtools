@@ -104,14 +104,14 @@ static bool handle_token(unsigned char uch, long file_pos,
   */
   if (t[0] == '_' && uch != 0x5F)
     {
-      if (0 == strcmp(t, invalid))
+      if (t == invalid)
 	{
 	  fprintf(stderr, "saw unexpected token 0x%02X at file position %ld (0x%02lX), "
 		  "are you sure you specified the right dialect?\n",
 		  (unsigned)uch, file_pos, (unsigned long)file_pos);
 	  return false;
 	}
-      if (0 == strcmp(t, line_num))
+      if (t == line_num)
 	{
 	  /* This flags an upcoming line number (e.g. in a GOTO
 	   * statement).  There are three following bytes encoding
