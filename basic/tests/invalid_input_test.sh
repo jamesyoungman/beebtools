@@ -57,9 +57,26 @@ run_test() {
     fi
 }
 
-premature_eof_test() {
-    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/SDL/end.missing-eof.bbc
+missing_eof_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL "${TEST_DATA_DIR}"/invalid/SDL/end.missing-eof.bbc
 }
+
+premature_eof_1_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL "${TEST_DATA_DIR}"/invalid/Z80/premature-eof-1.bbc
+}
+
+premature_eof_2_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL "${TEST_DATA_DIR}"/invalid/Z80/premature-eof-2.bbc
+}
+
+incomplete_eof_1_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-1.bbc
+}
+
+incomplete_eof_2_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-2.bbc
+}
+
 
 le_short_line_test() {
     expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/shortline.bbc
@@ -71,18 +88,29 @@ eol_in_line_number_test() {
 		 "${TEST_DATA_DIR}/invalid/6502/goto-premature-eol.bbc"
 }
 
-bad_c6_ext_map() {
+bad_c6_ext_map_test() {
     expect_error "sequence.*0xC6.*are you sure you specified the right dialect[?]" \
 		 "${BBCBASIC_TO_TEXT}" --dialect=ARM \
 		 "${TEST_DATA_DIR}/invalid/ARM/bad-c6-ext-map.bbc"
 }
 
+fastvar_test() {
+    expect_error "crunched.*this tool on the original source code" \
+		 "${BBCBASIC_TO_TEXT}" --dialect=SDL \
+		 "${TEST_DATA_DIR}/invalid/SDL/sdl-fastvar.bbc"
+}
+
 run_all_tests() {
     true &&
-	run_test premature_eof_test &&
+	run_test missing_eof_test &&
+	run_test incomplete_eof_1_test &&
+	run_test incomplete_eof_2_test &&
+	run_test premature_eof_1_test &&
+	run_test premature_eof_2_test &&
 	run_test le_short_line_test &&
 	run_test eol_in_line_number_test &&
-	run_test bad_c6_ext_map
+	run_test bad_c6_ext_map_test &&
+	run_test fastvar_test
 }
 
 main() {
