@@ -77,6 +77,14 @@ incomplete_eof_2_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-2.bbc
 }
 
+eof_in_line_num_1_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/eof-in-line-num-1.bbc
+}
+
+eof_in_line_num_2_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/eof-in-line-num-2.bbc
+}
+
 
 le_short_line_test() {
     expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/shortline.bbc
@@ -107,6 +115,8 @@ run_all_tests() {
 	run_test incomplete_eof_2_test &&
 	run_test premature_eof_1_test &&
 	run_test premature_eof_2_test &&
+	run_test eof_in_line_num_1_test &&
+	run_test eof_in_line_num_2_test &&
 	run_test le_short_line_test &&
 	run_test eol_in_line_number_test &&
 	run_test bad_c6_ext_map_test &&
