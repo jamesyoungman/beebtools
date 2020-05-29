@@ -93,6 +93,10 @@ premature_eof_8_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-8.bbc
 }
 
+premature_eof_9_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-9.bbc
+}
+
 incomplete_eof_1_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-1.bbc
 }
