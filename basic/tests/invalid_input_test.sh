@@ -73,6 +73,22 @@ premature_eof_3_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=SDL "${TEST_DATA_DIR}"/invalid/Z80/premature-eof-3.bbc
 }
 
+premature_eof_4_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-4.bbc
+}
+
+premature_eof_5_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-5.bbc
+}
+
+premature_eof_6_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-6.bbc
+}
+
+premature_eof_7_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-7.bbc
+}
+
 incomplete_eof_1_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-1.bbc
 }
@@ -89,9 +105,12 @@ eof_in_line_num_2_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/eof-in-line-num-2.bbc
 }
 
-
 le_short_line_test() {
-    expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/shortline.bbc
+    expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=SDL ${TEST_DATA_DIR}/invalid/Z80/short-line-1.bbc
+}
+
+be_short_line_test() {
+    expect_error "line.*length.*short" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/short-line-2.bbc
 }
 
 eol_in_line_number_test() {
@@ -110,6 +129,12 @@ fastvar_test() {
     expect_error "crunched.*this tool on the original source code" \
 		 "${BBCBASIC_TO_TEXT}" --dialect=SDL \
 		 "${TEST_DATA_DIR}/invalid/SDL/sdl-fastvar.bbc"
+}
+
+be_incorrect_line_start_test() {
+    expect_error "line at position 27 did not start with 0x0D [(]instead 0xD0[)]" \
+		 "${BBCBASIC_TO_TEXT}" --dialect=6502 \
+		 "${TEST_DATA_DIR}/invalid/6502/incorrect-line-start.bbc"
 }
 
 z80_trailing_junk_test() {
@@ -155,13 +180,19 @@ run_all_tests() {
 	run_test premature_eof_1_test &&
 	run_test premature_eof_2_test &&
 	run_test premature_eof_3_test &&
+	run_test premature_eof_4_test &&
+	run_test premature_eof_5_test &&
+	run_test premature_eof_6_test &&
+	run_test premature_eof_7_test &&
 	run_test eof_in_line_num_1_test &&
 	run_test eof_in_line_num_2_test &&
 	run_test le_short_line_test &&
+	run_test be_short_line_test &&
 	run_test eol_in_line_number_test &&
 	run_test bad_c6_ext_map_test &&
 	run_test fastvar_test &&
-	run_test z80_trailing_junk_test
+	run_test z80_trailing_junk_test &&
+	run_test be_incorrect_line_start_test
 }
 
 main() {
