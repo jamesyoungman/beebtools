@@ -159,6 +159,32 @@ is not encoded as a BBC BASIC program, its actual dialect doesn't
 match what was specified, or that the command-line inclued a usage
 error.
 
+.SH "CONFORMING TO"
+
+BBC BASIC implementations differ in some details, and in a number of
+cases,
+.B bbcbasic_to_text
+will render a BBC BASIC file as text where it
+would not in fact be accepted by the specified dialect of BBC BASIC.
+Also, the input file is not actually being parsed, so
+.B bbcbasic_to_text
+will render programs that are not really valid.
+Examples include:
+
+.IP \(bu
+In the 6502 dialect, line numbers greater than 32767 are
+accepted by this program even though the BBC Micro will not produce or
+accept such programs.
+
+.IP \(bu
+In all dialects, sequences of non-tokenised characters are accepted
+and passed though with the result that
+.B bbcbasic_to_text
+will accept and render invalid programs such as
+.EX
+ 10 DANCE AS IF NOBODY IS WATCHING
+.EE
+
 .SH BUGS
 Please report bugs to james@youngman.org.
 
@@ -187,5 +213,3 @@ BBC BASIC Website
 .UE
 .br
 \fBdfs\fP(1), \fBenscript\fP(1)
-
-

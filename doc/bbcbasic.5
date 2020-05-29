@@ -772,15 +772,30 @@ in
 .SH "LINE NUMBERS"
 
 Line numbers at the start of a line are encoded as exactly two bytes.
-Within a file, they are consistently represented high byte first
-(6502, 32016, ARM and Mac) or low byte first (Z80, 8086, Windows).
+They are consistently represented high byte first (6502, 32016, ARM
+and Mac) or low byte first (Z80, 8086, Windows).
 
-Within the rest of the line, they are represented differently. They
-are introduced by the byte value 0x8D and (counting the 0x8D) always
-occupy four bytes.  These line numbers are encoded in such a way that
-they can be decoded as if with the following C expression (b1, b2 and
-b3 are the three unsigned bytes of the line number which follow the
-0x8D marker byte):
+Big-endian implementations differ in the largest line number they
+support.
+The implementation for "Classic" Mac accepts the maximum line number
+possible for the big-endian line encoding, 65279.
+A BBC Micro will not produce or accept a program with a line number
+higher than 32767.
+I believe that all little-endian implementations accept line number
+65535.
+
+Some implementations allow line numbers to be omitted for some lines,
+and in this case the line number is encoded as zero.
+
+Within the rest of the line (for example in
+.B GOTO
+statements), line numbers are represented by a
+four-byte sequence instead, identically in all dialects.
+This sequence begins with the byte value 0x8D and is followed by three
+bytes which we will name in order as b1, b2 and b3.
+Those bytes represent the line number in such a way they can be
+decoded as if with the following C expression (b1, b2 and b3 are
+treated as unsigned):
 
 .EX
 (((b3 ^  (b1 << 4)) & 0xFF) << 8) | (b2 ^ ((b1 << 2)  & 0xC0))
