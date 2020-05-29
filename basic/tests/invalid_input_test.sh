@@ -173,10 +173,20 @@ z80_trailing_junk_test() {
 
 
 run_all_tests() {
+    # The initial "true" here is so that all the tests have the same
+    # indentation, to make it easier to automatically sort the lines.
     true &&
-	run_test missing_eof_test &&
+	run_test bad_c6_ext_map_test &&
+	run_test be_incorrect_line_start_test &&
+	run_test be_short_line_test &&
+	run_test eof_in_line_num_1_test &&
+	run_test eof_in_line_num_2_test &&
+	run_test eol_in_line_number_test &&
+	run_test fastvar_test &&
 	run_test incomplete_eof_1_test &&
 	run_test incomplete_eof_2_test &&
+	run_test le_short_line_test &&
+	run_test missing_eof_test &&
 	run_test premature_eof_1_test &&
 	run_test premature_eof_2_test &&
 	run_test premature_eof_3_test &&
@@ -184,15 +194,11 @@ run_all_tests() {
 	run_test premature_eof_5_test &&
 	run_test premature_eof_6_test &&
 	run_test premature_eof_7_test &&
-	run_test eof_in_line_num_1_test &&
-	run_test eof_in_line_num_2_test &&
-	run_test le_short_line_test &&
-	run_test be_short_line_test &&
-	run_test eol_in_line_number_test &&
-	run_test bad_c6_ext_map_test &&
-	run_test fastvar_test &&
 	run_test z80_trailing_junk_test &&
-	run_test be_incorrect_line_start_test
+	true
+    # The last "true" there is to make it more convenient to sort the lines
+    # in the section above (i.e. so that the final test has && at the end,
+    # like all the others).
 }
 
 main() {
