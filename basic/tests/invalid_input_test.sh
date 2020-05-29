@@ -89,6 +89,10 @@ premature_eof_7_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-7.bbc
 }
 
+premature_eof_8_test() {
+    expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=6502 "${TEST_DATA_DIR}"/invalid/6502/premature-eof-8.bbc
+}
+
 incomplete_eof_1_test() {
     expect_error "premature end-of-file" "${BBCBASIC_TO_TEXT}" --dialect=Z80 "${TEST_DATA_DIR}"/invalid/Z80/incomplete-eof-marker-1.bbc
 }
@@ -194,6 +198,7 @@ run_all_tests() {
 	run_test premature_eof_5_test &&
 	run_test premature_eof_6_test &&
 	run_test premature_eof_7_test &&
+	run_test premature_eof_8_test &&
 	run_test z80_trailing_junk_test &&
 	true
     # The last "true" there is to make it more convenient to sort the lines

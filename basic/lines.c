@@ -478,6 +478,10 @@ bool decode_big_endian_program(FILE *f, const char *filename,
 	      perror(filename);
 	      return false;
 	    }
+	  else
+	    {
+	      return premature_eof(f);
+	    }
 	}
       if (!decode_line(hi, lo, len, buf, file_pos, m, &indent, listo))
 	return false;
