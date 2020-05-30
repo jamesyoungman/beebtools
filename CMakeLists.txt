@@ -20,7 +20,13 @@ if (COVERAGE)
     EXECUTABLE ctest -VV -j10
     EXCLUDE "dfs/tests/*" "basic/tests/*")
 endif (COVERAGE)
+
 find_program(BOURNE_SHELL sh)
+if (${BOURNE_SHELL} STREQUAL "BOURNE_SHELL-NOTFOUND")
+  message(FATAL_ERROR "Cannot find a Bourne shell 'sh'")
+endif()
+
+
 set(EXTRA_WARNING_OPTIONS
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
           -Wall -Wextra -Wconversion -Wpedantic>

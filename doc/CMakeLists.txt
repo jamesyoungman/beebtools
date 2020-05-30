@@ -8,11 +8,30 @@ set(MAN1_FILES)
 set(MAN5_FILES)
 
 find_program(GZIP gzip)
+if (${GZIP} STREQUAL "GZIP-NOTFOUND")
+  # The regression tests need gunzip and assume it is on the path, but
+  # the build process also uses this GZIP variable to compress manual
+  # pages.  That is still needed even if you don't plan to test
+  # anything.
+  #
+  # It would be possible to arrange to install uncompressed pages if
+  # we didn't find gzip, but this kind of environment-dependent silent
+  # behaviour change normally isn't very helpful to people who are
+  # packaging the code.
+  message(FATAL_ERROR "Cannot find a gzip executable")
+endif()
+
+find_program(GUNZIP gzip)
+if (${GUNZIP} STREQUAL "GUNZIP-NOTFOUND")
+  message(WARNING "Cannot find gunzip; the build will work but the tests will likely not")
+endif()
 
 if (PDF)
   find_program(PDFROFF pdfroff)
-  if (PDFROFF-NOTFOUND)
+  if (${PDFROFF} STREQUAL "PDFROFF-NOTFOUND")
     message(FATAL_ERROR "Cannot find the pdfroff program, try turning off the PDF option")
+  else()
+    message(STATUS "Located pdfroff at ${PDFROFF}")
   endif()
 endif()
 
@@ -25,6 +44,7 @@ macro(gzip_file SOURCE DESTINATION)
     VERBATIM)
 endmacro(gzip_file)
 
+# Compress manual pages and arrange for them to be installed.
 foreach(m IN LISTS MAN1_NAMES)
   gzip_file(${CMAKE_CURRENT_SOURCE_DIR}/${m} ${CMAKE_CURRENT_BINARY_DIR}/${m}.gz)
   list(APPEND MAN1_FILES ${CMAKE_CURRENT_BINARY_DIR}/${m}.gz)
