@@ -1,7 +1,5 @@
 ###################################### Manual Pages
 
-option(PDF "Generate pdf format documentation" OFF)
-
 set(INSTALL_PREFIX_SHARE ${CMAKE_INSTALL_PREFIX}/share)
 set(INSTALL_PREFIX_MAN   ${INSTALL_PREFIX_SHARE}/man)
 set(MAN1_NAMES bbcbasic_to_text.1 dfs.1)
@@ -13,6 +11,9 @@ find_program(GZIP gzip)
 
 if (PDF)
   find_program(PDFROFF pdfroff)
+  if (PDFROFF-NOTFOUND)
+    message(FATAL_ERROR "Cannot find the pdfroff program, try turning off the PDF option")
+  endif()
 endif()
 
 macro(gzip_file SOURCE DESTINATION)
@@ -38,7 +39,7 @@ if (PDF)
   add_custom_command(
     OUTPUT bbcbasic.pdf
     COMMAND ${PDFROFF} -man --pdf-output=bbcbasic.pdf -t
-    ${CMAKE_CURRENT_SOURCE_DIR}/bbcbasic.5 
+    ${CMAKE_CURRENT_SOURCE_DIR}/bbcbasic.5
     DEPENDS bbcbasic.5)
   add_custom_command(
     OUTPUT bbcbasic_to_text.pdf
@@ -48,7 +49,7 @@ if (PDF)
   add_custom_command(
     OUTPUT dfs.pdf
     COMMAND ${PDFROFF} -man --pdf-output=dfs.pdf -t
-    ${CMAKE_CURRENT_SOURCE_DIR}/dfs.1 
+    ${CMAKE_CURRENT_SOURCE_DIR}/dfs.1
     DEPENDS dfs.1)
   add_custom_target(pdf ALL
     DEPENDS bbcbasic.pdf bbcbasic_to_text.pdf dfs.pdf)
@@ -56,4 +57,3 @@ endif()
 
 INSTALL(FILES ${MAN1_FILES} DESTINATION  ${INSTALL_PREFIX_MAN}/man1)
 INSTALL(FILES ${MAN5_FILES} DESTINATION  ${INSTALL_PREFIX_MAN}/man5)
-

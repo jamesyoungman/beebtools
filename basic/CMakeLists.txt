@@ -32,19 +32,25 @@ add_test(NAME basic_golden
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/run_golden_tests.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+set_property(TEST basic_golden PROPERTY LABELS basic positive)
 
 add_test(NAME basic_io_failure_test
   COMMAND
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/io_failure_test.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+set_property(TEST basic_io_failure_test PROPERTY LABELS basic negative)
+
 add_test(NAME basic_usage_error_test
   COMMAND
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/usage_error_test.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+set_property(TEST basic_usage_error_test PROPERTY LABELS basic negative)
+
 add_test(NAME basic_invalid_input_test
   COMMAND
   ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/tests/invalid_input_test.sh
   ${CMAKE_CURRENT_BINARY_DIR}/bbcbasic_to_text
   ${CMAKE_CURRENT_SOURCE_DIR}/testdata )
+set_property(TEST basic_invalid_input_test PROPERTY LABELS basic negative)

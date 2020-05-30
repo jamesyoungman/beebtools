@@ -86,6 +86,7 @@ target_compile_options(test_afsp
   -I ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test_afsp dfsbase)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
+set_property(TEST dfs_test_afsp_passes PROPERTY LABELS dfs unit_test)
 
 add_executable(test_regularexpression)
 target_sources(test_regularexpression
@@ -95,7 +96,8 @@ target_sources(test_regularexpression
 target_compile_options(test_regularexpression
   PRIVATE ${EXTRA_WARNING_OPTIONS}
   -I ${CMAKE_CURRENT_SOURCE_DIR})
-add_test(NAME test_regularexpression_passes COMMAND test_regularexpression)
+add_test(NAME dfs_test_regularexpression_passes COMMAND test_regularexpression)
+set_property(TEST dfs_test_regularexpression_passes PROPERTY LABELS dfs unit_test)
 
 
 add_executable(test_stringutil)
@@ -108,6 +110,7 @@ target_compile_options(test_stringutil
   -I ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test_stringutil dfsbase)
 add_test(NAME dfs_test_stringutil_passes COMMAND test_stringutil)
+set_property(TEST dfs_test_stringutil_passes PROPERTY LABELS dfs unit_test)
 
 ######################################## Regression Tests
 
@@ -122,6 +125,8 @@ foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
     COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/test_runner.sh
     ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/testdata
     WORKING_DIRECTORY ${SH_TEST_CWD})
+  # We don't know whether these tests, individually, are negative or positive test cases.
+  set_property(TEST ${shortname} PROPERTY LABELS dfs regression_test negaposimaybe )
 endforeach()
 
 configure_file(
@@ -138,3 +143,4 @@ add_test(
   # input file happens to be a valid (but empty) disc image.
   COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/mustfail.sh
   $<TARGET_FILE:dfs> --file testdata/not-gzipped.ssd.gz cat)
+  set_property(TEST invalid_compressed_data PROPERTY LABELS dfs regression_test)

@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.10)
 project(beebtools)
+
+option(PDF "Generate pdf format documentation" OFF)
+option(COVERAGE "Measure test coverage" OFF)
+
+
 enable_testing()
-if (OPT_COVERAGE)
+if (COVERAGE)
   # For the CodeCoverage to work, CodeCoverage.cmake needs to be in a directory
   # which is in ${CMAKE_MODULE_PATH} (which is empty by default).
   # https://github.com/bilke/cmake-modules/blob/master/CodeCoverage.cmake
@@ -12,9 +17,9 @@ if (OPT_COVERAGE)
   append_coverage_compiler_flags()
   setup_target_for_coverage_gcovr_html(
     NAME coverage
-    EXECUTABLE ctest -VV
+    EXECUTABLE ctest -VV -j10
     EXCLUDE "dfs/tests/*" "basic/tests/*")
-endif (OPT_COVERAGE)
+endif (COVERAGE)
 find_program(BOURNE_SHELL sh)
 set(EXTRA_WARNING_OPTIONS
      $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
