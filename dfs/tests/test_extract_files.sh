@@ -21,13 +21,27 @@ then
     exit 1
 fi
 
+cleanup_dirs() {
+    for d in "${extract_dfs}" "${extract_zip}"
+    do
+	if [ -d "${d}" ]
+	then
+	    rmdir "${d}" || break
+	else
+	    # Directory is already gone or wasn't created.
+	    true
+	fi
+    done || exit 1
+}
+
 check_extract() {
     input="$1"
     shift
     archive="$1"
     shift
 
-    cleanup() {
+    cleanup_just_files() {
+	echo "cleaning up extracted files..."
 	rm -f "${extract_dfs}"/* "${extract_zip}"/*
     }
 
@@ -36,7 +50,7 @@ check_extract() {
     }
 
     (
-	cleanup
+	cleanup_just_files
 
 	# This time the output directory has a trailing slash.
 	# When we do this again later, it's missing.
@@ -87,7 +101,7 @@ check_extract() {
 	# Perform the extration operations again, this time deleting
 	# all the files other than the .inf files, so that we can
 	# compare just those.
-	cleanup
+	cleanup_just_files
 	if ! ( cd "${extract_zip}" && unzip "${zipfile}" )
 	then
 	    echo "FAILED: could not extract ${zipfile}" >&2
@@ -161,8 +175,11 @@ check_extract() {
 
     )
     rv=$?
-    cleanup
+    cleanup_just_files
     ( exit $rv )
 }
 
 check_extract watford-sd-62-with-62-files.ssd  watford-sd-62-with-62-files.zip
+rv=$?
+cleanup_dirs
+( exit $rv )
