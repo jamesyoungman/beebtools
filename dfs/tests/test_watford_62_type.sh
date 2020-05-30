@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
@@ -7,14 +8,12 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
+
 input='watford-sd-62-with-62-files.ssd.gz'
 
-cleanup() {
-    rm -f last.command
-}
-
 dfs() {
-    echo "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" > last.command
     "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
 }
 
@@ -24,7 +23,6 @@ expect_got() {
     if test "$1" != "$2"
     then
 	printf 'test %s: expected:\n%s\ngot:\n%s\n' "${label}" "$1" "$2"
-	( printf "last dfs command was: " ; cat last.command ) >&2
 	exit 1
     fi
 }
@@ -39,29 +37,44 @@ expect_got() {
 
     # Use type on an uncompressed image file so that we exercise a call to
     # ImageFile::get_total_sectors().
-    gunzip \
-	< "${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" \
-	> 'watford-sd-62-with-62-files.ssd' || exit 1
-    if ! (expect_got type_50   "$(printf 'FIFTY\n')" \
-       "$(${DFS} --file watford-sd-62-with-62-files.ssd type 'FILE50')" )
+    if ! temp_image="$(mktemp --tmpdir=${TMPDIR} tmp_unc_img_watford-sd-62-with-62-files.XXXXXX.ssd)"
     then
-	rm -f 'watford-sd-62-with-62-files.ssd'
+	echo "failed to create temporary file" >&2
 	exit 1
     fi
-    rm -f 'watford-sd-62-with-62-files.ssd'
+
+    cleanup() {
+	rm -f "${temp_image}"
+    }
+
+    if ! gunzip < "${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" >"${temp_image}"
+    then
+	cleanup
+	exit 1
+    fi
+    if ! (expect_got type_50   "$(printf 'FIFTY\n')" \
+       "$(${DFS} --file ${temp_image} type 'FILE50')" )
+    then
+	cleanup
+	exit 1
+    fi
+    cleanup
+
+    # Multiple arguments are not currently supported but they might
+    # be in the future, so there is no test case about that.
 
     # Some usage errors and similar.
+    echo "Bad-option test:"
     if dfs type  --not-an-option 'FILE50'
     then
 	echo "FAIL: type command does not reject non-options" >&2
 	exit 1
     fi
-    if dfs type '' 'FILE50'
+
+    echo "Empty argument test:"
+    if dfs type ''
     then
 	echo "FAIL: type command does not reject empty arguments" >&2
 	exit 1
     fi
 )
-rv=$?
-cleanup
-( exit $rv )

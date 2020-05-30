@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
@@ -7,17 +8,25 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
+
+if ! incomplete_image="$(mktemp --tmpdir=${TMPDIR} incomplete_XXXXXX.ssd.gz)"
+then
+    echo "Unable to create a temporary file" >&2
+    exit 1
+fi
 
 cleanup()
 {
-    rm -f 'incomplete.ssd.gz'
+    rm -f "${incomplete_image}"
 }
 
 (
 # Generate an incomple gzipped file by taking a prefix
 # of a valid cmpressed file.
 if ! dd if="${TEST_DATA_DIR}/watford-sd-62-with-62-files.ssd.gz" \
-     of="incomplete.ssd.gz" \
+     of="${incomplete_image}" \
      count=1 bs=1470
 then
     echo "Failed to generate temporary file" >&2
@@ -25,13 +34,13 @@ then
 fi
 
 # Verify that the prefix is incomplete and invalid
-if gunzip < incomplete.ssd.gz >/dev/null 2>/dev/null
+if gunzip < "${incomplete_image}" >/dev/null 2>/dev/null
 then
     echo "Temporary file was unexpectedly valid" >&2
     exit 1
 fi
 
-if "${DFS}" --file incomplete.ssd.gz cat
+if "${DFS}" --file "${incomplete_image}" cat
 then
     echo "FAILURE: didn't reject an incomplete compressed file." >&2
     exit 1

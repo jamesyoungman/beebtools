@@ -7,13 +7,27 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# TODO: move this into the test driver.
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
 
 check_free() {
     input="$1"
     expected="$2"
 
+    if ! expected_f="$(mktemp --tmpdir=${TMPDIR} test_free_expected.XXXXXX.txt)"
+    then
+	echo "failed to create a temporary file" >&2
+	exit 1
+    fi
+    if ! actual_f="$(mktemp --tmpdir=${TMPDIR} test_free_actual.XXXXXX.txt)"
+    then
+	echo "failed to create a temporary file" >&2
+	exit 1
+    fi
+
     cleanup() {
-	rm -f expected.txt actual.txt
+	rm -f "${expected_f}" "${actual_f}"
     }
 
     dfs() {
@@ -21,13 +35,13 @@ check_free() {
     }
 
     (
-	dfs free > actual.txt
-	printf '%s' "${expected}" > expected.txt
-	if ! diff -u expected.txt actual.txt
+	dfs free > "${actual_f}"
+	printf '%s' "${expected}" > "${expected_f}"
+	if ! diff -u "${expected_f}" "${actual_f}"
 	then
 	    printf 'Result of free command for %s is incorrect.\n' "${input}" >&2
-	    hexdump -C expected.txt
-	    hexdump -C actual.txt
+	    hexdump -C "${expected_f}"
+	    hexdump -C "${actual_f}"
 	    exit 1
 	fi
     )

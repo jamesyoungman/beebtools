@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
@@ -8,12 +9,8 @@ TEST_DATA_DIR="$1"
 shift
 
 input='watford-sd-62-with-62-files.ssd.gz'
-cleanup() {
-    rm -f last.command
-}
 
 dfs() {
-    echo "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" > last.command
     "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
 }
 
@@ -22,11 +19,7 @@ expect_got() {
     shift
     if test "$1" != "$2"
     then
-	{
-	    printf 'test %s: expected:\n%s\ngot:\n%s\n' "${label}" "$1" "$2"
-	    printf "last dfs command was: "
-	    cat last.command
-	} >&2
+	printf 'test %s: expected:\n%s\ngot:\n%s\n' "${label}" "$1" "$2" >&2
 	exit 1
     fi
 }

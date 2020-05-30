@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
@@ -7,17 +8,26 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
+
 check_sector_map() {
 
+    if ! actual="$(mktemp --tmpdir=${TMPDIR} test_sector_map_XXXXXX)"
+    then
+	echo "Cannot create temporary file" >&2
+	exit 1
+    fi
+
     cleanup() {
-	rm -f actual.txt
+	rm -f "${actual}"
     }
 
     input="${TEST_DATA_DIR}/watford-sd-62-with-holes.ssd.gz"
     golden="${TEST_DATA_DIR}/watford-sd-62-with-holes.ssd.sectors"
     (
-	"${DFS}" --file "${input}"  sector-map "$@" > actual.txt
-	if diff -b "${golden}" actual.txt
+	"${DFS}" --file "${input}"  sector-map "$@" >"${actual}"
+	if diff -b "${golden}" "${actual}"
 	then
 	    return
 	else

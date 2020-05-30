@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
@@ -7,13 +8,26 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
 
 check_space() {
     input="$1"
-    expected="$2"
+    expected_stdout="$2"
+
+    if ! expected="$(mktemp --tmpdir=${TMPDIR} expected_space_output_XXXXXX.txt)"
+    then
+	echo "failed to create temporary file" >&2
+	exit 1
+    fi
+    if ! actual="$(mktemp --tmpdir=${TMPDIR} actual_space_output_XXXXXX.txt)"
+    then
+	echo "failed to create temporary file" >&2
+	exit 1
+    fi
 
     cleanup() {
-	rm -f "${input}" expected.txt actual.txt
+	rm -f "${expected}" "${actual}"
     }
 
     dfs() {
@@ -22,15 +36,15 @@ check_space() {
     }
 
     (
-	dfs space > actual.txt || exit 1
-	printf '%s' "${expected}" > expected.txt
-	if ! diff -u expected.txt actual.txt
+	dfs space >"${actual}" || exit 1
+	printf '%s' "${expected_stdout}" >"${expected}"
+	if ! diff -u "${expected}" "${actual}"
 	then
-	    printf 'Result of free command for %s is incorrect.\n' "${input}" >&2
+	    printf 'Result of free command for %s is incorrect.\n' "${TEST_DATA_DIR}/${input}" >&2
 	    echo "Expected output:"
-	    hexdump -C expected.txt
+	    hexdump -C "${expected}"
 	    echo "Actual output:"
-	    hexdump -C actual.txt
+	    hexdump -C "${actual}"
 	    exit 1
 	fi
     )

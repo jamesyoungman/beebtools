@@ -7,20 +7,29 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
 
 check_cat() {
     input="$1"
     shift
 
-    cleanup() {
-	rm -f actual.txt actual0.txt
-    }
-
     dfs() {
 	"${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
 
+    if ! workdir="$(mktemp --tmpdir=${TMPDIR} -d test_cat_XXXXXX)"
+    then
+	echo "Unable to create a temporary directory" >&2
+	exit 1
+    fi
+
+    cleanup() {
+	rm -f "${workdir}"/actual.txt "${workdir}/actual0.txt" "${workdir}/actual00.txt"
+    }
+
     (
+	cd "${workdir}"
 	rv=0
 	dfs cat > actual.txt
 	dfs cat 0 > actual0.txt
@@ -74,6 +83,8 @@ check_cat() {
     )
     rv=$?
     cleanup
+    ls -l "${workdir}"
+    rmdir "${workdir}"
     ( exit $rv )
 }
 

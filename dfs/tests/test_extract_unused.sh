@@ -7,11 +7,14 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
+
 check_extract_unused() {
     input="$1"
     expected="$2"
 
-    if ! d="$(mktemp -d)"; then
+    if ! d="$(mktemp --tmpdir=${TMPDIR} -d)"; then
 	echo "failed to create temporary directory" >&1
 	exit 1
     fi

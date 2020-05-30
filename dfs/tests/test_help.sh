@@ -7,7 +7,10 @@ shift
 TEST_DATA_DIR="$1"
 shift
 
-if ! t=$(mktemp); then
+# Ensure TMPDIR is set.
+: ${TMPDIR:=/tmp}
+
+if ! t="$(mktemp --tmpdir=${TMPDIR})"; then
     echo 'Failed to make temporary file' >&2
     exit 1
 fi

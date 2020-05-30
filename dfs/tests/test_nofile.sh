@@ -1,4 +1,5 @@
 #! /bin/sh
+set -u
 
 DFS="$1"
 shift
