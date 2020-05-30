@@ -33,5 +33,4 @@ expect_got() {
     fi
 )
 rv=$?
-cleanup
 ( exit $rv )
