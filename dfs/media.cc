@@ -138,12 +138,6 @@ namespace
     SectorCache cache_;
   };
 
-  DFS::AbstractDrive* dsd_unsupported()
-  {
-    std::cerr << "Double-sided image files are not supported, try splitting the file first\n";
-    return 0;
-  }
-
   inline bool ends_with(const std::string & s, const std::string& suffix)
   {
     if (suffix.size() > s.size())
@@ -190,6 +184,13 @@ namespace DFS
 	return cached_image_file(name, std::move(infile), cache_sectors);
       }
 #if 0
+    auto dsd_unsupported = []() -> std::unique_ptr<AbstractDrive>
+			   {
+			     std::cerr << "Double-sided image files are not supported, try splitting the file first\n";
+			     return 0;
+			   };
+
+
     /* We have no tests for this code at the moment. */
     if (ends_with(name, ".dsd"))
       {
@@ -215,6 +216,8 @@ namespace DFS
 	return failed;
       }
 #endif
+    std::cerr << "Image file " << name << " does not seem to be of a supported type.\n";
+    return 0;
   }
 
 
