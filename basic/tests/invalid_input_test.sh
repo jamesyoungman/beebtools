@@ -30,18 +30,28 @@ should_fail() {
 expect_error() {
     regex="$1"
     shift
+    show_any_actual_error() {
+	if [ -s stderr.output ]
+	then
+	    error "Actual error output was:"
+	    cat stderr.output >&2
+	else
+	    error "No error messasge was issued on stderr"
+	fi
+    }
     echo "$@" > last.command
     if "$@" 2>stderr.output
     then
-	error "$@ should have exited with a nonzero status but it didn't"
-	cat stderr.output >&2
+	error "$@ should have exited with a nonzero status but it didn't."
+	show_any_actual_error
 	return 1
     fi
     if egrep -r "${regex}" < stderr.output >/dev/null
     then
 	return 0
     fi
-    error "$@ should have issued an error message matching ${regex} but it didn't"
+    error "$@ exited with a non-zero status but should also have issued an error message matching ${regex}, however it didn't"
+    show_any_actual_error
     return 1
 }
 
@@ -133,6 +143,12 @@ bad_c6_ext_map_test() {
 		 "${TEST_DATA_DIR}/invalid/ARM/bad-c6-ext-map.bbc"
 }
 
+eol_in_extension_token_test() {
+    expect_error "Unexpected end-of-line immediately after token 0xC7" \
+		 "${BBCBASIC_TO_TEXT}" --dialect=ARM \
+		 "${TEST_DATA_DIR}/invalid/ARM/premature-eol-after-c7.bbc"
+}
+
 fastvar_test() {
     expect_error "crunched.*this tool on the original source code" \
 		 "${BBCBASIC_TO_TEXT}" --dialect=SDL \
@@ -189,6 +205,7 @@ run_all_tests() {
 	run_test be_short_line_test &&
 	run_test eof_in_line_num_1_test &&
 	run_test eof_in_line_num_2_test &&
+	run_test eol_in_extension_token_test &&
 	run_test eol_in_line_number_test &&
 	run_test fastvar_test &&
 	run_test incomplete_eof_1_test &&

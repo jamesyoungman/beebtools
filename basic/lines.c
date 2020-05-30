@@ -29,7 +29,7 @@ static bool print_target_line_number(unsigned char b1, unsigned char b2, unsigne
 
 static bool premature_eol(unsigned int tok)
 {
-  fprintf(stderr, "Uexpected end-of-line immediately after token 0x%02X\n", tok);
+  fprintf(stderr, "Unexpected end-of-line immediately after token 0x%02X\n", tok);
   return false;
 }
 
