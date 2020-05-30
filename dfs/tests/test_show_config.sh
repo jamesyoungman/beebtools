@@ -46,7 +46,7 @@ fi
 # We have to decompress the image here, to verify that --show-config
 # can distinguish compressed and uncompressed image files.
 gunzip < "${TEST_DATA_DIR}"/acorn-dfs-sd-40t.ssd.gz >"${imagefile}"
-"${DFS}" --show-config --file "${imagefile}" info ':0.no-file' > actual.txt 2>&1 || (
+"${DFS}" --show-config --file "${imagefile}" info ':0.nofile1' > actual.txt 2>&1 || (
 	 rm -f "${imagefile}"
 	 exit 1
 ) || exit 1
@@ -62,9 +62,11 @@ then
     exit 1
 fi
 
-"${DFS}" --show-config --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" info ':0.no-file' > actual.txt 2>&1 || (
+if ! "${DFS}" --show-config --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" info ':0.nofile2' > actual.txt 2>&1
+then
+    cat actual.txt >&2
     exit 1
-) || exit 1
+fi
 
 if ! check_config actual.txt \
 	     '^Drive 0: occupied, compressed image file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
