@@ -6,8 +6,14 @@
 BBCBASIC_TO_TEXT="$1"
 TEST_DATA_DIR="$2"
 
+prefix="invalid_input_test_${$}_"
+errout="${prefix}stderr.output"
+stdout="${prefix}stdout.output"
+expected_out="${prefix}expected.output"
+last="${prefix}last.command"
+
 cleanup() {
-    rm -f stdout.output stderr.output expected.output last.command
+    rm -f "${errout}" "${stdout}"  "${expected_out}" "${last}"
 }
 
 error() {
@@ -31,22 +37,22 @@ expect_error() {
     regex="$1"
     shift
     show_any_actual_error() {
-	if [ -s stderr.output ]
+	if [ -s "${errout}" ]
 	then
 	    error "Actual error output was:"
-	    cat stderr.output >&2
+	    cat "${errout}" >&2
 	else
 	    error "No error messasge was issued on stderr"
 	fi
     }
-    echo "$@" > last.command
-    if "$@" 2>stderr.output
+    echo "$@" > "${last}"
+    if "$@" 2>"${errout}"
     then
 	error "$@ should have exited with a nonzero status but it didn't."
 	show_any_actual_error
 	return 1
     fi
-    if egrep -r "${regex}" < stderr.output >/dev/null
+    if egrep -r "${regex}" < "${errout}" >/dev/null
     then
 	return 0
     fi
@@ -169,20 +175,20 @@ z80_trailing_junk_test() {
     if "${BBCBASIC_TO_TEXT}" \
 	   --dialect=Z80 \
 	   "${TEST_DATA_DIR}"/inputs/Z80/trailing-junk.bbc \
-	   >stdout.output 2>stderr.output
+	   >"${stdout}" 2>"${errout}"
     then
-	printf '   10 CLS\n' > expected.output
-	if ! diff -u expected.output stdout.output >&2
+	printf '   10 CLS\n' > "${expected_out}"
+	if ! diff -u "${expected_out}" "${stdout}" >&2
 	then
 	    echo "FAIL: incorrect output on stdout" >&2
 	    rv=1
 	fi
 	wanted='expected end-of-file'
-	if ! grep -F -q "${wanted}" stderr.output
+	if ! grep -F -q "${wanted}" "${errout}"
 	then
 	    echo "FAIL: expected to see ${wanted} in the stderr output" >&2
 	    echo "instead, got this:" >&2
-	    cat < stderr.output >&2
+	    cat < "${errout}" >&2
 	    rv=1
 	fi
 	echo "z80_trailing_junk_test: all checks OK"
