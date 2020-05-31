@@ -1,6 +1,6 @@
 #! /bin/sh
+# Tags: positive negative
 set -u
-
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
 DFS="$1"
@@ -26,6 +26,7 @@ expect_got() {
 
 (
     expect_got drive0    "$(printf 'FIFTY\n')" "$(dfs type ':0.$.FILE50')"
+
     if dfs type ':1.$.FILE50'
     then
 	echo 'expected non-zero return value for ":1.$.FILE50", got zero' >&2

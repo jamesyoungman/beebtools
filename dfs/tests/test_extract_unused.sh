@@ -1,5 +1,5 @@
 #! /bin/sh
-
+# Tags: positive negative
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"
 DFS="$1"

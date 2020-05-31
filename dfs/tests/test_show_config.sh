@@ -1,4 +1,5 @@
 #! /bin/sh
+# Tags: negative positive
 set -u
 
 # Args:

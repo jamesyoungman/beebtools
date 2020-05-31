@@ -118,6 +118,14 @@ file(GLOB SH_TEST_SCRIPTS tests/test_*.sh)
 set(SH_TEST_CWD ${CMAKE_CURRENT_BINARY_DIR}/work)
 file(MAKE_DIRECTORY ${SH_TEST_CWD})
 
+function(get_test_tags filename outvar)
+  file(READ ${SH_TEST_SCRIPT} body)
+  set(re  "# Tags: ([^\n]*)")
+  string(REGEX MATCH "${re}" taglist "${body}")
+  string(REGEX MATCHALL "[^ ]+" tags "${CMAKE_MATCH_1}")
+  set(${outvar} "${tags}" PARENT_SCOPE)
+endfunction()
+
 foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
   file(RELATIVE_PATH shortname ${CMAKE_CURRENT_SOURCE_DIR} ${SH_TEST_SCRIPT})
   add_test(
@@ -125,8 +133,8 @@ foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
     COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/test_runner.sh
     ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/testdata
     WORKING_DIRECTORY ${SH_TEST_CWD})
-  # We don't know whether these tests, individually, are negative or positive test cases.
-  set_property(TEST ${shortname} PROPERTY LABELS dfs regression_test negaposimaybe )
+  get_test_tags("${SH_TEST_SCRIPT}" tags)
+  set_property(TEST ${shortname} PROPERTY LABELS dfs regression_test ${tags} )
 endforeach()
 
 configure_file(

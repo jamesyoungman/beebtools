@@ -1,4 +1,5 @@
 #! /bin/sh
+# Tags: positive
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"

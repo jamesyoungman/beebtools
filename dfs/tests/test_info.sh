@@ -1,4 +1,5 @@
 #! /bin/sh
+# Tags: negative
 
 # Args:
 # ${DFS}" "${TEST_DATA_DIR}"

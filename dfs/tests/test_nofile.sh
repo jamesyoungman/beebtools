@@ -1,6 +1,6 @@
 #! /bin/sh
 set -u
-
+# Tags: negative
 DFS="$1"
 shift
 TEST_DATA_DIR="$1"
