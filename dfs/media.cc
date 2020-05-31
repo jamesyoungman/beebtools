@@ -174,7 +174,7 @@ namespace DFS
     const unsigned cache_sectors = 4;
     unsigned long int len;
     if (!get_file_size(*infile, &len))
-      throw FileIOError(name, errno);	// TODO: include file name
+      throw FileIOError(name, errno);
 
     if (len < DFS::SECTOR_BYTES * 2)
       throw DFS::BadFileSystem("disk image is too short to contain a valid catalog");

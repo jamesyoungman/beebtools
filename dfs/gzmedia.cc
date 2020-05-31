@@ -28,7 +28,7 @@ namespace
       free(msg_);
     }
 
-    const char *what() const throw()
+    const char *what() const noexcept
     {
       return msg_;
     }
@@ -41,7 +41,7 @@ namespace
   {
   public:
     OutOfMemoryError() {}
-    const char *what() const throw()
+    const char *what() const noexcept
     {
       return "not enough available memory";
     }
@@ -63,7 +63,7 @@ namespace
     }
 
 
-    const char *what() const throw()
+    const char *what() const noexcept
     {
       return msg_.c_str();
     }
