@@ -16,9 +16,6 @@ using std::string;
 
 namespace
 {
-  DFS::BadFileSystem eof_in_catalog("file system image is too short "
-				    "to contain a catalog");
-
   inline char byte_to_ascii7(DFS::byte b)
   {
     return char(b & 0x7F);
@@ -37,13 +34,18 @@ namespace
 
 namespace DFS
 {
+  DFS::BadFileSystem eof_in_catalog()
+  {
+    return BadFileSystem("file system image is too short to contain a catalog");
+  }
+
   Format FileSystemMetadata::identify_format(AbstractDrive* drive)
   {
     AbstractDrive::SectorBuffer buf;
     bool beyond_eof = false;
     drive->read_sector(1, &buf, beyond_eof);
     if (beyond_eof)
-      throw BadFileSystem("file system image is empty");
+      throw DFS::eof_in_catalog();
 
     if (buf[0x06] & 8)
       return Format::HDFS;
@@ -210,7 +212,7 @@ namespace DFS
     bool beyond_eof = false;
     media_->read_sector(sector, &buf, beyond_eof);
     if (beyond_eof)
-      throw eof_in_catalog;
+      throw eof_in_catalog();
     return buf[offset];
   }
 
@@ -240,12 +242,12 @@ CatalogEntry::CatalogEntry(AbstractDrive* media,
   bool beyond_eof = false;
   media->read_sector(name_sec, &buf, beyond_eof);
   if (beyond_eof)
-    throw eof_in_catalog;
+    throw eof_in_catalog();
   std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	    raw_name_.begin());
   media->read_sector(md_sec, &buf, beyond_eof);
   if (beyond_eof)
-    throw eof_in_catalog;
+    throw eof_in_catalog();
   std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	    raw_metadata_.begin());
 }

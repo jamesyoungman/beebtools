@@ -21,6 +21,8 @@
 
 namespace DFS
 {
+BadFileSystem eof_in_catalog();
+
 enum class BootSetting
   {
    None, Load, Run, Exec

@@ -177,7 +177,7 @@ namespace DFS
       throw FileIOError(name, errno);
 
     if (len < DFS::SECTOR_BYTES * 2)
-      throw DFS::BadFileSystem("disk image is too short to contain a valid catalog");
+      throw DFS::eof_in_catalog();
     std::unique_ptr<ImageFile> failed;
     if (ends_with(name, ".ssd"))
       {
