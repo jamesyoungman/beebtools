@@ -20,6 +20,19 @@ cd _build
 cmake .. && make && ctest -N
 ```
 
+## Build Options
+
+The following options exist:
+
+### PDF
+
+Generate PDF documentation.   Turn this on with `cmake -DPDF=ON`.
+
+### COVERAGE
+
+Generate code coverage statistics.  Turn this on with `cmake
+-DCOVERAGE=ON`.  For instructions on how to use this option, see below.
+
 ## Code Coverage
 
 To measure code coverage you will need to download
@@ -31,7 +44,7 @@ mkdir -p /tmp/coverage &&
 wget -O /tmp/coverage/CodeCoverage.cmake \
   'https://github.com/bilke/cmake-modules/raw/master/CodeCoverage.cmake' &&
 ( mkdir -p _build && cd _build &&
-  cmake -DCMAKE_MODULE_PATH=/tmp/coverage/ -DOPT_COVERAGE=1 -DCMAKE_BUILD_TYPE=Debug .. &&
+  cmake -DCMAKE_MODULE_PATH=/tmp/coverage/ -DCOVERAGE=ON -DCMAKE_BUILD_TYPE=Debug .. &&
   make && make coverage
 )
 ```
