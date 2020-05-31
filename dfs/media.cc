@@ -183,39 +183,6 @@ namespace DFS
       {
 	return cached_image_file(name, std::move(infile), cache_sectors);
       }
-#if 0
-    auto dsd_unsupported = []() -> std::unique_ptr<AbstractDrive>
-			   {
-			     std::cerr << "Double-sided image files are not supported, try splitting the file first\n";
-			     return 0;
-			   };
-
-
-    /* We have no tests for this code at the moment. */
-    if (ends_with(name, ".dsd"))
-      {
-	dsd_unsupported();
-	return failed;
-      }
-
-    std::cerr << "Guessing whether " << name << " is a single- or a double-sided image based on the extension\n";
-    switch (len)
-      {
-	// DFS 80 tracks * 10 sectors * 2 sides * 256 bytes/sector
-      case 400 * 1024:
-	dsd_unsupported();
-	return failed;
-
-	// DFS 40 tracks * 10 sectors * 2 sides * 256 bytes/sector
-      case 200 * 1024:
-	return cached_image_file(name, std::move(infile), cache_sectors);
-
-      default:
-	std::cerr << "Don't know how to handle an image file " << len
-		  << " bytes long\n";
-	return failed;
-      }
-#endif
     std::cerr << "Image file " << name << " does not seem to be of a supported type.\n";
     return 0;
   }
