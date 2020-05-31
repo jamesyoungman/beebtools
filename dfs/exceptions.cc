@@ -17,7 +17,7 @@ BadFileSystem::BadFileSystem(const std::string& msg)
 }
 
 const char *
-BadFileSystem::what() const throw()
+BadFileSystem::what() const noexcept
 {
   return error_message_.c_str();
 }
@@ -28,7 +28,7 @@ FileIOError::FileIOError(const std::string& file_name, int errno_value)
 }
 
 const char *
-FileIOError::what() const throw()
+FileIOError::what() const noexcept
 {
   return msg_.c_str();
 }
@@ -38,7 +38,7 @@ NonFileOsError::NonFileOsError(int errno_value)
 {
 }
 
-const char* NonFileOsError::what() const throw()
+const char* NonFileOsError::what() const noexcept
 {
   return strerror(errno_value_);
 }
