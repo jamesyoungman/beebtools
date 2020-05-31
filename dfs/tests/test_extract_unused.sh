@@ -26,8 +26,8 @@ check_extract_unused() {
     }
 
     dfs() {
-	echo Running: "${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@" >&2
-	"${DFS}" --file "${TEST_DATA_DIR}/${input}.gz" "$@"
+	echo Running: "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@" >&2
+	"${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
 
     (
@@ -63,7 +63,22 @@ check_extract_unused() {
 }
 
 
-check_extract_unused acorn-dfs-sd-40t.ssd || exit 1
+# Sanity check for check_extract_unused to make sure it can
+# diagnose a missing input filr.
+if check_extract_unused this-file-does-not-exist.ssd
+then
+    echo "test bug: check_extract_unused accepts a missing image file" >&2
+    exit 1
+fi
+
+check_extract_unused acorn-dfs-sd-40t.ssd.gz || exit 1
+
+# Two test cases with a short disc image, one compressed the other
+# not.  This disc image was created in B-EM using "Disc > New disc
+# :0/2..."  but *FORM80 was not used.  The emulated BBC Micro is fine
+# with this (for example *CAT works) so we should accept it, too.
+check_extract_unused acorn-dfs-40t-single-density-single-sided-empty.ssd.gz || exit 1
+check_extract_unused acorn-dfs-40t-single-density-single-sided-empty.ssd || exit 1
 
 # Now check some usage errors.
 

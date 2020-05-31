@@ -129,7 +129,7 @@ private:
 	drive->read_sector(sec, &buf, beyond_eof);
 	if (beyond_eof)
 	  {
-	    std::cerr << "warning: media (" << sec << " sectors) is shorter "
+	    std::cerr << "warning: media (" << drive->get_total_sectors() << " sectors) is shorter "
 		      << "than file system (" << end_sector << " sectors)\n";
 	    break;
 	  }

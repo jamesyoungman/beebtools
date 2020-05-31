@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <exception>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -70,18 +71,18 @@ namespace DFS
     // Look for the Watford DFS recognition string
     // in the initial entry in its extended catalog.
     drive->read_sector(2, &buf, beyond_eof);
-    if (beyond_eof)
+    if (!beyond_eof)
       {
-	throw BadFileSystem("File system image contains just one sector (i.e. "
-			    "the catalog would be incomplete if it were a DFS  "
-			    "image)\n");
+	if (std::all_of(buf.cbegin(), buf.cbegin()+0x08,
+			[](byte b) { return b == 0xAA; }))
+	  {
+	    return Format::WDFS;
+	  }
       }
-
-    if (std::all_of(buf.cbegin(), buf.cbegin()+0x08,
-		    [](byte b) { return b == 0xAA; }))
-      {
-	return Format::WDFS;
-      }
+    // Either the recognition bytes were not there (meaning it's not a
+    // Watford DFS 62 file catalog) or the disk image is too short to
+    // contain sector 2 (meaning that the recognition bytes cannot be
+    // there beyond the end of the "media").
     return Format::DFS;
   }
 
