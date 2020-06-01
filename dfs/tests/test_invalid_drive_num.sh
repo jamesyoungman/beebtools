@@ -44,12 +44,13 @@ check_valid_drive     0
 check_valid_drive     1
 check_valid_drive     2
 check_valid_drive     3
+# We accept drive numbers larger than 3.
+check_valid_drive     4
+check_valid_drive     200
 
-check_invalid_drive   4
 check_invalid_drive   A
 check_invalid_drive   -1
 check_invalid_drive   2x
-check_invalid_drive   5
 check_invalid_drive   -10000000000000000000000000000000
 check_invalid_drive    10000000000000000000000000000000
 

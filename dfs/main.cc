@@ -9,15 +9,20 @@
 #include "commands.h"
 #include "dfs.h"
 #include "media.h"
+#include "storage.h"
 
 namespace
 {
+  using DFS::StorageConfiguration;
+
   enum OptSignifier
     {
      OPT_IMAGE_FILE = SCHAR_MIN,
      OPT_CWD,
      OPT_DRIVE,
      OPT_SHOW_CONFIG,
+     OPT_ALLOCATE_EVEN,
+     OPT_ALLOCATE_ANY,
      OPT_HELP,
     };
 
@@ -33,6 +38,10 @@ namespace
      // associated with the disc image specified in --file (as for
      // *DRIVE).
      { "drive", 1, NULL, OPT_DRIVE },
+     // --drive-any allows disc images to be "inserted" in any slot
+     { "drive-any", 0, NULL, OPT_ALLOCATE_ANY },
+     // --drive-even allows disc images to be "inserted" in only even slots
+     { "drive-even", 0, NULL, OPT_ALLOCATE_EVEN },
      { "show-config", 0, NULL, OPT_SHOW_CONFIG },
      { "help", 0, NULL, OPT_HELP },
      { 0, 0, 0, 0 },
@@ -70,7 +79,7 @@ namespace
     return ok;
   }
 
-  std::pair<bool, int> get_drive_number(const char *s)
+  std::pair<bool, DFS::drive_number> get_drive_number(const char *s)
   {
     long v = 0;
     bool ok = [s, &v]() {
@@ -95,14 +104,14 @@ namespace
 			      << "argument to --drive: " << end << "\n";
 		    return false;
 		  }
-		if (v < 0 || v > 3)
+		if (v < 0)
 		  {
-		    std::cerr << "Drive number should be between 0 and 3.\n ";
+		    std::cerr << "Drive number must not be negative.\n ";
 		    return false;
 		  }
 		return true;
 	      }();
-    return std::make_pair(ok, static_cast<int>(v));
+    return std::make_pair(ok, static_cast<DFS::drive_number>(v));
   }
 
 std::unique_ptr<std::map<std::string, std::string>> option_help;
@@ -114,6 +123,9 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
        {"file", "the name of the DFS image file to read"},
        {"dir", "the default directory (if unspecified, use $)"},
        {"drive", "the default drive (if unspecified, use 0)"},
+       {"drive-any", "disc images are assigned the next free drive slot"},
+       {"drive-even", "disc images are assigned the even drive slot "
+	"(as if they were physical floppies being inserted)"},
        {"show-config", "show the storage configuraiton before "
 	"performing the operation"},
        {"help", "print a brief explanation of how to use the program"}
@@ -144,7 +156,8 @@ int main (int argc, char *argv[])
   std::vector<std::string> extra_args;
   DFS::StorageConfiguration storage;
   bool show_config = false;
-
+  using DFS::StorageConfiguration;
+  StorageConfiguration::DriveAllocation how_to_allocate_drives(StorageConfiguration::DriveAllocation::EVEN);
   int opt;
   while ((opt=getopt_long(argc, argv, "+", global_opts, &longindex)) != -1)
     {
@@ -157,7 +170,8 @@ int main (int argc, char *argv[])
 	case OPT_IMAGE_FILE:
 	  try
 	    {
-	      if (!storage.connect_drive(DFS::make_image_file(optarg)))
+	      if (!storage.connect_drive(DFS::make_image_file(optarg),
+					 how_to_allocate_drives))
 		return 1;
 	    }
 	  catch (std::exception& e)
@@ -185,6 +199,14 @@ int main (int argc, char *argv[])
 	    if (!ok)
 	      return 1;
 	  }
+	  break;
+
+	case OPT_ALLOCATE_EVEN:
+	  how_to_allocate_drives = StorageConfiguration::DriveAllocation::EVEN;
+	  break;
+
+	case OPT_ALLOCATE_ANY:
+	  how_to_allocate_drives = StorageConfiguration::DriveAllocation::ANY;
 	  break;
 
 	case OPT_SHOW_CONFIG:

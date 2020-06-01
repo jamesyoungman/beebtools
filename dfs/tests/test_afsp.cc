@@ -317,20 +317,32 @@ namespace
     record_test(one_qualify_test(ctx, ":2.&.WHAP", true, ":2.&.WHAP", ""));
     record_test(one_qualify_test(ctx,      ":0.$", true, ":0.$.$", ""));
 
+    // Positive cases for high (> 3) drive numbers.
+    record_test(one_qualify_test(ctx, ":4.&.WHAP", true, ":4.&.WHAP", ""));
+    record_test(one_qualify_test(ctx, ":10.&.WHAP", true, ":10.&.WHAP", ""));
+
     // Checks for trailing blanks (which are present in the catalog but not part of
     // the file name).
     record_test(one_qualify_test(ctx, ":2.B.SPC   ", true, ":2.B.SPC", ""));
 
     // Invalid file names.
-    record_test(one_qualify_test(ctx,   "",   false, "", "not a valid file name"));
-    record_test(one_qualify_test(ctx, ":0",   false, "", "not a valid file name"));
-    record_test(one_qualify_test(ctx, ":0.",  false, "", "not a valid file name"));
+    const std::string not_valid_file("not a valid file name");
+    record_test(one_qualify_test(ctx,   "",   false, "", not_valid_file));
+    record_test(one_qualify_test(ctx, ":0",   false, "", not_valid_file));
+    record_test(one_qualify_test(ctx, ":0.",  false, "", not_valid_file));
     // Metacharacters are not valid in file names.
-    record_test(one_qualify_test(ctx, "#",   false, "", "not a valid file name"));
-    record_test(one_qualify_test(ctx, "*",   false, "", "not a valid file name"));
-    record_test(one_qualify_test(ctx, ":",   false, "", "not a valid file name"));
-    record_test(one_qualify_test(ctx, ".",   false, "", "not a valid file name"));
+    record_test(one_qualify_test(ctx, "#",   false, "",  not_valid_file));
+    record_test(one_qualify_test(ctx, "*",   false, "",  not_valid_file));
+    record_test(one_qualify_test(ctx, ":",   false, "",  not_valid_file));
+    record_test(one_qualify_test(ctx, ".",   false, "",  not_valid_file));
 
+    // Negative cases for bad drive numbers (they must be decimal, >= 0)
+    // Drive numbers must be made of digits.
+    record_test(one_qualify_test(ctx, ":Z.&.WHAP", false, "", not_valid_file));
+    // They must be >= 0.
+    record_test(one_qualify_test(ctx, ":-1.&.WHAP", false, "", not_valid_file));
+    // They must not contain trailing non-digits in the same field.
+    record_test(one_qualify_test(ctx, ":2Z.&.WHAP", false, "", not_valid_file));
 
     record_test(one_wild_test(ctx, ":0.$.*", true, ":0.$.*", ""));
     record_test(one_wild_test(ctx, ":0.$.NAME", true, ":0.$.NAME", ""));
@@ -339,6 +351,12 @@ namespace
     record_test(one_wild_test(ctx, "*.#", true, ":0.*.#", ""));
     record_test(one_wild_test(ctx, "#.##", true, ":0.#.##", ""));
     record_test(one_wild_test(ctx, "I.*", true, ":0.I.*", ""));
+
+    // Drive numbers which are not valid in file names are also not
+    // valid in wildcards.
+    record_test(one_wild_test(ctx, ":Z.&.WHAP", false, "", "bad name"));
+    record_test(one_wild_test(ctx, ":-1.&.WHAP", false, "", "bad name"));
+    record_test(one_wild_test(ctx, ":2Z.&.WHAP", false, "", "bad name"));
 
     // Some of these expected results rely on the fact that the current
     // working directory ("cwd") is $.
@@ -353,13 +371,12 @@ namespace
 			    {":0.Q.TRUG"}, // no match: * only matches in cwd
 			    {":1.$.TREAD"} // should not be matched because wrong drive
 			   }, {/* no matches */}));
-
     // Tests that verify drive number handling.  cwd is $, drive is 0.
     record_test(match_test(ctx, ":0.Q.*", {{0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
     record_test(match_test(ctx, ":1.Q.*", {{0, 'T', "BLUE"}}, {}));
     record_test(match_test(ctx, ":1.Q.*", {{0, 'Q', "BLUE"}}, {}));
-
     record_test(match_test(ctx, ":1.Q.*", {{1, 'Q', "BLUE"}}, {{1, 'Q', "BLUE"}}));
+
     record_test(match_test(ctx, ":0.Q.*", {{2, 'Q', "BLUE"}, {0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
     record_test(match_test(ctx, ":2.Q.*", {{2, 'Q', "BLUE"}, {0, 'Q', "BLUE"}}, {{2, 'Q', "BLUE"}}));
 

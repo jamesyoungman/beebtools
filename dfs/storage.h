@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,34 +14,44 @@
 
 namespace DFS
 {
-  enum
-    {
-     MAX_DRIVES = 4
-    };
-
-
   class FileSystem;
 
   class StorageConfiguration
   {
   public:
-    StorageConfiguration();
-    bool connect_drive(std::unique_ptr<AbstractDrive>&&);
+    // DriveAllocation represents a choice of how to assign image
+    // files to drive slots.
+    //
+    // Suppose (from empty) we insert two single-sided image files.
+    // The first will be drive 0.  For strategy EVEN, the second will
+    // be drive 2, just as if we inserted two single-sided floppy
+    // disks into a BBC Micro.  For strategy ANY, the second will be
+    // drive 1, as if the two image files represented the two sides
+    // of a physical floppy.
+    enum class DriveAllocation
+      {
+       ANY = 1,  // always use the next available slot
+       EVEN = 2,  // use an even slot (as if the image were a physical disc).
+      };
 
-    bool is_drive_connected(unsigned drive) const
+    StorageConfiguration();
+    bool connect_drive(std::unique_ptr<AbstractDrive>&&, DriveAllocation how);
+
+    bool is_drive_connected(drive_number drive) const
     {
-      if (drive >= drives_.size())
+      auto it = drives_.find(drive);
+      if (it == drives_.end())
 	return false;
-      return drives_[drive].get();
+      return it->second.get();
     }
 
-    static bool decode_drive_number(const std::string& s, unsigned int *result);
-    bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, int current) const;
-    bool select_drive(unsigned int drive, AbstractDrive **pp) const;
+    static bool decode_drive_number(const std::string& s, drive_number *result);
+    bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, drive_number current) const;
+    bool select_drive(drive_number drive, AbstractDrive **pp) const;
     void show_drive_configuration(std::ostream& os) const;
 
   private:
-    std::array<std::unique_ptr<AbstractDrive>, MAX_DRIVES> drives_;
+    std::map<drive_number, std::unique_ptr<AbstractDrive>> drives_;
   };
 }
 

@@ -4,7 +4,9 @@
 #include <functional>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 #include <set>
+#include <string>
 #include <vector>
 
 #include <assert.h>
@@ -13,6 +15,7 @@
 #include "stringutil.h"
 #include "dfscontext.h"
 #include "regularexpression.h"
+#include "storage.h"
 
 using std::string;
 using std::vector;
@@ -23,6 +26,7 @@ namespace
   using DFS::AFSPMatcher;
   using DFS::DFSContext;
   using DFS::RegularExpression;
+  using DFS::StorageConfiguration;
 
   inline char up(char ch)
   {
@@ -34,13 +38,12 @@ namespace
     return static_cast<char>(tolower(static_cast<unsigned char>(ch)));
   }
 
-  string drive_prefix(int drive)
+  string drive_prefix(DFS::drive_number drive)
   {
     string result;
-    result.reserve(3);
+    result.reserve(3); // common, but not an upper limit
     result.push_back(':');
-    assert((std::numeric_limits<char>::max() - '0') > drive);
-    result.push_back(static_cast<char>('0' + drive));
+    result.append(std::to_string(drive));
     result.push_back('.');
     return result;
   }
@@ -132,6 +135,8 @@ namespace
     if (!DFS::internal::extend_wildcard(*drive_num, dir, wild, &full_wildcard, error_message))
       return false;
     assert(full_wildcard.size() > 0 && full_wildcard[0] == ':');
+    // We expect the wildcard to be of the form :NN.D.blah where DD is
+    // the drive number.
     if (!isdigit(full_wildcard[1]))
       {
 	error_message->assign("No drive number in " + full_wildcard);
@@ -221,7 +226,7 @@ namespace DFS
     {
       static const char invalid[] = "not a valid file name";
       static const char *ddn_pat = "^"
-	"(:[0-9][.])?"		// drive
+	"(:[0-9]+[.])?"	// drive (more than one digit is OK)
 	"([^.:#*][.])?"		// directory
 	"([^.:#*]+)$";		// file name (with trailing blanks trimmed)
       bool result = transform_string_with_regex(drive_num, dir, rtrim(filename), ddn_pat, invalid,
@@ -236,7 +241,7 @@ namespace DFS
 			 string* out, string* error_message)
     {
       static const char *ddn_pat = "^"
-	"(:[^.][.])?"		// drive
+	"(:[0-9]+[.])?"		// drive (more than one digit is OK)
 	"([^.][.])?"		// directory
 	"([^.]+)$";		// file name
       return transform_string_with_regex(drive_num, dir, wild, ddn_pat, "bad name", out, error_message);
