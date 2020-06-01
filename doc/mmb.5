@@ -1,0 +1,88 @@
+.TH "MMB" 5 2020-05-31 Youngman \" -*- nroff -*-
+
+.SH SYNOPSIS
+
+The MMB file consists of a table of disc image metadata followed by
+all the disc images, catenated together.
+
+.SH DISC TABLE
+
+The disc table occupies 32 (0x20) sectors beginning at offset 0 in the
+MMB file.  In other words it is 8192 bytes long.  Each disc is
+described in a 16 (0x10) byte record (meaning that up to 511 discs can
+be stored).
+
+The Disc Table has a 16-byte header:
+
+.TS
+tab(|) allbox;
+lb lb
+l l.
+Offset (hex)|Meaning
+0x00|Low byte of ID of disk to "insert" in drive 0 on boot
+0x01|Low byte of ID of disk to "insert" in drive 1 on boot
+0x02|Low byte of ID of disk to "insert" in drive 2 on boot
+0x03|Low byte of ID of disk to "insert" in drive 3 on boot
+0x04|High byte of ID of disk to "insert" in drive 0 on boot
+0x05|High byte of ID of disk to "insert" in drive 1 on boot
+0x06|High byte of ID of disk to "insert" in drive 2 on boot
+0x07|High byte of ID of disk to "insert" in drive 3 on boot
+0x08 - 0x0F|not used
+.TE
+
+
+After the header there is a sequence of 16-byte records giving the
+metadata for each disc.
+Disc 0 is described at offset 16 (0x10) in
+the disc table, disc 1 at offset 32 (0x20) and so on.  Each record
+looks like this:
+
+.TS
+tab(|) allbox;
+lb lb
+l l.
+Record offset (hex)|Meaning
+0x00 - 0x0B|Disc Name
+0x0C - 0x0E|not used
+0x0F|Disc Type
+.TE
+
+The Disc Type field specifies whether this entry actually represents a
+disc image or not:
+
+.TS
+tab(|) allbox;
+lb lb
+l l.
+Disc Type|Meaning
+0x00|Read-only
+0x0F|Read-write
+0xF0|Unormatted
+0xFF|This disc number is not valid
+.TE
+
+.SH DISC IMAGES
+
+All disc images are 204800 bytes (80 tracks times 10 sectors per track
+times 256 bytes per sector) long.  511 disc images are supported.  The
+first of these (for disc 0) begins directly after the Disc Table.
+
+In Acorn DFS file systems, sectors are always 256 bytes long.
+
+.SH BUGS
+Please report inaccuracies or other defects in this document to
+james@youngman.org.
+
+.SH "SEE ALSO"
+.BR dfs (1),
+.BR imgtool (1),
+.BR floptool (1),
+.BR losetup (1),
+.br
+.UR https://github.com/sweharris/MMB_Utils
+MMB_Utils by Stephen Harris
+.UE
+.br
+.UR https://web.archive.org/web/20171002201228/https://swhs.home.xs4all.nl/bbc/mmbeeb/index_files/DUTILS.pdf
+DUTILS.pdf
+.UE
