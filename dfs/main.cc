@@ -154,10 +154,12 @@ int main (int argc, char *argv[])
   DFS::DFSContext ctx('$', 0);
   int longindex;
   std::vector<std::string> extra_args;
-  DFS::StorageConfiguration storage;
+  // files is just a way to manage the lifetime of the image file objects such
+  // that they live longer than the StorageConfiguration.
+  std::vector<std::unique_ptr<DFS::AbstractImageFile>> files;
+  DFS::StorageConfiguration storage; // must be declared after files.
   bool show_config = false;
-  using DFS::StorageConfiguration;
-  StorageConfiguration::DriveAllocation how_to_allocate_drives(StorageConfiguration::DriveAllocation::EVEN);
+  DFS::DriveAllocation how_to_allocate_drives(DFS::DriveAllocation::EVEN);
   int opt;
   while ((opt=getopt_long(argc, argv, "+", global_opts, &longindex)) != -1)
     {
@@ -170,9 +172,12 @@ int main (int argc, char *argv[])
 	case OPT_IMAGE_FILE:
 	  try
 	    {
-	      if (!storage.connect_drive(DFS::make_image_file(optarg),
-					 how_to_allocate_drives))
+	      std::unique_ptr<DFS::AbstractImageFile> file = DFS::make_image_file(optarg);
+	      if (!file)
 		return 1;
+	      if (!file->connect_to(&storage, how_to_allocate_drives))
+		return 1;
+	      files.push_back(std::move(file));
 	    }
 	  catch (std::exception& e)
 	    {
@@ -202,11 +207,11 @@ int main (int argc, char *argv[])
 	  break;
 
 	case OPT_ALLOCATE_EVEN:
-	  how_to_allocate_drives = StorageConfiguration::DriveAllocation::EVEN;
+	  how_to_allocate_drives = DFS::DriveAllocation::EVEN;
 	  break;
 
 	case OPT_ALLOCATE_ANY:
-	  how_to_allocate_drives = StorageConfiguration::DriveAllocation::ANY;
+	  how_to_allocate_drives = DFS::DriveAllocation::ANY;
 	  break;
 
 	case OPT_SHOW_CONFIG:

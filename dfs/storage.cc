@@ -17,12 +17,6 @@ using DFS::byte;
 
 namespace
 {
-  void connect_internal(std::unique_ptr<DFS::AbstractDrive>* where,
-			std::unique_ptr<DFS::AbstractDrive>&& incoming)
-  {
-    *where = std::move(incoming);
-  }
-
   bool full()
   {
     std::cerr << "There is not enough room to attach more drives.\n";
@@ -37,7 +31,7 @@ namespace DFS
   {
   }
 
-  bool StorageConfiguration::connect_drive(std::unique_ptr<AbstractDrive>&& media,
+  bool StorageConfiguration::connect_drive(AbstractDrive* media,
 					   DriveAllocation how)
   {
     // Attach at the next free spot.
@@ -62,19 +56,20 @@ namespace DFS
 	      }
 	  }
       }
-    connect_internal(&drives_[selected], std::move(media));
+    drives_[selected] = media;
     return true;
   }
 
   bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp) const
   {
     auto it = drives_.find(drive);
-    if (it == drives_.end() || !it->second)
+    if (it == drives_.end())
       {
 	std::cerr << "There is no disc in drive " << drive << "\n";
 	return false;
       }
-    *pp = it->second.get();
+    assert(it->second != 0);
+    *pp = it->second;
     return true;
   }
 
@@ -138,8 +133,7 @@ namespace DFS
 		  if (it != drives_.end())
 		    {
 		      assert(is_drive_connected(d));
-		      const AbstractDrive* image = it->second.get();
-		      os << ", " << image->description();
+		      os << ", " << it->second->description();
 		    }
 		  os << "\n";
 		};

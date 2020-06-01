@@ -9,27 +9,19 @@
 
 #include "dfstypes.h"
 #include "exceptions.h"
-
+#include "storage.h"
 
 namespace DFS
 {
-  constexpr unsigned int SECTOR_BYTES = 256;
-
-  class AbstractDrive
+  class AbstractImageFile
   {
   public:
-    using SectorBuffer = std::array<byte, DFS::SECTOR_BYTES>;
-    // read a sector.  Allow reads beyond EOF when zero_beyond_eof
-    // is true.  Image files can be shorter than the disc image.
-    virtual void read_sector(sector_count_type sector, SectorBuffer *buf,
-			     bool& beyond_eof) = 0;
-    virtual sector_count_type get_total_sectors() const = 0;
-    virtual std::string description() const = 0;
+    virtual bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) = 0;
   };
 
-  std::unique_ptr<AbstractDrive> make_image_file(const std::string& file_name);
+  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name);
 #if USE_ZLIB
-  std::unique_ptr<AbstractDrive> compressed_image_file(const std::string& name);
+  std::unique_ptr<AbstractImageFile> compressed_image_file(const std::string& name);
 #endif
 }  // namespace DFS
 #endif

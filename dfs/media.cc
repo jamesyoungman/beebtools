@@ -58,13 +58,18 @@ namespace
     std::vector<std::unique_ptr<DFS::AbstractDrive::SectorBuffer>> cache_;
   };
 
-  class ImageFile : public DFS::AbstractDrive
+  class ImageFile : public DFS::AbstractImageFile, public DFS::AbstractDrive
   {
   public:
     explicit ImageFile(const std::string& name, std::unique_ptr<std::ifstream>&& ifs)
       : name_(name), f_(std::move(ifs))
     {
       get_file_size(*f_, &file_size_);
+    }
+
+    bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
+    {
+      return storage->connect_drive(this, how);
     }
 
     virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
@@ -154,14 +159,7 @@ namespace DFS
     return std::make_unique<CachedDevice>(std::move(underlying), cached_sectors);
   }
 
-  std::unique_ptr<AbstractDrive> cached_image_file(const std::string& name,
-						   std::unique_ptr<std::ifstream>&& infile,
-						   DFS::sector_count_type cached_sectors)
-  {
-    return cached_device(std::make_unique<ImageFile>(name, std::move(infile)), cached_sectors);
-  }
-
-  std::unique_ptr<AbstractDrive> make_image_file(const std::string& name)
+  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& name)
   {
 #if USE_ZLIB
     if (ends_with(name, ".ssd.gz"))
@@ -171,17 +169,15 @@ namespace DFS
 #endif
 
     std::unique_ptr<std::ifstream> infile(std::make_unique<std::ifstream>(name, std::ifstream::in));
-    const unsigned cache_sectors = 4;
     unsigned long int len;
     if (!get_file_size(*infile, &len))
       throw FileIOError(name, errno);
-
     if (len < DFS::SECTOR_BYTES * 2)
       throw DFS::eof_in_catalog();
-    std::unique_ptr<ImageFile> failed;
+
     if (ends_with(name, ".ssd"))
       {
-	return cached_image_file(name, std::move(infile), cache_sectors);
+	return std::make_unique<ImageFile>(name, std::move(infile));
       }
     std::cerr << "Image file " << name << " does not seem to be of a supported type.\n";
     return 0;

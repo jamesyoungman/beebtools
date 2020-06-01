@@ -227,7 +227,7 @@ namespace
     return result;
   }
 
-  class CompressedImageFile : public DFS::AbstractDrive
+  class CompressedImageFile : public DFS::AbstractImageFile, public DFS::AbstractDrive
   {
   public:
     explicit CompressedImageFile(const std::string& name)
@@ -235,6 +235,11 @@ namespace
     {
       std::vector<DFS::byte> data = decompress_image_file(name);
       std::swap(data, data_);
+    }
+
+    bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
+    {
+      return storage->connect_drive(this, how);
     }
 
     virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
@@ -271,7 +276,7 @@ namespace
 
 namespace DFS
 {
-  std::unique_ptr<AbstractDrive> compressed_image_file(const std::string& name)
+  std::unique_ptr<AbstractImageFile> compressed_image_file(const std::string& name)
   {
     return std::make_unique<CompressedImageFile>(name);
   }
