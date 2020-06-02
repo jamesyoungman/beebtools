@@ -5,6 +5,8 @@
 #include <functional>
 #include <iostream>
 #include <set>
+#include <sstream>
+#include <string>
 #include <vector>
 
 using std::string;
@@ -12,22 +14,139 @@ using std::vector;
 
 using DFS::DFSContext;
 
+#undef LARGE_DRIVE_NUMBERS
+
 namespace
 {
-  bool one_xfrm_test(const DFSContext& ctx,
+  class BadTestInput : public std::exception
+  {
+  public:
+    explicit BadTestInput(const string& msg)
+      : msg_(msg)
+    {
+    }
+
+    const char *what() const noexcept
+    {
+      return msg_.c_str();
+    }
+
+  private:
+    std::string msg_;
+  };
+
+  struct MatchInput
+  {
+    DFS::drive_number drive_num;
+    char directory;
+    std::string name;
+
+    MatchInput(DFS::drive_number d, char dir, const std::string& n)
+      : drive_num(d), directory(dir), name(n)
+    {
+    }
+
+    MatchInput(DFS::drive_number d, char dir, const char* n)
+      : drive_num(d), directory(dir), name(n)
+    {
+    }
+
+    MatchInput(const std::string& s)
+      : drive_num(9),
+	directory('\0'),
+	name("__unset__")
+    {
+      if (s[0] != ':')
+	throw BadTestInput("missing leading colon: " + s);
+      assert(s.size() >= 6);
+      assert(s[0] == ':');
+      assert(isdigit(s[1]));
+      // find the end of the drive number
+      size_t i;
+      for (i = 1; i < s.size(); ++i)
+	{
+	  if (!isdigit(s[i]))
+	    break;
+	}
+      assert(i != s.size());
+      size_t end;
+      unsigned long n = std::stoul(s.substr(1), &end, 10);
+      ++end; // account for substr(1).
+      assert(n <= std::numeric_limits<DFS::drive_number>::max());
+      drive_num = static_cast<DFS::drive_number>(n);
+      assert(s[end] == '.');	// drive number should be followed by "."
+      ++end;
+      assert(s.size() > end);
+      directory = s[end];	// end points at directory
+      ++end;			// end points at . after directory
+      assert(s.size() > end);
+      ++end;			// end points at file name
+      assert(s.size() > end);
+      name = s.substr(end);
+    }
+
+    MatchInput(const MatchInput& m)
+      : drive_num(m.drive_num), directory(m.directory), name(m.name)
+    {
+    }
+
+    bool operator<(const MatchInput& other) const
+    {
+      if (drive_num < other.drive_num)
+	return true;
+      if (directory < other.directory)
+	return true;
+      if (name < other.name)
+	return true;
+      return false;
+    }
+
+    bool operator==(const MatchInput& other) const
+    {
+      if (*this < other)
+	return false;
+      if (other < *this)
+	return false;
+      return true;
+    }
+
+    std::string str() const
+    {
+      std::ostringstream ss;
+      ss << ":" << drive_num << "." << directory << "." << name;
+      return ss.str();
+    }
+
+    MatchInput& operator=(const MatchInput&) = default;
+  };
+}  // namespace
+
+namespace std
+{
+  ostream& operator<<(ostream& os, const MatchInput& m)
+  {
+    return os << m.str();
+  }
+}  // namespace std
+
+namespace
+{
+  bool one_xfrm_test(DFS::drive_number drive, char dir,
 		     const string& transform_name,
-		     std::function<bool(const DFSContext&, const string&, string*, string*)> transformer,
+		     std::function<bool(DFS::drive_number, char, const string&, string*, string*)> transformer,
 		     const string& input,
 		     bool expected_return,
 		     const string& expected_output,
 		     const string& expected_error)
   {
     string actual_output, actual_error;
-    bool actual_return = transformer(ctx, input, &actual_output, &actual_error);
+    bool actual_return = transformer(drive, dir, input, &actual_output, &actual_error);
     auto describe_call = [&]() -> string
 			 {
-			   return transform_name + "(ctx, \"" + input +
-			     "\", &actual_output, &actual_error)";
+			   std::ostringstream ss;
+			   ss << transform_name << "(" << drive << ", '" << dir << "', "
+			      <<  '"' << input << "\", &actual_output, &actual_error)";
+			   return ss.str();
 		};
     auto show_result = [&]()
 		       {
@@ -77,7 +196,8 @@ namespace
 		     const string& expected_output,
 		     const string& expected_error)
   {
-    return one_xfrm_test(ctx, "extend_wildcard", DFS::internal::extend_wildcard, wildcard,
+    return one_xfrm_test(ctx.current_drive, ctx.current_directory, "extend_wildcard",
+			 DFS::internal::extend_wildcard, wildcard,
 			 expected_return, expected_output, expected_error);
   }
 
@@ -87,14 +207,15 @@ namespace
 			const string& expected_output,
 			const string& expected_error)
   {
-    return one_xfrm_test(ctx, "qualify", DFS::internal::qualify, filename,
+    return one_xfrm_test(ctx.current_drive, ctx.current_directory, "qualify",
+			 DFS::internal::qualify, filename,
 			 expected_return, expected_output, expected_error);
   }
 
   bool match_test(const DFSContext& ctx,
 		  const string& pattern,
-		  const vector<string>& inputs,
-		  const vector<string>& expected_outputs)
+		  const vector<MatchInput>& inputs,
+		  const vector<MatchInput>& expected_outputs)
   {
     string err;
     std::unique_ptr<DFS::AFSPMatcher> m = DFS::AFSPMatcher::make_unique(ctx, pattern, &err);
@@ -104,21 +225,21 @@ namespace
 	return false;
       }
     std::cerr << "match_test: pattern " << pattern << " is valid.\n";
-    std::set<string> expected_accepts(expected_outputs.begin(), expected_outputs.end());
-    std::set<string> actual_accepts;
-    for (const string& name : inputs)
+    std::set<MatchInput> expected_accepts(expected_outputs.begin(), expected_outputs.end());
+    std::set<MatchInput> actual_accepts;
+    for (const MatchInput& input : inputs)
       {
-	if (m->matches(name))
+	if (m->matches(input.drive_num, input.directory, input.name))
 	  {
-	    std::cerr << "match_test: " << pattern << " matches " << name << "\n";
-	    actual_accepts.insert(name);
+	    std::cerr << "match_test: " << pattern << " matches " << input << "\n";
+	    actual_accepts.insert(input);
 	  }
 	else
 	  {
-	    std::cerr << "match_test: " << pattern << " does not match " << name << "\n";
+	    std::cerr << "match_test: " << pattern << " does not match " << input << "\n";
 	  }
       }
-    for (const string& expected : expected_accepts)
+    for (const MatchInput& expected : expected_accepts)
       {
 	if (actual_accepts.find(expected) == actual_accepts.end())
 	  {
@@ -127,7 +248,7 @@ namespace
 	    return false;
 	  }
       }
-    for (const string& actual : actual_accepts)
+    for (const MatchInput& actual : actual_accepts)
       {
 	if (expected_accepts.find(actual) == expected_accepts.end())
 	  {
@@ -142,10 +263,41 @@ namespace
     return true;
   }
 
+  bool inputs_same(const MatchInput& m, const MatchInput& n)
+  {
+    if (m == n)
+      return true;
+    std::cerr << "inputs are not the same: " << m << " versus " << n << "\n";
+    return false;
+  }
+
+  bool self_test_matcher()
+  {
+    MatchInput m1(0, '$', "TEST");
+    assert(m1.drive_num == 0);
+    assert(m1.directory == '$');
+    assert(m1.name == "TEST");
+
+    MatchInput m2(":0.$.TEST");
+    assert(m2.drive_num == 0);
+    assert(m2.directory == '$');
+    assert(m2.name == "TEST");
+
+    assert(inputs_same(MatchInput(":0.$.TEST"),
+		       MatchInput(0, '$', "TEST")));
+    assert(inputs_same(MatchInput(":1.Q.V"),
+		       MatchInput(1, 'Q', "V")));
+    assert(inputs_same(MatchInput(":41.P.Z"),
+		       MatchInput(41, 'P', "Z")));
+    return true;
+  }
+
   bool self_test()
   {
     DFSContext ctx;
     std::vector<bool> results;
+
+    assert(self_test_matcher());
 
     auto record_test =
       [&results](bool result) {
@@ -191,35 +343,59 @@ namespace
     // Some of these expected results rely on the fact that the current
     // working directory ("cwd") is $.
     record_test(match_test(ctx, "Q.*", {}, {}));
-    record_test(match_test(ctx, "Q.*", {":0.Q.FLUE"}, {":0.Q.FLUE"}));
-    record_test(match_test(ctx, "Q.*", {":0.T.BLUE"}, {}));
-    record_test(match_test(ctx, ":0.$.*", {":0.Q.GLUE", ":0.$.GLEAN"}, {":0.$.GLEAN"}));
-    record_test(match_test(ctx,    "$.*", {":0.Q.GRUE", ":0.$.GREAT"}, {":0.$.GREAT"}));
-    record_test(match_test(ctx,      "*", {":0.Q.TRUE", ":0.$.TREAD"}, {":0.$.TREAD"}));
+    record_test(match_test(ctx, "Q.*", {{0,'Q', "FLUE"}}, {{0, 'Q', "FLUE"}}));
+    record_test(match_test(ctx, "Q.*", {{0,'T',"BLUE"}}, {}));
+    record_test(match_test(ctx, ":0.$.*", {{0, 'Q', "GLUE"}, {0, '$', "GLEAN"}}, {{0, '$', "GLEAN"}}));
+    record_test(match_test(ctx,    "$.*", {{0, 'Q', "GRUE"}, {0, '$', "GREAT"}}, {{0, '$', "GREAT"}}));
+    record_test(match_test(ctx,      "*", {{0, 'Q', "TRUE"}, {0, '$', "TREAD"}}, {{0, '$', "TREAD"}}));
     record_test(match_test(ctx, "*",
 			   {
-			    ":0.Q.TRUG", // no match: * only matches in cwd
-			    ":1.$.TREAD" // should not be matched because wrong drive
-			   }, {}));
+			    {":0.Q.TRUG"}, // no match: * only matches in cwd
+			    {":1.$.TREAD"} // should not be matched because wrong drive
+			   }, {/* no matches */}));
+
+    // Tests that verify drive number handling.  cwd is $, drive is 0.
+    record_test(match_test(ctx, ":0.Q.*", {{0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
+    record_test(match_test(ctx, ":1.Q.*", {{0, 'T', "BLUE"}}, {}));
+    record_test(match_test(ctx, ":1.Q.*", {{0, 'Q', "BLUE"}}, {}));
+
+    record_test(match_test(ctx, ":1.Q.*", {{1, 'Q', "BLUE"}}, {{1, 'Q', "BLUE"}}));
+    record_test(match_test(ctx, ":0.Q.*", {{2, 'Q', "BLUE"}, {0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
+    record_test(match_test(ctx, ":2.Q.*", {{2, 'Q', "BLUE"}, {0, 'Q', "BLUE"}}, {{2, 'Q', "BLUE"}}));
+
+#ifdef LARGE_DRIVE_NUMBERS
+    // These tests verify that we can handle drive numbers > 3.
+    record_test(match_test(ctx, ":1.Q.*",  {{1, 'Q', "BLUE"},  {12, 'Q', "BLUE"}}, {{1, 'Q', "BLUE"}}));
+    record_test(match_test(ctx, ":12.Q.*", {{1, 'Q', "BLUE"},  {2, 'Q', "BLUE"}}, {}));
+    record_test(match_test(ctx, ":41.Q.*", {{41, 'Q', "BLUE"}, {1, 'Q', "BLUE"}}, {{41, 'Q', "BLUE"}}));
+#endif
+
     // Tests that verify that matches are case-folded.
     record_test(match_test(ctx, "P*",
-			   {":0.$.Price", ":0.$.price"},
-			   {":0.$.Price", ":0.$.price"}));
+			   {{0, '$', "Price"}, {0, '$', "price"}},
+			   {{0, '$', "Price"}, {0, '$', "price"}}));
     record_test(match_test(ctx, "P.*",
-			   {":0.P.Trice", ":0.p.Trice", ":0.$.Trice"},
-			   {":0.P.Trice", ":0.p.Trice"}));
+			   {{0, 'P', "Trice"}, {0, 'p', "Trice"}, {0, '$', "Trice"}},
+			   {{0, 'P', "Trice"}, {0, 'p', "Trice"}}));
 
     return std::find(results.cbegin(), results.cend(), false) == results.cend();
   }
-
-
-
 }
 
 
 int main()
 {
-  const int rv = self_test() ? 0 : 1;
+  int rv = 1;
+  try
+    {
+      if (self_test())
+	rv = 0;
+    }
+  catch (BadTestInput& e)
+    {
+      std::cerr << "Unit test input was bad: " << e.what() << "\n";
+      rv = 2;
+    }
   if (rv != 0)
     {
       std::cerr << "TEST FAILURE\n";

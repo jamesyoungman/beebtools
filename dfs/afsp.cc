@@ -52,9 +52,10 @@ namespace
     return result;
   }
 
-  bool transform_string_with_regex(const DFS::DFSContext& ctx,
-				   const string& regex_pattern,
+  bool transform_string_with_regex(const DFS::drive_number drive_num,
+				   const char dir,
 				   const string& input,
+				   const string& regex_pattern,
 				   const char * invalid,
 				   string* out, string* error_message)
   {
@@ -84,11 +85,11 @@ namespace
     if (groups.size() > 1 && !groups[1].empty())
       drive = groups[1];
     else
-      drive = drive_prefix(ctx.current_drive);
+      drive = drive_prefix(drive_num);
     if (groups.size() > 2 && !groups[2].empty())
       directory = groups[2];
     else
-      directory = directory_prefix(ctx.current_directory);
+      directory = directory_prefix(dir);
     if (groups.size() > 3 && !groups[3].empty())
       {
 	name = groups[3];
@@ -98,6 +99,7 @@ namespace
 	error_message->assign(invalid);
 	return false;
       }
+     // TODO: there is probably a more efficient way to perform this assignment.
     out->assign(drive + directory + name);
     return true;
   }
@@ -123,16 +125,43 @@ namespace
      Opus DDOS 3.45 does not (giving the error "Bad drive")
      Solidisk DOS 2.1 does not (giving the error "Bad filename")
   */
-  bool convert_wildcard_into_extended_regex(const DFSContext& ctx, const string& wild,
+  bool convert_wildcard_into_extended_regex(DFS::drive_number* drive_num, char dir, const string& wild,
 					    string* ere, string* error_message)
   {
     string full_wildcard;
-    if (!DFS::internal::extend_wildcard(ctx, wild, &full_wildcard, error_message))
+    if (!DFS::internal::extend_wildcard(*drive_num, dir, wild, &full_wildcard, error_message))
       return false;
     assert(full_wildcard.size() > 0 && full_wildcard[0] == ':');
     if (!isdigit(full_wildcard[1]))
       {
-	error_message->assign("Bad drive");
+	error_message->assign("No drive number in " + full_wildcard);
+	return false;
+      }
+    size_t end;
+    try
+      {
+	// The base matters because we support drive numbers greater
+	// than 3.
+	unsigned long d = std::stoul(full_wildcard.substr(1), &end, 10);
+	// To allow us to use end as an index into full_wildcard, we
+	// increment it here, to compensate for the substr(1) above.
+	if (end == std::numeric_limits<decltype(end)>::max())
+	  {
+	    error_message->assign("Drive number is too long");
+	    return false;
+	  }
+	*drive_num = static_cast<DFS::drive_number>(d);
+	++end;
+      }
+    catch (std::exception& e)
+      {
+	error_message->assign("Bad drive number in " + full_wildcard + ": " + e.what());
+	return false;
+      }
+    if (full_wildcard[end] != '.')
+      {
+	error_message->assign("Non-digit after drive number in " + full_wildcard
+			      + ", specifically " + full_wildcard.substr(end));
 	return false;
       }
     vector<char> parts = {'^'};
@@ -187,7 +216,7 @@ namespace DFS
 {
   namespace internal
   {
-    bool qualify(const DFSContext& ctx, const string& filename,
+    bool qualify(DFS::drive_number drive_num, char dir, const string& filename,
 		 string* out, string* error_message)
     {
       static const char invalid[] = "not a valid file name";
@@ -195,7 +224,7 @@ namespace DFS
 	"(:[0-9][.])?"		// drive
 	"([^.:#*][.])?"		// directory
 	"([^.:#*]+)$";		// file name (with trailing blanks trimmed)
-      bool result = transform_string_with_regex(ctx, ddn_pat, rtrim(filename), invalid,
+      bool result = transform_string_with_regex(drive_num, dir, rtrim(filename), ddn_pat, invalid,
 						out, error_message);
 #if VERBOSE_FOR_TESTS
       std::cerr << "qualify: '" << filename << "' -> '" << *out << "'\n";
@@ -203,15 +232,14 @@ namespace DFS
       return result;
     }
 
-    bool extend_wildcard(const DFSContext& ctx, const string& wild,
+    bool extend_wildcard(DFS::drive_number drive_num, char dir, const string& wild,
 			 string* out, string* error_message)
     {
       static const char *ddn_pat = "^"
 	"(:[^.][.])?"		// drive
 	"([^.][.])?"		// directory
 	"([^.]+)$";		// file name
-      return transform_string_with_regex(ctx, ddn_pat, wild, "bad name", out, error_message);
-      return true;
+      return transform_string_with_regex(drive_num, dir, wild, ddn_pat, "bad name", out, error_message);
     }
 
   }  // namespace internal
@@ -219,11 +247,12 @@ namespace DFS
 AFSPMatcher::AFSPMatcher(const AFSPMatcher::FactoryKey&,
 			 const DFSContext& ctx, const string& wildcard,
 			 string *error_message)
-  : valid_(false), context_(ctx), implementation_(0)
+  : valid_(false), drive_num_(ctx.current_drive), implementation_(0)
 {
   string ere;
-  valid_ = convert_wildcard_into_extended_regex(ctx, wildcard,
-						&ere, error_message);
+  valid_ = convert_wildcard_into_extended_regex(&drive_num_,
+						ctx.current_directory,
+						wildcard, &ere, error_message);
   if (valid_)
     {
 #if defined(VERBOSE_FOR_TESTS)
@@ -242,14 +271,19 @@ AFSPMatcher::AFSPMatcher(const AFSPMatcher::FactoryKey&,
     }
 }
 
-bool AFSPMatcher::matches(const std::string& name)
+DFS::drive_number AFSPMatcher::get_drive_number() const
+{
+  return drive_num_;
+}
+
+bool AFSPMatcher::matches(DFS::drive_number drive_num, char directory, const std::string& name)
 {
   if (!valid())
     return false;
   assert(implementation_);
   string full_name;
   string error_message;
-  if (!DFS::internal::qualify(context_, name, &full_name, &error_message))
+  if (!DFS::internal::qualify(drive_num, directory, name, &full_name, &error_message))
     {
 #if VERBOSE_FOR_TESTS
       std::cerr << "not matched (because " << error_message << "): " << full_name

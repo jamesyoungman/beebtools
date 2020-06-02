@@ -78,8 +78,9 @@ public:
 	return false;
       }
 
+    const DFS::drive_number drive_num = matcher->get_drive_number();
     DFS::AbstractDrive *drive;
-    if (!storage.select_drive_by_afsp(args[1], &drive, ctx.current_drive))
+    if (!storage.select_drive(drive_num, &drive))
       return false;
     assert(drive != 0);
     const DFS::FileSystem file_system(drive);
@@ -93,12 +94,11 @@ public:
     for (unsigned short i = 1; i <= entries; ++i)
       {
 	const auto& entry = fs->get_global_catalog_entry(i);
-	const std::string full_name = std::string(1, entry.directory()) + "." + entry.name();
 #if VERBOSE_FOR_TESTS
 	std::cerr << "info: directory is '" << entry.directory() << "'\n";
-	std::cerr << "info: item is '" << full_name << "'\n";
+	std::cerr << "info: item is '" << entry.name() << "'\n";
 #endif
-	if (!matcher->matches(full_name))
+	if (!matcher->matches(drive_num, entry.directory(), entry.name()))
 	  continue;
 	unsigned long load_addr, exec_addr;
 	load_addr = DFS::sign_extend(entry.load_address());
@@ -120,4 +120,3 @@ public:
   }
 };
 REGISTER_COMMAND(CommandInfo);
-

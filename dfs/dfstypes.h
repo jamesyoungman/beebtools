@@ -11,6 +11,7 @@ namespace DFS
   typedef unsigned char byte;
   typedef std::vector<byte>::size_type offset;
   typedef unsigned short sector_count_type; // needs 10 bits
+  typedef unsigned int drive_number;
 
   inline sector_count_type sector_count(long int x)
   {
