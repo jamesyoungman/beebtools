@@ -368,13 +368,15 @@ namespace
     record_test(match_test(ctx,      "*", {{0, 'Q', "TRUE"}, {0, '$', "TREAD"}}, {{0, '$', "TREAD"}}));
     record_test(match_test(ctx, "*",
 			   {
-			    {":0.Q.TRUG"}, // no match: * only matches in cwd
-			    {":1.$.TREAD"} // should not be matched because wrong drive
-			   }, {/* no matches */}));
+			    {0, 'Q', "TRUG"}, // no match: * only matches in cwd
+			    {1, '$', "TREAD"}, // should not be matched because wrong drive
+			   }, {/* no mathces */}));
+
     // Tests that verify drive number handling.  cwd is $, drive is 0.
     record_test(match_test(ctx, ":0.Q.*", {{0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
     record_test(match_test(ctx, ":1.Q.*", {{0, 'T', "BLUE"}}, {}));
     record_test(match_test(ctx, ":1.Q.*", {{0, 'Q', "BLUE"}}, {}));
+
     record_test(match_test(ctx, ":1.Q.*", {{1, 'Q', "BLUE"}}, {{1, 'Q', "BLUE"}}));
 
     record_test(match_test(ctx, ":0.Q.*", {{2, 'Q', "BLUE"}, {0, 'Q', "BLUE"}}, {{0, 'Q', "BLUE"}}));
