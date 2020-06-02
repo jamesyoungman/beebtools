@@ -21,8 +21,8 @@ namespace
      OPT_CWD,
      OPT_DRIVE,
      OPT_SHOW_CONFIG,
-     OPT_ALLOCATE_EVEN,
-     OPT_ALLOCATE_ANY,
+     OPT_ALLOCATE_PHYSICAL,
+     OPT_ALLOCATE_FIRST,
      OPT_HELP,
     };
 
@@ -38,10 +38,12 @@ namespace
      // associated with the disc image specified in --file (as for
      // *DRIVE).
      { "drive", 1, NULL, OPT_DRIVE },
-     // --drive-any allows disc images to be "inserted" in any slot
-     { "drive-any", 0, NULL, OPT_ALLOCATE_ANY },
-     // --drive-even allows disc images to be "inserted" in only even slots
-     { "drive-even", 0, NULL, OPT_ALLOCATE_EVEN },
+     // --drive-first allows disc images to be "inserted" into the first free slot
+     { "drive-first", 0, NULL, OPT_ALLOCATE_FIRST },
+     // --drive-physical allows disc images to be "inserted" as if
+     // they were physical disks (e.g. for single-sided files into 0
+     // then 1, then 4).
+     { "drive-physical", 0, NULL, OPT_ALLOCATE_PHYSICAL },
      { "show-config", 0, NULL, OPT_SHOW_CONFIG },
      { "help", 0, NULL, OPT_HELP },
      { 0, 0, 0, 0 },
@@ -123,8 +125,8 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
        {"file", "the name of the DFS image file to read"},
        {"dir", "the default directory (if unspecified, use $)"},
        {"drive", "the default drive (if unspecified, use 0)"},
-       {"drive-any", "disc images are assigned the next free drive slot"},
-       {"drive-even", "disc images are assigned the even drive slot "
+       {"drive-first", "disc images are assigned the next free drive slot"},
+       {"drive-physical", "disc images are assigned drive slots as if they were physical discs "
 	"(as if they were physical floppies being inserted)"},
        {"show-config", "show the storage configuraiton before "
 	"performing the operation"},
@@ -159,7 +161,7 @@ int main (int argc, char *argv[])
   std::vector<std::unique_ptr<DFS::AbstractImageFile>> files;
   DFS::StorageConfiguration storage; // must be declared after files.
   bool show_config = false;
-  DFS::DriveAllocation how_to_allocate_drives(DFS::DriveAllocation::EVEN);
+  DFS::DriveAllocation how_to_allocate_drives(DFS::DriveAllocation::PHYSICAL);
   int opt;
   while ((opt=getopt_long(argc, argv, "+", global_opts, &longindex)) != -1)
     {
@@ -175,7 +177,7 @@ int main (int argc, char *argv[])
 	      std::unique_ptr<DFS::AbstractImageFile> file = DFS::make_image_file(optarg);
 	      if (!file)
 		return 1;
-	      if (!file->connect_to(&storage, how_to_allocate_drives))
+	      if (!file->connect_drives(&storage, how_to_allocate_drives))
 		return 1;
 	      files.push_back(std::move(file));
 	    }
@@ -206,12 +208,12 @@ int main (int argc, char *argv[])
 	  }
 	  break;
 
-	case OPT_ALLOCATE_EVEN:
-	  how_to_allocate_drives = DFS::DriveAllocation::EVEN;
+	case OPT_ALLOCATE_FIRST:
+	  how_to_allocate_drives = DFS::DriveAllocation::FIRST;
 	  break;
 
-	case OPT_ALLOCATE_ANY:
-	  how_to_allocate_drives = DFS::DriveAllocation::ANY;
+	case OPT_ALLOCATE_PHYSICAL:
+	  how_to_allocate_drives = DFS::DriveAllocation::PHYSICAL;
 	  break;
 
 	case OPT_SHOW_CONFIG:

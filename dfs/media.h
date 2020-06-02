@@ -16,7 +16,7 @@ namespace DFS
   class AbstractImageFile
   {
   public:
-    virtual bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) = 0;
+    virtual bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) = 0;
   };
 
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name);

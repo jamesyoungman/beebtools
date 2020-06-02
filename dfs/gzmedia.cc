@@ -237,9 +237,10 @@ namespace
       std::swap(data, data_);
     }
 
-    bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
+    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
     {
-      return storage->connect_drive(this, how);
+      return storage->connect_drives(std::vector<DFS::AbstractDrive*>({this}),
+				     how);
     }
 
     virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,

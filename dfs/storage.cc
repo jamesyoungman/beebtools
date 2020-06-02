@@ -15,50 +15,93 @@ using std::vector;
 
 using DFS::byte;
 
-namespace
-{
-  bool full()
-  {
-    std::cerr << "There is not enough room to attach more drives.\n";
-    return false;
-  }
-}
-
-
 namespace DFS
 {
   StorageConfiguration::StorageConfiguration()
   {
   }
 
-  bool StorageConfiguration::connect_drive(AbstractDrive* media,
-					   DriveAllocation how)
+  bool check_sequence_fits(DFS::drive_number i,
+			   const DFS::drive_number to_do,
+			   std::function<bool(DFS::drive_number)> occupied)
   {
-    // Attach at the next free spot.
-    const auto limit = std::numeric_limits<drive_number>::max();
-    drive_number selected = 0;
-    if (!drives_.empty())
+    if (occupied(i))
+      return false;		// Don't use occpied slots.
+    switch (i % 4)
       {
-	auto last_drive = drives_.rbegin();
-	selected = last_drive->first;
-	if (selected == limit)
-	  return full();
-	++selected;
-
-	if (how == DriveAllocation::EVEN)
+      case 0:
+      case 1:
+	if (occupied(i + 2))
 	  {
-	    // Put the new disk in an even numbered drive.
-	    if (selected % 2)
+	    // this is "side 0" where "side 1" is occupied.
+	    return false;
+	  }
+	break;
+      case 2:
+      case 3:
+	if (occupied(i - 2))
+	  {
+	    // this is "side 1" where "side 0" is occupied.
+	    return false;
+	  }
+	break;
+      }
+    const auto limit = std::numeric_limits<drive_number>::max();
+    DFS::drive_number done = 0;
+    while (i < limit-1 && done < to_do)
+      {
+	if (occupied(i))
+	  return false;
+	++done;
+	i += 2;
+      }
+    return done == to_do;
+  }
+
+  bool StorageConfiguration::connect_drives(const std::vector<AbstractDrive*>& drives,
+					    DriveAllocation how)
+  {
+    const auto limit = std::numeric_limits<drive_number>::max();
+    if (how == DriveAllocation::PHYSICAL)
+      {
+	auto occ = [this](DFS::drive_number i) -> bool
+		    {
+		      return is_drive_connected(i);
+		    };
+	for (DFS::drive_number n = 0; n < limit; ++n)
+	  {
+	    if (check_sequence_fits(n, static_cast<DFS::drive_number>(drives.size()), occ))
 	      {
-		if (selected == limit)
-		  return full();
-		++selected;
+		for (auto d : drives)
+		  {
+		    assert(!is_drive_connected(n));
+		    drives_[n] = d;
+		    n += 2;
+		  }
+		return true;
 	      }
 	  }
+	return false;
       }
-    drives_[selected] = media;
-    return true;
+    else
+      {
+	DFS::drive_number n = 0;
+	for (auto d : drives)
+	  {
+	    for (; n < limit; ++n)
+	      {
+		if (!is_drive_connected(n))
+		  {
+		    drives_[n] = d;
+		    break;
+		  }
+	      }
+	  }
+	return n < limit;
+      }
   }
+
+
 
   bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp) const
   {

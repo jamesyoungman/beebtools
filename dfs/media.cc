@@ -194,32 +194,12 @@ namespace
       {
       }
 
-    bool connect_to(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
+    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
     {
-      // |how| describes how the first device will be allocated.
-      DFS::DriveAllocation h = how;
+      std::vector<DFS::AbstractDrive*> drives;
       for (auto& view : views_)
-	{
-	  if (!storage->connect_drive(&view, h))
-	    return false;
-	  // Any remaining devices are allocated sequentially.
-	  // This ensures that if we start with:
-	  //
-	  // 0: occupied (with a single-sided device)
-	  // 1: empty
-	  // 2: empty
-	  // 3: empty
-	  //
-	  // Then we allocate a two-sided device with how==EVEN, and
-	  // get:
-	  //
-	  // 0: occupied
-	  // 1: empty (how == EVEN so did not attempt to use this slot)
-	  // 2: new device, first side
-	  // 3: new device, second side (becuase it was allocated with ANY).
-	  h = DFS::DriveAllocation::ANY;
-	}
-      return true;
+	drives.push_back(&view);
+      return storage->connect_drives(drives, how);
     }
 
     std::ifstream* get_file() const
@@ -256,6 +236,30 @@ namespace
       std::string desc = std::string("SSD file ") + name;
       FileView v(f, name, desc, 0, total_sectors, 0, total_sectors);
       add_view(v);
+    }
+  };
+
+  class DsdFile : public ViewFile
+  {
+  public:
+    explicit DsdFile(const std::string& name, std::unique_ptr<std::ifstream>&& ifs)
+      : ViewFile(name, std::move(ifs))
+    {
+      std::ifstream* f = get_file();
+      const DFS::sector_count_type one_side = DFS::sector_count(file_size() / (2 * DFS::SECTOR_BYTES));
+      const sector_count_type track_len = 10;
+      FileView side0(f, name, std::string("side 0 of DSD file ") + name,
+		     0,		/* side 0 begins immediately */
+		     track_len, /* read the whole of the track */
+		     track_len, /* ignore track data for side 1 */
+		     one_side);
+      add_view(side0);
+      FileView side1(f, name, std::string("side 1 of DSD file ") + name,
+		     track_len, /* side 1 begins after the first track of side 0 */
+		     track_len, /* read the whole of the track */
+		     track_len, /* ignore track data for side 0 */
+		     one_side);
+      add_view(side1);
     }
   };
 
@@ -326,6 +330,10 @@ namespace DFS
     if (ends_with(name, ".ssd"))
       {
 	return std::make_unique<SsdFile>(name, std::move(infile));
+      }
+    if (ends_with(name, ".dsd"))
+      {
+	return std::make_unique<DsdFile>(name, std::move(infile));
       }
     std::cerr << "Image file " << name << " does not seem to be of a supported type.\n";
     return 0;

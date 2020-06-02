@@ -18,16 +18,16 @@ namespace DFS
   // DriveAllocation represents a choice of how to assign image
   // files to drive slots.
   //
-  // Suppose (from empty) we insert two single-sided image files.
-  // The first will be drive 0.  For strategy EVEN, the second will
-  // be drive 2, just as if we inserted two single-sided floppy
-  // disks into a BBC Micro.  For strategy ANY, the second will be
-  // drive 1, as if the two image files represented the two sides
-  // of a physical floppy.
+  // Suppose (from empty) we insert two single-sided image files.  The
+  // first will be drive 0.  For strategy PHYSICAL, the second will be
+  // drive 1, just as if we inserted two single-sided floppy disks
+  // into a BBC Micro.  For strategy PHYSICAL, the second will be
+  // drive 2, as if the two image files represented the two sides of a
+  // physical floppy.
   enum class DriveAllocation
     {
-     ANY = 1,  // always use the next available slot
-     EVEN = 2,  // use an even slot (as if the image were a physical disc).
+     FIRST = 1,  // always use the next available slot
+     PHYSICAL = 2, // behave as if image files were physical discs
     };
 
   constexpr unsigned int SECTOR_BYTES = 256;
@@ -48,7 +48,8 @@ namespace DFS
   {
   public:
     StorageConfiguration();
-    bool connect_drive(DFS::AbstractDrive*, DriveAllocation how);
+    bool connect_drives(const std::vector<DFS::AbstractDrive*>& sides,
+			DriveAllocation how);
 
     bool is_drive_connected(drive_number drive) const
     {
