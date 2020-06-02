@@ -52,19 +52,29 @@ gunzip < "${TEST_DATA_DIR}"/acorn-dfs-sd-40t.ssd.gz >"${imagefile}"
 ) || exit 1
 
 rm -f "${imagefile}"
-check_config actual.txt \
-	     '^Drive 0: occupied, image file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
+if ! check_config actual.txt \
+	     '^Drive 0: occupied, SSD file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
-	     '^Drive 3: empty' || exit 1
-
+	     '^Drive 3: empty'
+then
+    cleanup
+    exit 1
+fi
 
 "${DFS}" --show-config --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" info ':0.no-file' > actual.txt 2>&1 || (
     exit 1
 ) || exit 1
 
-check_config actual.txt \
+if ! check_config actual.txt \
 	     '^Drive 0: occupied, compressed image file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
-	     '^Drive 3: empty' || exit 1
+	     '^Drive 3: empty'
+then
+    cleanup
+    exit 1
+fi
+
+cleanup
+exit 0
