@@ -38,39 +38,6 @@ namespace
     return result;
   }
 
-  class SectorCache
-  {
-  public:
-    explicit SectorCache(DFS::sector_count_type initial_sectors)
-    {
-      cache_.resize(initial_sectors);
-    }
-
-    bool has(DFS::sector_count_type sec) const
-    {
-      return sec < cache_.size() && cache_[sec].get() != 0;
-    }
-
-    bool get(DFS::sector_count_type sec, DFS::AbstractDrive::SectorBuffer *buf) const
-    {
-      if (!has(sec))
-	return false;
-      *buf = *(cache_[sec].get());
-      return true;
-    }
-
-    void put(DFS::sector_count_type sec, const DFS::AbstractDrive::SectorBuffer *buf)
-    {
-      if (sec >= cache_.size())
-	return;
-      cache_[sec] = std::make_unique<DFS::AbstractDrive::SectorBuffer>();
-      std::copy(buf->begin(), buf->end(), cache_[sec]->begin());
-    }
-
-  private:
-    std::vector<std::unique_ptr<DFS::AbstractDrive::SectorBuffer>> cache_;
-  };
-
   class FileView : public DFS::AbstractDrive
   {
   public:
@@ -91,6 +58,10 @@ namespace
       // the device we're presenting.  IOW, we would make no progress.
       assert(take_ > 0);
     }
+
+    ~FileView() override
+      {
+      }
 
     sector_count_type get_total_sectors() const
     {
@@ -194,6 +165,10 @@ namespace
       {
       }
 
+    ~ViewFile() override
+      {
+      }
+
     bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
     {
       std::vector<DFS::AbstractDrive*> drives;
@@ -263,40 +238,6 @@ namespace
     }
   };
 
-  class CachedDevice : public DFS::AbstractDrive
-  {
-  public:
-    CachedDevice(std::unique_ptr<AbstractDrive> underlying,
-		 DFS::sector_count_type cached_sectors)
-      : underlying_(std::move(underlying)),
-	cache_(cached_sectors)
-    {
-    }
-
-    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
-			     bool& beyond_eof) override
-    {
-      if (cache_.get(sector, buf))
-	return;
-      underlying_->read_sector(sector, buf, beyond_eof);
-      cache_.put(sector, buf);
-    }
-
-    sector_count_type get_total_sectors() const override
-    {
-      return underlying_->get_total_sectors();
-    }
-
-    std::string description() const override
-    {
-      return underlying_->description();
-    }
-
-  private:
-    std::unique_ptr<DFS::AbstractDrive> underlying_;
-    SectorCache cache_;
-  };
-
   inline bool ends_with(const std::string & s, const std::string& suffix)
   {
     if (suffix.size() > s.size())
@@ -307,11 +248,9 @@ namespace
 
 namespace DFS
 {
-  std::unique_ptr<AbstractDrive> cached_device(std::unique_ptr<AbstractDrive> underlying,
-					       DFS::sector_count_type cached_sectors)
-  {
-    return std::make_unique<CachedDevice>(std::move(underlying), cached_sectors);
-  }
+  DFS::AbstractImageFile::~AbstractImageFile()
+    {
+    }
 
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& name)
   {

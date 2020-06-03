@@ -15,8 +15,88 @@ using std::vector;
 
 using DFS::byte;
 
+namespace
+{
+  class SectorCache
+  {
+  public:
+    explicit SectorCache(DFS::sector_count_type initial_sectors)
+    {
+      cache_.resize(initial_sectors);
+    }
+
+    bool has(DFS::sector_count_type sec) const
+    {
+      return sec < cache_.size() && cache_[sec].get() != 0;
+    }
+
+    bool get(DFS::sector_count_type sec, DFS::AbstractDrive::SectorBuffer *buf) const
+    {
+      if (!has(sec))
+	return false;
+      *buf = *(cache_[sec].get());
+      return true;
+    }
+
+    void put(DFS::sector_count_type sec, const DFS::AbstractDrive::SectorBuffer *buf)
+    {
+      if (sec >= cache_.size())
+	return;
+      cache_[sec] = std::make_unique<DFS::AbstractDrive::SectorBuffer>();
+      std::copy(buf->begin(), buf->end(), cache_[sec]->begin());
+    }
+
+  private:
+    std::vector<std::unique_ptr<DFS::AbstractDrive::SectorBuffer>> cache_;
+  };
+
+  class CachedDevice : public DFS::AbstractDrive
+  {
+  public:
+    CachedDevice(AbstractDrive* underlying,
+		 DFS::sector_count_type cached_sectors)
+      : underlying_(underlying),
+	cache_(cached_sectors)
+    {
+    }
+
+    ~CachedDevice() override
+    {
+    }
+
+    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
+			     bool& beyond_eof) override
+    {
+      if (cache_.get(sector, buf))
+	return;
+      underlying_->read_sector(sector, buf, beyond_eof);
+      cache_.put(sector, buf);
+    }
+
+    DFS::sector_count_type get_total_sectors() const override
+    {
+      return underlying_->get_total_sectors();
+    }
+
+    std::string description() const override
+    {
+      return underlying_->description();
+    }
+
+  private:
+    DFS::AbstractDrive* underlying_;
+    SectorCache cache_;
+  };
+
+}  // namespace
+
+
 namespace DFS
 {
+  DFS::AbstractDrive::~AbstractDrive()
+  {
+  }
+
   StorageConfiguration::StorageConfiguration()
   {
   }
@@ -58,6 +138,14 @@ namespace DFS
     return done == to_do;
   }
 
+  void StorageConfiguration::connect_internal(drive_number n, AbstractDrive* d)
+  {
+    const sector_count_type cached_sectors = 4;
+    assert(!is_drive_connected(n));
+    drives_[n] = d;
+    caches_[n] = std::make_unique<CachedDevice>(d, cached_sectors);
+  }
+
   bool StorageConfiguration::connect_drives(const std::vector<AbstractDrive*>& drives,
 					    DriveAllocation how)
   {
@@ -74,8 +162,7 @@ namespace DFS
 	      {
 		for (auto d : drives)
 		  {
-		    assert(!is_drive_connected(n));
-		    drives_[n] = d;
+		    connect_internal(n, d);
 		    n += 2;
 		  }
 		return true;
@@ -92,7 +179,7 @@ namespace DFS
 	      {
 		if (!is_drive_connected(n))
 		  {
-		    drives_[n] = d;
+		    connect_internal(n, d);
 		    break;
 		  }
 	      }
@@ -105,14 +192,14 @@ namespace DFS
 
   bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp) const
   {
-    auto it = drives_.find(drive);
-    if (it == drives_.end())
+    auto it = caches_.find(drive);
+    if (it == caches_.end())
       {
 	std::cerr << "There is no disc in drive " << drive << "\n";
 	return false;
       }
-    assert(it->second != 0);
-    *pp = it->second;
+    assert(it->second);
+    *pp = it->second.get();
     return true;
   }
 

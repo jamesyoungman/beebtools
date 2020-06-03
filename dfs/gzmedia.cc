@@ -230,6 +230,10 @@ namespace
   class CompressedImageFile : public DFS::AbstractImageFile, public DFS::AbstractDrive
   {
   public:
+    ~CompressedImageFile() override
+    {
+    }
+
     explicit CompressedImageFile(const std::string& name)
       : name_(name)
     {

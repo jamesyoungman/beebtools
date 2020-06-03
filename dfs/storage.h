@@ -13,7 +13,6 @@
 namespace DFS
 {
   class FileSystem;
-  class AbstractDrive;
 
   // DriveAllocation represents a choice of how to assign image
   // files to drive slots.
@@ -35,6 +34,7 @@ namespace DFS
   class AbstractDrive
   {
   public:
+    virtual ~AbstractDrive();
     using SectorBuffer = std::array<byte, DFS::SECTOR_BYTES>;
     // read a sector.  Allow reads beyond EOF when zero_beyond_eof
     // is true.  Image files can be shorter than the disc image.
@@ -63,9 +63,11 @@ namespace DFS
     static bool decode_drive_number(const std::string& s, drive_number *result);
     bool select_drive(drive_number drive, AbstractDrive **pp) const;
     void show_drive_configuration(std::ostream& os) const;
+    void connect_internal(drive_number d, AbstractDrive* p);
 
   private:
     std::map<drive_number, AbstractDrive*> drives_;
+    std::map<drive_number, std::unique_ptr<AbstractDrive>> caches_;
   };
 }
 

@@ -16,6 +16,7 @@ namespace DFS
   class AbstractImageFile
   {
   public:
+    virtual ~AbstractImageFile();
     virtual bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) = 0;
   };
 
