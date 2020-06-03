@@ -61,7 +61,6 @@ namespace DFS
     }
 
     static bool decode_drive_number(const std::string& s, drive_number *result);
-    bool select_drive_by_afsp(const std::string& drive_arg, AbstractDrive **pp, drive_number current) const;
     bool select_drive(drive_number drive, AbstractDrive **pp) const;
     void show_drive_configuration(std::ostream& os) const;
 

@@ -148,24 +148,6 @@ namespace DFS
       }
   }
 
-  bool StorageConfiguration::select_drive_by_afsp(const std::string& afsp, AbstractDrive **pp,
-						  drive_number current) const
-  {
-    drive_number drive_wanted;
-    if (afsp.size() > 1 && afsp[0] == ':' && isdigit(afsp[1]))
-      {
-	drive_wanted = afsp[1] - '0';
-      }
-    else
-      {
-	std::cerr << "warning: " << afsp
-		  << " doesn't look like a wildcard containing a drive "
-		  << "specification, defaulting to drive " << current << "\n";
-	drive_wanted = current;
-      }
-    return select_drive(drive_wanted, pp);
-  }
-
   void StorageConfiguration::show_drive_configuration(std::ostream& os) const
   {
     auto show = [this, &os](drive_number d)
