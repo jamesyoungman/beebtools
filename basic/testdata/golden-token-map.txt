@@ -250,7 +250,7 @@ dialect 6502:
 6502 (base map): 0xF8->RETURN
 6502 (base map): 0xF9->RUN
 6502 (base map): 0xFA->STOP
-6502 (base map): 0xFB->COLOR
+6502 (base map): 0xFB->COLOUR
 6502 (base map): 0xFC->TRACE
 6502 (base map): 0xFD->UNTIL
 6502 (base map): 0xFE->WIDTH
@@ -508,7 +508,7 @@ Z80 (base map): 0xF7->RESTORE
 Z80 (base map): 0xF8->RETURN
 Z80 (base map): 0xF9->RUN
 Z80 (base map): 0xFA->STOP
-Z80 (base map): 0xFB->COLOR
+Z80 (base map): 0xFB->COLOUR
 Z80 (base map): 0xFC->TRACE
 Z80 (base map): 0xFD->UNTIL
 Z80 (base map): 0xFE->WIDTH
@@ -766,7 +766,7 @@ ARM (base map): 0xF7->RESTORE
 ARM (base map): 0xF8->RETURN
 ARM (base map): 0xF9->RUN
 ARM (base map): 0xFA->STOP
-ARM (base map): 0xFB->COLOR
+ARM (base map): 0xFB->COLOUR
 ARM (base map): 0xFC->TRACE
 ARM (base map): 0xFD->UNTIL
 ARM (base map): 0xFE->WIDTH
@@ -1023,7 +1023,7 @@ Windows (base map): 0xF7->RESTORE
 Windows (base map): 0xF8->RETURN
 Windows (base map): 0xF9->RUN
 Windows (base map): 0xFA->STOP
-Windows (base map): 0xFB->COLOR
+Windows (base map): 0xFB->COLOUR
 Windows (base map): 0xFC->TRACE
 Windows (base map): 0xFD->UNTIL
 Windows (base map): 0xFE->WIDTH
@@ -1282,7 +1282,7 @@ Mac (base map): 0xF7->RESTORE
 Mac (base map): 0xF8->RETURN
 Mac (base map): 0xF9->RUN
 Mac (base map): 0xFA->STOP
-Mac (base map): 0xFB->COLOR
+Mac (base map): 0xFB->COLOUR
 Mac (base map): 0xFC->TRACE
 Mac (base map): 0xFD->UNTIL
 Mac (base map): 0xFE->WIDTH
