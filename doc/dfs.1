@@ -29,7 +29,7 @@ Specifies the name of the disc image to read.
 If this option is specified more than once, each image file is
 "inserted" into the next free "drive".
 See
-.B DISC IMAGE FILE FORMAT
+.B DISC IMAGE FILES
 for a description of the supported image files.
 
 .IP "\-\-dir \fID\fR"
@@ -472,9 +472,11 @@ If the exit status is non-zero but no error message is issued on the
 standard error stream, that is a bug (see
 .BR BUGS ).
 
-.SH DISC IMAGE FILE FORMAT
+.SH DISC IMAGE FILES
 
-Curently only the ".ssd" disc image format is supported.
+Two disc image formats are supported, ".ssd" and ".dsd".
+
+.SS SSD images
 
 SSD disc images should have the file extension ".ssd" (for example
 .BR foo.ssd ).
@@ -482,10 +484,23 @@ Disc images compressed with GNU
 .B gzip
 are also accepted and should have the file extension ".ssd.gz".
 
-The data in an ssd-format file contains all the sectors of a disc
-image starting with the initial sector, followed by the rest of the
-initial track, and so on up that surface of the disc.  No sectors from
-the other side of the disc are included in the image file.
+The data in an SSD-format file starts with the initial sector at the
+begining of the image file, followed by the rest of the initial track,
+and so on up that surface of the disc.  No sectors from the other side
+of the disc are included in the image file.
+
+.SS DSD images
+
+DSD disc images should have the file extension ".dsd" (for example
+.BR double-sided.dsd ).
+Disc images compressed with GNU
+.B gzip
+are also accepted and should have the file extension ".dsd.gz".
+
+The data in a DSD-format file contains all the sectors of the first
+track of side 0, followed by all the sectors of the first track of
+side 1, then all the sectors of the second track of side 0 and all the
+sectors of the second track of side 1, and so on.
 
 .SH CONFORMING TO
 
@@ -509,12 +524,6 @@ What "not yet supported" means in practice is that such images will be
 treated as if they were actually Acorn DFS images.
 
 .SH "NOTES"
-
-In the future, there may be a behaviour change in how insertion of
-single-sided disc images is handled, changing the drive ordering from
-0, 1, 2, 3 to 0, 1.
-This would better mimic what happens when you insert physical floppies
-on a real system.
 
 The
 .BR dfs (1)
