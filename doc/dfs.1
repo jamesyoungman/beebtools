@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-05-30 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-06-06 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -31,6 +31,9 @@ If this option is specified more than once, each image file is
 See
 .B DISC IMAGE FILES
 for a description of the supported image files.
+See
+.B NOTES
+for some caveats on the backward-compatibility of future versions.
 
 .IP "\-\-dir \fID\fR"
 Specifies the current directory to assume when reading the disc image,
@@ -474,7 +477,7 @@ standard error stream, that is a bug (see
 
 .SH DISC IMAGE FILES
 
-Two disc image formats are supported, ".ssd" and ".dsd".
+Three disc image formats are supported, ".ssd", ".dsd" and ".mmb".
 
 .SS SSD images
 
@@ -502,6 +505,18 @@ track of side 0, followed by all the sectors of the first track of
 side 1, then all the sectors of the second track of side 0 and all the
 sectors of the second track of side 1, and so on.
 
+.SS MMB files
+
+MMB files are archives of many (up to 511) SSD images.  These have the
+extension ".mmb".
+Connecting an MMB file results in all the included disc images being
+attached (but see the
+.B NOTES
+section for possible changes in this regard).
+See the
+.BR mmb (5)
+manual page for a description of the MMB format.
+
 .SH CONFORMING TO
 
 There are several variants of the DFS file system, and this tool
@@ -524,6 +539,24 @@ What "not yet supported" means in practice is that such images will be
 treated as if they were actually Acorn DFS images.
 
 .SH "NOTES"
+
+.SS MMB File Support
+
+Attaching an MMB file with the
+.B \-\-file
+option currently results in a configuration in which several hundred
+disc images are attached.  With the
+.B \-\-drive-first
+option, the drive numbers can be allocated sequentially.
+Because the MMB file format supports marking slots as invalid, there
+is no direct correspondance between the MMB slot number and the number
+of the drive to which the relevant disc image becomes connected.
+In other words, the current drive number assignment scheme doesn't
+have great usability characteristics.
+These behaviours may need to change in the future (breaking backward
+compatibility) to become more usable.
+
+.SS Drive Number Validation
 
 The
 .BR dfs (1)
@@ -581,4 +614,5 @@ March 1985.
 by Mark de Weger
 .UE
 
-.BR bbcbasic_to_text (1)
+.BR bbcbasic_to_text (1),
+.BR mmb (5).

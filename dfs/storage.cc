@@ -4,7 +4,9 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -237,10 +239,15 @@ namespace DFS
 
   void StorageConfiguration::show_drive_configuration(std::ostream& os) const
   {
-    auto show = [this, &os](drive_number d)
+    const auto max_drive = drives_.empty() ? 0 : drives_.rbegin()->first;
+    std::ostringstream ss;
+    ss << max_drive;
+    const int max_drive_num_len = static_cast<int>(ss.str().size());
+
+    auto show = [this, &os, max_drive_num_len](drive_number d)
 		{
 		  auto it = drives_.find(d);
-		  os << "Drive " << d << ": "
+		  os << "Drive " << std::setw(max_drive_num_len) << d << ": "
 		     << (it != drives_.end() ? "occupied" : "empty");
 		  if (it != drives_.end())
 		    {

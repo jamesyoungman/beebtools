@@ -3,8 +3,10 @@
 #include <string.h>
 
 #include <fstream>
+#include <iomanip>
 #include <limits>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -46,7 +48,7 @@ namespace
     FileView(std::ifstream* f,
 	     const std::string& file_name,
 	     const std::string& description,
-	     sector_count_type initial_skip,
+	     unsigned long initial_skip,
 	     sector_count_type take,
 	     sector_count_type leave,
 	     sector_count_type total)
@@ -110,11 +112,7 @@ namespace
       // the start-of-file (the far-left edge of the box) and the
       // sector we want is
       //
-<<<<<<< HEAD
-      // initial_leave_ + (x / take_) * (take_ + leave_) + (x % take_)
-=======
-      // initial_skip_ + (x / take_) * (take_ + leave_) + x % (take_ + leave_)
->>>>>>> 73164ce... [dfs] correct name of member variable in a comment.
+      // initial_skip_ + (x / take_) * (take_ + leave_) + (x % take_)
       //
       // initial_skip_ is the size of the initial part of the file we
       // need to skip to read sector 0 of the emulated device.  At
@@ -134,7 +132,7 @@ namespace
 	initial_skip_ +
 	safe_unsigned_multiply(DFS::sector_count(sector / take_),
 			       DFS::sector_count(take_ + leave_)) +
-	(sector % take_));
+	(sector % take_);
       errno = 0;
       if (!f_->seekg(pos * DFS::SECTOR_BYTES, f_->beg))
 	{
@@ -159,7 +157,9 @@ namespace
     std::ifstream* f_;
     std::string file_name_;
     std::string description_;
-    sector_count_type initial_skip_;
+    // initial_skip_ is wider than sector_count_type because MMB files
+    // are much larger than a single disc image.
+    unsigned long initial_skip_;
     sector_count_type take_;
     sector_count_type leave_;
     sector_count_type total_;
@@ -253,6 +253,79 @@ namespace
     }
   };
 
+  class MmbFile : public ViewFile
+  {
+  public:
+    static constexpr unsigned long MMB_ENTRY_BYTES = 16;
+
+    explicit MmbFile(const std::string& name, std::unique_ptr<std::ifstream>&& ifs)
+      : ViewFile(name, std::move(ifs))
+    {
+      std::ifstream* f = get_file();
+      const unsigned long mmb_sectors = 32;
+      const unsigned long disc_image_sectors = 80 * 10;
+      const unsigned long mmb_header_size = mmb_sectors * DFS::SECTOR_BYTES;
+      const unsigned long max_mmb_entries = mmb_header_size / MMB_ENTRY_BYTES;
+      for (unsigned i = 0; i < max_mmb_entries; ++i)
+	{
+	  unsigned char entry[MMB_ENTRY_BYTES];
+	  if (!f->read(reinterpret_cast<char*>(entry), MMB_ENTRY_BYTES).good())
+	    throw DFS::FileIOError(name, errno);
+	  if (i == 0)
+	    {
+	      // We don't actually care about the header; it specifies
+	      // which drives are loaded at boot time, but we don't
+	      // need to know that.
+	      continue;
+	    }
+	  const auto slot_status = entry[0x0F];
+	  std::string slot_status_desc;
+	  int fill = 0;
+	  switch (slot_status)
+	    {
+	    case 0x00:		// read-only
+	      slot_status_desc = "read-only";
+	      fill = 2;
+	      break;
+	    case 0x0F:		// read-write
+	      slot_status_desc = "read-write";
+	      fill = 1;
+	      break;
+	    case 0xF0:		// unformatted
+	      slot_status_desc = "unformatted";
+	      fill = 0;
+	      break;
+	    case 0xFF:		// invalid, perhaps missing
+	      slot_status_desc = "missing";
+	      fill = 4;
+	      continue;
+	    default:
+	      slot_status_desc = "unknown";
+	      fill = 5;
+	      std::cerr << "MMB entry " << i << " has unexpected type 0x"
+			<< std::setw(2) << std::uppercase << std::setbase(16)
+			<< entry[0x0F] << "\n";
+	      continue;
+	    }
+	  std::ostringstream ss;
+	  // The initial slot of the MMB gives the boot configuration, but it
+	  // seems unhelpful to the user to designate that slot 1, since doing
+	  // so causes slot 1 to be attached to drive 0.
+	  const int slot = i - 1;
+	  ss << std::setfill(' ') << std::setw(fill) << "" << slot_status_desc
+	     << " slot " << std::setw(3) << slot << " of " << name;
+	  const std::string disc_name = ss.str();
+	  add_view(FileView(f, name, disc_name,
+			    // units are sectors
+			    mmb_sectors + (i * disc_image_sectors),
+			    DFS::sector_count(disc_image_sectors),
+			    DFS::sector_count(0),
+			    DFS::sector_count(disc_image_sectors)));
+
+	}
+    }
+  };
+
   inline bool ends_with(const std::string & s, const std::string& suffix)
   {
     if (suffix.size() > s.size())
@@ -288,6 +361,10 @@ namespace DFS
     if (ends_with(name, ".dsd"))
       {
 	return std::make_unique<DsdFile>(name, std::move(infile));
+      }
+    if (ends_with(name, ".mmb"))
+      {
+	return std::make_unique<MmbFile>(name, std::move(infile));
       }
     std::cerr << "Image file " << name << " does not seem to be of a supported type.\n";
     return 0;
