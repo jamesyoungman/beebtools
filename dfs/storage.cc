@@ -190,8 +190,6 @@ namespace DFS
       }
   }
 
-
-
   bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp) const
   {
     auto it = caches_.find(drive);
@@ -235,6 +233,15 @@ namespace DFS
 		  << " is too large.\n";
 	return false;
       }
+  }
+
+  std::vector<drive_number> StorageConfiguration::get_all_occupied_drive_numbers() const
+  {
+    std::vector<drive_number> result;
+    result.reserve(drives_.size());
+    for (const auto& number_and_device : drives_)
+      result.push_back(number_and_device.first);
+    return result;
   }
 
   void StorageConfiguration::show_drive_configuration(std::ostream& os) const

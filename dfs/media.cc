@@ -317,7 +317,7 @@ namespace
 	  const std::string disc_name = ss.str();
 	  add_view(FileView(f, name, disc_name,
 			    // units are sectors
-			    mmb_sectors + (i * disc_image_sectors),
+			    mmb_sectors + ((i-1) * disc_image_sectors),
 			    DFS::sector_count(disc_image_sectors),
 			    DFS::sector_count(0),
 			    DFS::sector_count(disc_image_sectors)));

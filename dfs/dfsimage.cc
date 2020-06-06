@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "fsp.h"
+#include "stringutil.h"
 
 using std::string;
 
@@ -94,9 +95,32 @@ namespace DFS
     bool beyond_eof = false;
     drive->read_sector(0, &s, beyond_eof);
     const byte title_initial = s[0];
-    std::transform(&s[0], &s[8], std::back_inserter(title_), byte_to_ascii7);
+    string title;
+    bool title_done = false;
+    for (int offset = 0; offset < 8; ++offset)
+      {
+	if (!s[offset])
+	  {
+	    title_done = true;
+	    break;
+	  }
+	title.push_back(byte_to_ascii7(s[offset]));
+      }
     drive->read_sector(1, &s, beyond_eof);
-    std::transform(&s[0], &s[4], std::back_inserter(title_), byte_to_ascii7);
+    if (!title_done)
+      {
+	for (int offset = 0; offset < 4; ++offset)
+	  {
+	    if (!s[offset])
+	      {
+		title_done = true;
+		break;
+	      }
+	    title.push_back(byte_to_ascii7(s[offset]));
+	  }
+      }
+    title_ = DFS::stringutil::rtrim(title);
+
     if (format_ != Format::HDFS)
       {
 	sequence_number_ = s[4];

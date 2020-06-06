@@ -17,7 +17,7 @@ if ! t="$(mktemp --tmpdir=${TMPDIR})"; then
 fi
 (
     rv=0
-    commands="cat dump extract-files extract-unused free help info list sector-map space type"
+    commands="cat dump extract-files extract-unused free help info list sector-map show-titles space type"
 
     check() {
 	for c in $commands

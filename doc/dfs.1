@@ -6,7 +6,7 @@ dfs \- read Acorn DFS disc images
 
 .SH SYNOPSIS
 .B dfs
-[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|extract\-unused|free|help|info|list|sector\-map|space|type
+[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|extract\-unused|free|help|info|list|sector\-map|show-titles|space|type
 [args...]
 
 .SH DESCRIPTION
@@ -217,6 +217,11 @@ section.
 
 Print a description of the layout of the disc, showing the locations
 of the files.
+
+.SS "show-titles [drive]..."
+
+Show the disc titles of the specified drives.  If no drives are
+specified, list the titles of the discs in all attached drives.
 
 .SS "space [drive]"
 

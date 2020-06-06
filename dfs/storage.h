@@ -61,6 +61,7 @@ namespace DFS
     }
 
     static bool decode_drive_number(const std::string& s, drive_number *result);
+    std::vector<drive_number> get_all_occupied_drive_numbers() const;
     bool select_drive(drive_number drive, AbstractDrive **pp) const;
     void show_drive_configuration(std::ostream& os) const;
     void connect_internal(drive_number d, AbstractDrive* p);
