@@ -138,10 +138,21 @@ namespace
       errno = 0;
       if (!f_->seekg(pos * DFS::SECTOR_BYTES, f_->beg))
 	{
+	  assert(errno != 0);
 	  throw DFS::FileIOError(file_name_, errno);
 	}
       if (!f_->read(reinterpret_cast<char*>(buf->data()), DFS::SECTOR_BYTES).good())
-	throw DFS::FileIOError(file_name_, errno);
+	{
+	  // POSIX permits a seek beyond end-of-file, so if pos was
+	  // larger than the file size, we come to here rather than
+	  // fail the seekg() call.  However, it's also not a failure
+	  // to read beyond EOF, so reading from beyond EOF just
+	  // returns zero bytes.
+	  if (errno)
+	    throw DFS::FileIOError(file_name_, errno); // a real error
+	  else
+	    beyond_eof = true;
+	}
     }
 
   private:
