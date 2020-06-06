@@ -74,13 +74,20 @@ namespace
 	  // HDFS uses this field for something else.
 	  cout << " ("  << std::setbase(16) << cycle_count.value() << ")";
 	}
+      // TODO: determine whether then image is FM or MFM, print the
+      // right indicator (and spell it appropriately for the UI).
       cout << std::setbase(10) << " FM\n";
       const auto opt = fs->opt_value();
       cout << "Drive "<< ctx.current_drive
 	   << "            Option " << opt << "\n";
       cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
 	   << "          "
-	   << "Lib. :0.$\n\n";
+	   << "Lib. :0.$\n";
+      if (fs->ui_style(ctx) == DFS::UiStyle::Watford)
+	{
+	  cout << "Work file $.\n";
+	}
+      cout << "\n";
 
       const unsigned short entries = fs->global_catalog_entry_count();
       vector<unsigned short int> ordered_catalog_index;
@@ -151,9 +158,12 @@ namespace
 	  left_column = !left_column;
 	}
       cout << "\n";
-      cout << fs->global_catalog_entry_count() << " files of "
-	   << fs->max_file_count() << "\n";
-      // TODO: Watford DFS states the number of tracks too.
+      if (fs->ui_style(ctx) == DFS::UiStyle::Watford)
+	{
+	  // TODO: Watford DFS states the number of tracks too.
+	  cout << fs->global_catalog_entry_count() << " files of "
+	       << fs->max_file_count() << "\n";
+	}
       return true;
     }
   };

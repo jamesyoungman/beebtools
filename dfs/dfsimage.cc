@@ -228,6 +228,29 @@ namespace DFS
   {
   }
 
+  DFS::UiStyle FileSystem::ui_style(const DFSContext& ctx) const
+  {
+    if (ctx.ui_ != DFS::UiStyle::Default)
+      return ctx.ui_;
+    switch (disc_format())
+      {
+      case Format::HDFS:
+	// There appear to be some differences in UI between HDFS and
+	// Acorn, but I don't know what they are in detail.  So for
+	// the time being, follow Acorn.
+	return DFS::UiStyle::Acorn;
+      case Format::DFS:
+	return DFS::UiStyle::Acorn;
+      case Format::WDFS:
+	return DFS::UiStyle::Watford;
+      case Format::Solidisk:
+	// TODO: are there UI differences?
+	return DFS::UiStyle::Acorn;
+      }
+    // TODO: find out if there are differences for Opus, too.
+    return DFS::UiStyle::Acorn;
+  }
+
   byte FileSystem::get_byte(sector_count_type sector, unsigned offset) const
   {
     assert(offset < DFS::SECTOR_BYTES);

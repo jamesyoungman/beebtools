@@ -169,6 +169,9 @@ public:
 
   std::string title() const;
 
+  // Determine what UI styling to use for the current file system.
+  DFS::UiStyle ui_style(const DFSContext&) const;
+
   inline BootSetting opt_value() const
   {
     return metadata_.boot_setting();
