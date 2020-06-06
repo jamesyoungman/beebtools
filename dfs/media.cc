@@ -99,7 +99,7 @@ namespace
       // In the underlyng file these sectors are laid out like this:
       //
       // +-------------------------------------------------------------------+
-      // |initial_leave_  | take_ | leave_ | take_ | leave_ | take_ | leave_ |
+      // |initial_skip_   | take_ | leave_ | take_ | leave_ | take_ | leave_ |
       // |                | 0     | 0      | 1     | 1      | 2     | 2      |
       // +-------------------------------------------------------------------+
       // |                |       |        |  p    |        |       |        |
@@ -110,9 +110,13 @@ namespace
       // the start-of-file (the far-left edge of the box) and the
       // sector we want is
       //
+<<<<<<< HEAD
       // initial_leave_ + (x / take_) * (take_ + leave_) + (x % take_)
+=======
+      // initial_skip_ + (x / take_) * (take_ + leave_) + x % (take_ + leave_)
+>>>>>>> 73164ce... [dfs] correct name of member variable in a comment.
       //
-      // initial_leave_ is the size of the initial part of the file we
+      // initial_skip_ is the size of the initial part of the file we
       // need to skip to read sector 0 of the emulated device.  At
       // that offset we can read |take_| emulated secors, but then
       // would need to skip |leave_| emulated sectors before we can
@@ -122,7 +126,7 @@ namespace
       // sector is in, and then the position within that section where
       // x lives.
       //
-      // For initial_leave_ = 0 and leave_ = 0, this turns into an
+      // For initial_skip_ = 0 and leave_ = 0, this turns into an
       // identity mapping.
       //
       // The units here are sectors, of course.
