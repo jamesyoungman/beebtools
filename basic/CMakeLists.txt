@@ -21,6 +21,10 @@ install(TARGETS bbcbasic_to_text
 
 enable_testing()
 
+add_test(NAME basic_invariant_token_map
+  COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/invariant_token_map_test.sh $<TARGET_FILE:bbcbasic_to_text> ${CMAKE_CURRENT_SOURCE_DIR}/testdata/golden-token-map.txt)
+set_property(TEST basic_invariant_token_map PROPERTY LABELS basic regression)
+
 add_executable(test_tokens tests/test_tokens.c)
 target_compile_options(test_tokens
   PRIVATE ${EXTRA_WARNING_OPTIONS} -I${CMAKE_CURRENT_SOURCE_DIR} )

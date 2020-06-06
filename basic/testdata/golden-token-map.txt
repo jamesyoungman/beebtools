@@ -1,0 +1,1289 @@
+dialect 6502:
+6502 (base map): 0x00->__invalid__
+6502 (base map): 0x01->__invalid__
+6502 (base map): 0x02->__invalid__
+6502 (base map): 0x03->__invalid__
+6502 (base map): 0x04->__invalid__
+6502 (base map): 0x05->__invalid__
+6502 (base map): 0x06->__invalid__
+6502 (base map): 0x07->__invalid__
+6502 (base map): 0x08->__invalid__
+6502 (base map): 0x09->__invalid__
+6502 (base map): 0x0A->__invalid__
+6502 (base map): 0x0B->__invalid__
+6502 (base map): 0x0C->__invalid__
+6502 (base map): 0x0D->(maps to itself)
+6502 (base map): 0x0E->__invalid__
+6502 (base map): 0x0F->__invalid__
+6502 (base map): 0x10->__invalid__
+6502 (base map): 0x11->(maps to itself)
+6502 (base map): 0x12->(maps to itself)
+6502 (base map): 0x13->(maps to itself)
+6502 (base map): 0x14->(maps to itself)
+6502 (base map): 0x15->(maps to itself)
+6502 (base map): 0x16->(maps to itself)
+6502 (base map): 0x17->(maps to itself)
+6502 (base map): 0x18->(maps to itself)
+6502 (base map): 0x19->(maps to itself)
+6502 (base map): 0x1A->(maps to itself)
+6502 (base map): 0x1B->(maps to itself)
+6502 (base map): 0x1C->(maps to itself)
+6502 (base map): 0x1D->(maps to itself)
+6502 (base map): 0x1E->(maps to itself)
+6502 (base map): 0x1F->(maps to itself)
+6502 (base map): 0x20->(maps to itself)
+6502 (base map): 0x21->(maps to itself)
+6502 (base map): 0x22->(maps to itself)
+6502 (base map): 0x23->(maps to itself)
+6502 (base map): 0x24->(maps to itself)
+6502 (base map): 0x25->(maps to itself)
+6502 (base map): 0x26->(maps to itself)
+6502 (base map): 0x27->(maps to itself)
+6502 (base map): 0x28->(maps to itself)
+6502 (base map): 0x29->(maps to itself)
+6502 (base map): 0x2A->(maps to itself)
+6502 (base map): 0x2B->(maps to itself)
+6502 (base map): 0x2C->(maps to itself)
+6502 (base map): 0x2D->(maps to itself)
+6502 (base map): 0x2E->(maps to itself)
+6502 (base map): 0x2F->(maps to itself)
+6502 (base map): 0x30->(maps to itself)
+6502 (base map): 0x31->(maps to itself)
+6502 (base map): 0x32->(maps to itself)
+6502 (base map): 0x33->(maps to itself)
+6502 (base map): 0x34->(maps to itself)
+6502 (base map): 0x35->(maps to itself)
+6502 (base map): 0x36->(maps to itself)
+6502 (base map): 0x37->(maps to itself)
+6502 (base map): 0x38->(maps to itself)
+6502 (base map): 0x39->(maps to itself)
+6502 (base map): 0x3A->(maps to itself)
+6502 (base map): 0x3B->(maps to itself)
+6502 (base map): 0x3C->(maps to itself)
+6502 (base map): 0x3D->(maps to itself)
+6502 (base map): 0x3E->(maps to itself)
+6502 (base map): 0x3F->(maps to itself)
+6502 (base map): 0x40->(maps to itself)
+6502 (base map): 0x41->(maps to itself)
+6502 (base map): 0x42->(maps to itself)
+6502 (base map): 0x43->(maps to itself)
+6502 (base map): 0x44->(maps to itself)
+6502 (base map): 0x45->(maps to itself)
+6502 (base map): 0x46->(maps to itself)
+6502 (base map): 0x47->(maps to itself)
+6502 (base map): 0x48->(maps to itself)
+6502 (base map): 0x49->(maps to itself)
+6502 (base map): 0x4A->(maps to itself)
+6502 (base map): 0x4B->(maps to itself)
+6502 (base map): 0x4C->(maps to itself)
+6502 (base map): 0x4D->(maps to itself)
+6502 (base map): 0x4E->(maps to itself)
+6502 (base map): 0x4F->(maps to itself)
+6502 (base map): 0x50->(maps to itself)
+6502 (base map): 0x51->(maps to itself)
+6502 (base map): 0x52->(maps to itself)
+6502 (base map): 0x53->(maps to itself)
+6502 (base map): 0x54->(maps to itself)
+6502 (base map): 0x55->(maps to itself)
+6502 (base map): 0x56->(maps to itself)
+6502 (base map): 0x57->(maps to itself)
+6502 (base map): 0x58->(maps to itself)
+6502 (base map): 0x59->(maps to itself)
+6502 (base map): 0x5A->(maps to itself)
+6502 (base map): 0x5B->(maps to itself)
+6502 (base map): 0x5C->(maps to itself)
+6502 (base map): 0x5D->(maps to itself)
+6502 (base map): 0x5E->(maps to itself)
+6502 (base map): 0x5F->(maps to itself)
+6502 (base map): 0x60->(maps to itself)
+6502 (base map): 0x61->(maps to itself)
+6502 (base map): 0x62->(maps to itself)
+6502 (base map): 0x63->(maps to itself)
+6502 (base map): 0x64->(maps to itself)
+6502 (base map): 0x65->(maps to itself)
+6502 (base map): 0x66->(maps to itself)
+6502 (base map): 0x67->(maps to itself)
+6502 (base map): 0x68->(maps to itself)
+6502 (base map): 0x69->(maps to itself)
+6502 (base map): 0x6A->(maps to itself)
+6502 (base map): 0x6B->(maps to itself)
+6502 (base map): 0x6C->(maps to itself)
+6502 (base map): 0x6D->(maps to itself)
+6502 (base map): 0x6E->(maps to itself)
+6502 (base map): 0x6F->(maps to itself)
+6502 (base map): 0x70->(maps to itself)
+6502 (base map): 0x71->(maps to itself)
+6502 (base map): 0x72->(maps to itself)
+6502 (base map): 0x73->(maps to itself)
+6502 (base map): 0x74->(maps to itself)
+6502 (base map): 0x75->(maps to itself)
+6502 (base map): 0x76->(maps to itself)
+6502 (base map): 0x77->(maps to itself)
+6502 (base map): 0x78->(maps to itself)
+6502 (base map): 0x79->(maps to itself)
+6502 (base map): 0x7A->(maps to itself)
+6502 (base map): 0x7B->(maps to itself)
+6502 (base map): 0x7C->(maps to itself)
+6502 (base map): 0x7D->(maps to itself)
+6502 (base map): 0x7E->(maps to itself)
+6502 (base map): 0x7F->(maps to itself)
+6502 (base map): 0x80->AND
+6502 (base map): 0x81->DIV
+6502 (base map): 0x82->EOR
+6502 (base map): 0x83->MOD
+6502 (base map): 0x84->OR
+6502 (base map): 0x85->ERROR
+6502 (base map): 0x86->LINE
+6502 (base map): 0x87->OFF
+6502 (base map): 0x88->STEP
+6502 (base map): 0x89->SPC
+6502 (base map): 0x8A->TAB(
+6502 (base map): 0x8B->ELSE
+6502 (base map): 0x8C->THEN
+6502 (base map): 0x8D->__line_num__
+6502 (base map): 0x8E->OPENIN
+6502 (base map): 0x8F->PTR
+6502 (base map): 0x90->PAGE
+6502 (base map): 0x91->TIME
+6502 (base map): 0x92->LOMEM
+6502 (base map): 0x93->HIMEM
+6502 (base map): 0x94->ABS
+6502 (base map): 0x95->ACS
+6502 (base map): 0x96->ADVAL
+6502 (base map): 0x97->ASC
+6502 (base map): 0x98->ASN
+6502 (base map): 0x99->ATN
+6502 (base map): 0x9A->BGET
+6502 (base map): 0x9B->COS
+6502 (base map): 0x9C->COUNT
+6502 (base map): 0x9D->DEG
+6502 (base map): 0x9E->ERL
+6502 (base map): 0x9F->ERR
+6502 (base map): 0xA0->EVAL
+6502 (base map): 0xA1->EXP
+6502 (base map): 0xA2->EXT
+6502 (base map): 0xA3->FALSE
+6502 (base map): 0xA4->FN
+6502 (base map): 0xA5->GET
+6502 (base map): 0xA6->INKEY
+6502 (base map): 0xA7->INSTR(
+6502 (base map): 0xA8->INT
+6502 (base map): 0xA9->LEN
+6502 (base map): 0xAA->LN
+6502 (base map): 0xAB->LOG
+6502 (base map): 0xAC->NOT
+6502 (base map): 0xAD->OPENUP
+6502 (base map): 0xAE->OPENOUT
+6502 (base map): 0xAF->PI
+6502 (base map): 0xB0->POINT(
+6502 (base map): 0xB1->POS
+6502 (base map): 0xB2->RAD
+6502 (base map): 0xB3->RND
+6502 (base map): 0xB4->SGN
+6502 (base map): 0xB5->SIN
+6502 (base map): 0xB6->SQR
+6502 (base map): 0xB7->TAN
+6502 (base map): 0xB8->TO
+6502 (base map): 0xB9->TRUE
+6502 (base map): 0xBA->USR
+6502 (base map): 0xBB->VAL
+6502 (base map): 0xBC->VPOS
+6502 (base map): 0xBD->CHR$
+6502 (base map): 0xBE->GET$
+6502 (base map): 0xBF->INKEY$
+6502 (base map): 0xC0->LEFT$(
+6502 (base map): 0xC1->MID$(
+6502 (base map): 0xC2->RIGHT$(
+6502 (base map): 0xC3->STR$
+6502 (base map): 0xC4->STRING$(
+6502 (base map): 0xC5->EOF
+6502 (base map): 0xC6->AUTO
+6502 (base map): 0xC7->DELETE
+6502 (base map): 0xC8->LOAD
+6502 (base map): 0xC9->LIST
+6502 (base map): 0xCA->NEW
+6502 (base map): 0xCB->OLD
+6502 (base map): 0xCC->RENUMBER
+6502 (base map): 0xCD->SAVE
+6502 (base map): 0xCE->EDIT
+6502 (base map): 0xCF->PTR
+6502 (base map): 0xD0->PAGE
+6502 (base map): 0xD1->TIME
+6502 (base map): 0xD2->LOMEM
+6502 (base map): 0xD3->HIMEM
+6502 (base map): 0xD4->SOUND
+6502 (base map): 0xD5->BPUT
+6502 (base map): 0xD6->CALL
+6502 (base map): 0xD7->CHAIN
+6502 (base map): 0xD8->CLEAR
+6502 (base map): 0xD9->CLOSE
+6502 (base map): 0xDA->CLG
+6502 (base map): 0xDB->CLS
+6502 (base map): 0xDC->DATA
+6502 (base map): 0xDD->DEF
+6502 (base map): 0xDE->DIM
+6502 (base map): 0xDF->DRAW
+6502 (base map): 0xE0->END
+6502 (base map): 0xE1->ENDPROC
+6502 (base map): 0xE2->ENVELOPE
+6502 (base map): 0xE3->FOR
+6502 (base map): 0xE4->GOSUB
+6502 (base map): 0xE5->GOTO
+6502 (base map): 0xE6->GCOL
+6502 (base map): 0xE7->IF
+6502 (base map): 0xE8->INPUT
+6502 (base map): 0xE9->LET
+6502 (base map): 0xEA->LOCAL
+6502 (base map): 0xEB->MODE
+6502 (base map): 0xEC->MOVE
+6502 (base map): 0xED->NEXT
+6502 (base map): 0xEE->ON
+6502 (base map): 0xEF->VDU
+6502 (base map): 0xF0->PLOT
+6502 (base map): 0xF1->PRINT
+6502 (base map): 0xF2->PROC
+6502 (base map): 0xF3->READ
+6502 (base map): 0xF4->REM
+6502 (base map): 0xF5->REPEAT
+6502 (base map): 0xF6->REPORT
+6502 (base map): 0xF7->RESTORE
+6502 (base map): 0xF8->RETURN
+6502 (base map): 0xF9->RUN
+6502 (base map): 0xFA->STOP
+6502 (base map): 0xFB->COLOR
+6502 (base map): 0xFC->TRACE
+6502 (base map): 0xFD->UNTIL
+6502 (base map): 0xFE->WIDTH
+6502 (base map): 0xFF->OSCLI
+dialect 32000=6502
+dialect Z80:
+Z80 (base map): 0x00->__invalid__
+Z80 (base map): 0x01->__invalid__
+Z80 (base map): 0x02->__invalid__
+Z80 (base map): 0x03->__invalid__
+Z80 (base map): 0x04->__invalid__
+Z80 (base map): 0x05->__invalid__
+Z80 (base map): 0x06->__invalid__
+Z80 (base map): 0x07->__invalid__
+Z80 (base map): 0x08->__invalid__
+Z80 (base map): 0x09->__invalid__
+Z80 (base map): 0x0A->__invalid__
+Z80 (base map): 0x0B->__invalid__
+Z80 (base map): 0x0C->__invalid__
+Z80 (base map): 0x0D->(maps to itself)
+Z80 (base map): 0x0E->__invalid__
+Z80 (base map): 0x0F->__invalid__
+Z80 (base map): 0x10->__invalid__
+Z80 (base map): 0x11->(maps to itself)
+Z80 (base map): 0x12->(maps to itself)
+Z80 (base map): 0x13->(maps to itself)
+Z80 (base map): 0x14->(maps to itself)
+Z80 (base map): 0x15->(maps to itself)
+Z80 (base map): 0x16->(maps to itself)
+Z80 (base map): 0x17->(maps to itself)
+Z80 (base map): 0x18->(maps to itself)
+Z80 (base map): 0x19->(maps to itself)
+Z80 (base map): 0x1A->(maps to itself)
+Z80 (base map): 0x1B->(maps to itself)
+Z80 (base map): 0x1C->(maps to itself)
+Z80 (base map): 0x1D->(maps to itself)
+Z80 (base map): 0x1E->(maps to itself)
+Z80 (base map): 0x1F->(maps to itself)
+Z80 (base map): 0x20->(maps to itself)
+Z80 (base map): 0x21->(maps to itself)
+Z80 (base map): 0x22->(maps to itself)
+Z80 (base map): 0x23->(maps to itself)
+Z80 (base map): 0x24->(maps to itself)
+Z80 (base map): 0x25->(maps to itself)
+Z80 (base map): 0x26->(maps to itself)
+Z80 (base map): 0x27->(maps to itself)
+Z80 (base map): 0x28->(maps to itself)
+Z80 (base map): 0x29->(maps to itself)
+Z80 (base map): 0x2A->(maps to itself)
+Z80 (base map): 0x2B->(maps to itself)
+Z80 (base map): 0x2C->(maps to itself)
+Z80 (base map): 0x2D->(maps to itself)
+Z80 (base map): 0x2E->(maps to itself)
+Z80 (base map): 0x2F->(maps to itself)
+Z80 (base map): 0x30->(maps to itself)
+Z80 (base map): 0x31->(maps to itself)
+Z80 (base map): 0x32->(maps to itself)
+Z80 (base map): 0x33->(maps to itself)
+Z80 (base map): 0x34->(maps to itself)
+Z80 (base map): 0x35->(maps to itself)
+Z80 (base map): 0x36->(maps to itself)
+Z80 (base map): 0x37->(maps to itself)
+Z80 (base map): 0x38->(maps to itself)
+Z80 (base map): 0x39->(maps to itself)
+Z80 (base map): 0x3A->(maps to itself)
+Z80 (base map): 0x3B->(maps to itself)
+Z80 (base map): 0x3C->(maps to itself)
+Z80 (base map): 0x3D->(maps to itself)
+Z80 (base map): 0x3E->(maps to itself)
+Z80 (base map): 0x3F->(maps to itself)
+Z80 (base map): 0x40->(maps to itself)
+Z80 (base map): 0x41->(maps to itself)
+Z80 (base map): 0x42->(maps to itself)
+Z80 (base map): 0x43->(maps to itself)
+Z80 (base map): 0x44->(maps to itself)
+Z80 (base map): 0x45->(maps to itself)
+Z80 (base map): 0x46->(maps to itself)
+Z80 (base map): 0x47->(maps to itself)
+Z80 (base map): 0x48->(maps to itself)
+Z80 (base map): 0x49->(maps to itself)
+Z80 (base map): 0x4A->(maps to itself)
+Z80 (base map): 0x4B->(maps to itself)
+Z80 (base map): 0x4C->(maps to itself)
+Z80 (base map): 0x4D->(maps to itself)
+Z80 (base map): 0x4E->(maps to itself)
+Z80 (base map): 0x4F->(maps to itself)
+Z80 (base map): 0x50->(maps to itself)
+Z80 (base map): 0x51->(maps to itself)
+Z80 (base map): 0x52->(maps to itself)
+Z80 (base map): 0x53->(maps to itself)
+Z80 (base map): 0x54->(maps to itself)
+Z80 (base map): 0x55->(maps to itself)
+Z80 (base map): 0x56->(maps to itself)
+Z80 (base map): 0x57->(maps to itself)
+Z80 (base map): 0x58->(maps to itself)
+Z80 (base map): 0x59->(maps to itself)
+Z80 (base map): 0x5A->(maps to itself)
+Z80 (base map): 0x5B->(maps to itself)
+Z80 (base map): 0x5C->(maps to itself)
+Z80 (base map): 0x5D->(maps to itself)
+Z80 (base map): 0x5E->(maps to itself)
+Z80 (base map): 0x5F->(maps to itself)
+Z80 (base map): 0x60->(maps to itself)
+Z80 (base map): 0x61->(maps to itself)
+Z80 (base map): 0x62->(maps to itself)
+Z80 (base map): 0x63->(maps to itself)
+Z80 (base map): 0x64->(maps to itself)
+Z80 (base map): 0x65->(maps to itself)
+Z80 (base map): 0x66->(maps to itself)
+Z80 (base map): 0x67->(maps to itself)
+Z80 (base map): 0x68->(maps to itself)
+Z80 (base map): 0x69->(maps to itself)
+Z80 (base map): 0x6A->(maps to itself)
+Z80 (base map): 0x6B->(maps to itself)
+Z80 (base map): 0x6C->(maps to itself)
+Z80 (base map): 0x6D->(maps to itself)
+Z80 (base map): 0x6E->(maps to itself)
+Z80 (base map): 0x6F->(maps to itself)
+Z80 (base map): 0x70->(maps to itself)
+Z80 (base map): 0x71->(maps to itself)
+Z80 (base map): 0x72->(maps to itself)
+Z80 (base map): 0x73->(maps to itself)
+Z80 (base map): 0x74->(maps to itself)
+Z80 (base map): 0x75->(maps to itself)
+Z80 (base map): 0x76->(maps to itself)
+Z80 (base map): 0x77->(maps to itself)
+Z80 (base map): 0x78->(maps to itself)
+Z80 (base map): 0x79->(maps to itself)
+Z80 (base map): 0x7A->(maps to itself)
+Z80 (base map): 0x7B->(maps to itself)
+Z80 (base map): 0x7C->(maps to itself)
+Z80 (base map): 0x7D->(maps to itself)
+Z80 (base map): 0x7E->(maps to itself)
+Z80 (base map): 0x7F->(maps to itself)
+Z80 (base map): 0x80->AND
+Z80 (base map): 0x81->DIV
+Z80 (base map): 0x82->EOR
+Z80 (base map): 0x83->MOD
+Z80 (base map): 0x84->OR
+Z80 (base map): 0x85->ERROR
+Z80 (base map): 0x86->LINE
+Z80 (base map): 0x87->OFF
+Z80 (base map): 0x88->STEP
+Z80 (base map): 0x89->SPC
+Z80 (base map): 0x8A->TAB(
+Z80 (base map): 0x8B->ELSE
+Z80 (base map): 0x8C->THEN
+Z80 (base map): 0x8D->__line_num__
+Z80 (base map): 0x8E->OPENIN
+Z80 (base map): 0x8F->PTR
+Z80 (base map): 0x90->PAGE
+Z80 (base map): 0x91->TIME
+Z80 (base map): 0x92->LOMEM
+Z80 (base map): 0x93->HIMEM
+Z80 (base map): 0x94->ABS
+Z80 (base map): 0x95->ACS
+Z80 (base map): 0x96->ADVAL
+Z80 (base map): 0x97->ASC
+Z80 (base map): 0x98->ASN
+Z80 (base map): 0x99->ATN
+Z80 (base map): 0x9A->BGET
+Z80 (base map): 0x9B->COS
+Z80 (base map): 0x9C->COUNT
+Z80 (base map): 0x9D->DEG
+Z80 (base map): 0x9E->ERL
+Z80 (base map): 0x9F->ERR
+Z80 (base map): 0xA0->EVAL
+Z80 (base map): 0xA1->EXP
+Z80 (base map): 0xA2->EXT
+Z80 (base map): 0xA3->FALSE
+Z80 (base map): 0xA4->FN
+Z80 (base map): 0xA5->GET
+Z80 (base map): 0xA6->INKEY
+Z80 (base map): 0xA7->INSTR(
+Z80 (base map): 0xA8->INT
+Z80 (base map): 0xA9->LEN
+Z80 (base map): 0xAA->LN
+Z80 (base map): 0xAB->LOG
+Z80 (base map): 0xAC->NOT
+Z80 (base map): 0xAD->OPENUP
+Z80 (base map): 0xAE->OPENOUT
+Z80 (base map): 0xAF->PI
+Z80 (base map): 0xB0->POINT(
+Z80 (base map): 0xB1->POS
+Z80 (base map): 0xB2->RAD
+Z80 (base map): 0xB3->RND
+Z80 (base map): 0xB4->SGN
+Z80 (base map): 0xB5->SIN
+Z80 (base map): 0xB6->SQR
+Z80 (base map): 0xB7->TAN
+Z80 (base map): 0xB8->TO
+Z80 (base map): 0xB9->TRUE
+Z80 (base map): 0xBA->USR
+Z80 (base map): 0xBB->VAL
+Z80 (base map): 0xBC->VPOS
+Z80 (base map): 0xBD->CHR$
+Z80 (base map): 0xBE->GET$
+Z80 (base map): 0xBF->INKEY$
+Z80 (base map): 0xC0->LEFT$(
+Z80 (base map): 0xC1->MID$(
+Z80 (base map): 0xC2->RIGHT$(
+Z80 (base map): 0xC3->STR$
+Z80 (base map): 0xC4->STRING$(
+Z80 (base map): 0xC5->EOF
+Z80 (base map): 0xC6->AUTO
+Z80 (base map): 0xC7->DELETE
+Z80 (base map): 0xC8->LOAD
+Z80 (base map): 0xC9->LIST
+Z80 (base map): 0xCA->NEW
+Z80 (base map): 0xCB->OLD
+Z80 (base map): 0xCC->RENUMBER
+Z80 (base map): 0xCD->SAVE
+Z80 (base map): 0xCE->PUT
+Z80 (base map): 0xCF->PTR
+Z80 (base map): 0xD0->PAGE
+Z80 (base map): 0xD1->TIME
+Z80 (base map): 0xD2->LOMEM
+Z80 (base map): 0xD3->HIMEM
+Z80 (base map): 0xD4->SOUND
+Z80 (base map): 0xD5->BPUT
+Z80 (base map): 0xD6->CALL
+Z80 (base map): 0xD7->CHAIN
+Z80 (base map): 0xD8->CLEAR
+Z80 (base map): 0xD9->CLOSE
+Z80 (base map): 0xDA->CLG
+Z80 (base map): 0xDB->CLS
+Z80 (base map): 0xDC->DATA
+Z80 (base map): 0xDD->DEF
+Z80 (base map): 0xDE->DIM
+Z80 (base map): 0xDF->DRAW
+Z80 (base map): 0xE0->END
+Z80 (base map): 0xE1->ENDPROC
+Z80 (base map): 0xE2->ENVELOPE
+Z80 (base map): 0xE3->FOR
+Z80 (base map): 0xE4->GOSUB
+Z80 (base map): 0xE5->GOTO
+Z80 (base map): 0xE6->GCOL
+Z80 (base map): 0xE7->IF
+Z80 (base map): 0xE8->INPUT
+Z80 (base map): 0xE9->LET
+Z80 (base map): 0xEA->LOCAL
+Z80 (base map): 0xEB->MODE
+Z80 (base map): 0xEC->MOVE
+Z80 (base map): 0xED->NEXT
+Z80 (base map): 0xEE->ON
+Z80 (base map): 0xEF->VDU
+Z80 (base map): 0xF0->PLOT
+Z80 (base map): 0xF1->PRINT
+Z80 (base map): 0xF2->PROC
+Z80 (base map): 0xF3->READ
+Z80 (base map): 0xF4->REM
+Z80 (base map): 0xF5->REPEAT
+Z80 (base map): 0xF6->REPORT
+Z80 (base map): 0xF7->RESTORE
+Z80 (base map): 0xF8->RETURN
+Z80 (base map): 0xF9->RUN
+Z80 (base map): 0xFA->STOP
+Z80 (base map): 0xFB->COLOR
+Z80 (base map): 0xFC->TRACE
+Z80 (base map): 0xFD->UNTIL
+Z80 (base map): 0xFE->WIDTH
+Z80 (base map): 0xFF->OSCLI
+dialect 8086=Z80
+dialect ARM:
+ARM (base map): 0x00->__invalid__
+ARM (base map): 0x01->__invalid__
+ARM (base map): 0x02->__invalid__
+ARM (base map): 0x03->__invalid__
+ARM (base map): 0x04->__invalid__
+ARM (base map): 0x05->__invalid__
+ARM (base map): 0x06->__invalid__
+ARM (base map): 0x07->__invalid__
+ARM (base map): 0x08->__invalid__
+ARM (base map): 0x09->__invalid__
+ARM (base map): 0x0A->__invalid__
+ARM (base map): 0x0B->__invalid__
+ARM (base map): 0x0C->__invalid__
+ARM (base map): 0x0D->(maps to itself)
+ARM (base map): 0x0E->__invalid__
+ARM (base map): 0x0F->__invalid__
+ARM (base map): 0x10->__invalid__
+ARM (base map): 0x11->(maps to itself)
+ARM (base map): 0x12->(maps to itself)
+ARM (base map): 0x13->(maps to itself)
+ARM (base map): 0x14->(maps to itself)
+ARM (base map): 0x15->(maps to itself)
+ARM (base map): 0x16->(maps to itself)
+ARM (base map): 0x17->(maps to itself)
+ARM (base map): 0x18->(maps to itself)
+ARM (base map): 0x19->(maps to itself)
+ARM (base map): 0x1A->(maps to itself)
+ARM (base map): 0x1B->(maps to itself)
+ARM (base map): 0x1C->(maps to itself)
+ARM (base map): 0x1D->(maps to itself)
+ARM (base map): 0x1E->(maps to itself)
+ARM (base map): 0x1F->(maps to itself)
+ARM (base map): 0x20->(maps to itself)
+ARM (base map): 0x21->(maps to itself)
+ARM (base map): 0x22->(maps to itself)
+ARM (base map): 0x23->(maps to itself)
+ARM (base map): 0x24->(maps to itself)
+ARM (base map): 0x25->(maps to itself)
+ARM (base map): 0x26->(maps to itself)
+ARM (base map): 0x27->(maps to itself)
+ARM (base map): 0x28->(maps to itself)
+ARM (base map): 0x29->(maps to itself)
+ARM (base map): 0x2A->(maps to itself)
+ARM (base map): 0x2B->(maps to itself)
+ARM (base map): 0x2C->(maps to itself)
+ARM (base map): 0x2D->(maps to itself)
+ARM (base map): 0x2E->(maps to itself)
+ARM (base map): 0x2F->(maps to itself)
+ARM (base map): 0x30->(maps to itself)
+ARM (base map): 0x31->(maps to itself)
+ARM (base map): 0x32->(maps to itself)
+ARM (base map): 0x33->(maps to itself)
+ARM (base map): 0x34->(maps to itself)
+ARM (base map): 0x35->(maps to itself)
+ARM (base map): 0x36->(maps to itself)
+ARM (base map): 0x37->(maps to itself)
+ARM (base map): 0x38->(maps to itself)
+ARM (base map): 0x39->(maps to itself)
+ARM (base map): 0x3A->(maps to itself)
+ARM (base map): 0x3B->(maps to itself)
+ARM (base map): 0x3C->(maps to itself)
+ARM (base map): 0x3D->(maps to itself)
+ARM (base map): 0x3E->(maps to itself)
+ARM (base map): 0x3F->(maps to itself)
+ARM (base map): 0x40->(maps to itself)
+ARM (base map): 0x41->(maps to itself)
+ARM (base map): 0x42->(maps to itself)
+ARM (base map): 0x43->(maps to itself)
+ARM (base map): 0x44->(maps to itself)
+ARM (base map): 0x45->(maps to itself)
+ARM (base map): 0x46->(maps to itself)
+ARM (base map): 0x47->(maps to itself)
+ARM (base map): 0x48->(maps to itself)
+ARM (base map): 0x49->(maps to itself)
+ARM (base map): 0x4A->(maps to itself)
+ARM (base map): 0x4B->(maps to itself)
+ARM (base map): 0x4C->(maps to itself)
+ARM (base map): 0x4D->(maps to itself)
+ARM (base map): 0x4E->(maps to itself)
+ARM (base map): 0x4F->(maps to itself)
+ARM (base map): 0x50->(maps to itself)
+ARM (base map): 0x51->(maps to itself)
+ARM (base map): 0x52->(maps to itself)
+ARM (base map): 0x53->(maps to itself)
+ARM (base map): 0x54->(maps to itself)
+ARM (base map): 0x55->(maps to itself)
+ARM (base map): 0x56->(maps to itself)
+ARM (base map): 0x57->(maps to itself)
+ARM (base map): 0x58->(maps to itself)
+ARM (base map): 0x59->(maps to itself)
+ARM (base map): 0x5A->(maps to itself)
+ARM (base map): 0x5B->(maps to itself)
+ARM (base map): 0x5C->(maps to itself)
+ARM (base map): 0x5D->(maps to itself)
+ARM (base map): 0x5E->(maps to itself)
+ARM (base map): 0x5F->(maps to itself)
+ARM (base map): 0x60->(maps to itself)
+ARM (base map): 0x61->(maps to itself)
+ARM (base map): 0x62->(maps to itself)
+ARM (base map): 0x63->(maps to itself)
+ARM (base map): 0x64->(maps to itself)
+ARM (base map): 0x65->(maps to itself)
+ARM (base map): 0x66->(maps to itself)
+ARM (base map): 0x67->(maps to itself)
+ARM (base map): 0x68->(maps to itself)
+ARM (base map): 0x69->(maps to itself)
+ARM (base map): 0x6A->(maps to itself)
+ARM (base map): 0x6B->(maps to itself)
+ARM (base map): 0x6C->(maps to itself)
+ARM (base map): 0x6D->(maps to itself)
+ARM (base map): 0x6E->(maps to itself)
+ARM (base map): 0x6F->(maps to itself)
+ARM (base map): 0x70->(maps to itself)
+ARM (base map): 0x71->(maps to itself)
+ARM (base map): 0x72->(maps to itself)
+ARM (base map): 0x73->(maps to itself)
+ARM (base map): 0x74->(maps to itself)
+ARM (base map): 0x75->(maps to itself)
+ARM (base map): 0x76->(maps to itself)
+ARM (base map): 0x77->(maps to itself)
+ARM (base map): 0x78->(maps to itself)
+ARM (base map): 0x79->(maps to itself)
+ARM (base map): 0x7A->(maps to itself)
+ARM (base map): 0x7B->(maps to itself)
+ARM (base map): 0x7C->(maps to itself)
+ARM (base map): 0x7D->(maps to itself)
+ARM (base map): 0x7E->(maps to itself)
+ARM (base map): 0x7F->OTHERWISE
+ARM (base map): 0x80->AND
+ARM (base map): 0x81->DIV
+ARM (base map): 0x82->EOR
+ARM (base map): 0x83->MOD
+ARM (base map): 0x84->OR
+ARM (base map): 0x85->ERROR
+ARM (base map): 0x86->LINE
+ARM (base map): 0x87->OFF
+ARM (base map): 0x88->STEP
+ARM (base map): 0x89->SPC
+ARM (base map): 0x8A->TAB(
+ARM (base map): 0x8B->ELSE
+ARM (base map): 0x8C->THEN
+ARM (base map): 0x8D->__line_num__
+ARM (base map): 0x8E->OPENIN
+ARM (base map): 0x8F->PTR
+ARM (base map): 0x90->PAGE
+ARM (base map): 0x91->TIME
+ARM (base map): 0x92->LOMEM
+ARM (base map): 0x93->HIMEM
+ARM (base map): 0x94->ABS
+ARM (base map): 0x95->ACS
+ARM (base map): 0x96->ADVAL
+ARM (base map): 0x97->ASC
+ARM (base map): 0x98->ASN
+ARM (base map): 0x99->ATN
+ARM (base map): 0x9A->BGET
+ARM (base map): 0x9B->COS
+ARM (base map): 0x9C->COUNT
+ARM (base map): 0x9D->DEG
+ARM (base map): 0x9E->ERL
+ARM (base map): 0x9F->ERR
+ARM (base map): 0xA0->EVAL
+ARM (base map): 0xA1->EXP
+ARM (base map): 0xA2->EXT
+ARM (base map): 0xA3->FALSE
+ARM (base map): 0xA4->FN
+ARM (base map): 0xA5->GET
+ARM (base map): 0xA6->INKEY
+ARM (base map): 0xA7->INSTR(
+ARM (base map): 0xA8->INT
+ARM (base map): 0xA9->LEN
+ARM (base map): 0xAA->LN
+ARM (base map): 0xAB->LOG
+ARM (base map): 0xAC->NOT
+ARM (base map): 0xAD->OPENUP
+ARM (base map): 0xAE->OPENOUT
+ARM (base map): 0xAF->PI
+ARM (base map): 0xB0->POINT(
+ARM (base map): 0xB1->POS
+ARM (base map): 0xB2->RAD
+ARM (base map): 0xB3->RND
+ARM (base map): 0xB4->SGN
+ARM (base map): 0xB5->SIN
+ARM (base map): 0xB6->SQR
+ARM (base map): 0xB7->TAN
+ARM (base map): 0xB8->TO
+ARM (base map): 0xB9->TRUE
+ARM (base map): 0xBA->USR
+ARM (base map): 0xBB->VAL
+ARM (base map): 0xBC->VPOS
+ARM (base map): 0xBD->CHR$
+ARM (base map): 0xBE->GET$
+ARM (base map): 0xBF->INKEY$
+ARM (base map): 0xC0->LEFT$(
+ARM (base map): 0xC1->MID$(
+ARM (base map): 0xC2->RIGHT$(
+ARM (base map): 0xC3->STR$
+ARM (base map): 0xC4->STRING$(
+ARM (base map): 0xC5->EOF
+ARM (base map): 0xC6->__c6__
+ARM (base map): 0xC7->__c7__
+ARM (base map): 0xC8->__c8__
+ARM (base map): 0xC9->WHEN
+ARM (base map): 0xCA->OF
+ARM (base map): 0xCB->ENDCASE
+ARM (base map): 0xCC->ELSE
+ARM (base map): 0xCD->ENDIF
+ARM (base map): 0xCE->ENDWHILE
+ARM (base map): 0xCF->PTR
+ARM (base map): 0xD0->PAGE
+ARM (base map): 0xD1->TIME
+ARM (base map): 0xD2->LOMEM
+ARM (base map): 0xD3->HIMEM
+ARM (base map): 0xD4->SOUND
+ARM (base map): 0xD5->BPUT
+ARM (base map): 0xD6->CALL
+ARM (base map): 0xD7->CHAIN
+ARM (base map): 0xD8->CLEAR
+ARM (base map): 0xD9->CLOSE
+ARM (base map): 0xDA->CLG
+ARM (base map): 0xDB->CLS
+ARM (base map): 0xDC->DATA
+ARM (base map): 0xDD->DEF
+ARM (base map): 0xDE->DIM
+ARM (base map): 0xDF->DRAW
+ARM (base map): 0xE0->END
+ARM (base map): 0xE1->ENDPROC
+ARM (base map): 0xE2->ENVELOPE
+ARM (base map): 0xE3->FOR
+ARM (base map): 0xE4->GOSUB
+ARM (base map): 0xE5->GOTO
+ARM (base map): 0xE6->GCOL
+ARM (base map): 0xE7->IF
+ARM (base map): 0xE8->INPUT
+ARM (base map): 0xE9->LET
+ARM (base map): 0xEA->LOCAL
+ARM (base map): 0xEB->MODE
+ARM (base map): 0xEC->MOVE
+ARM (base map): 0xED->NEXT
+ARM (base map): 0xEE->ON
+ARM (base map): 0xEF->VDU
+ARM (base map): 0xF0->PLOT
+ARM (base map): 0xF1->PRINT
+ARM (base map): 0xF2->PROC
+ARM (base map): 0xF3->READ
+ARM (base map): 0xF4->REM
+ARM (base map): 0xF5->REPEAT
+ARM (base map): 0xF6->REPORT
+ARM (base map): 0xF7->RESTORE
+ARM (base map): 0xF8->RETURN
+ARM (base map): 0xF9->RUN
+ARM (base map): 0xFA->STOP
+ARM (base map): 0xFB->COLOR
+ARM (base map): 0xFC->TRACE
+ARM (base map): 0xFD->UNTIL
+ARM (base map): 0xFE->WIDTH
+ARM (base map): 0xFF->OSCLI
+dialect Windows:
+Windows (base map): 0x00->__invalid__
+Windows (base map): 0x01->CIRCLE
+Windows (base map): 0x02->ELLIPSE
+Windows (base map): 0x03->FILL
+Windows (base map): 0x04->MOUSE
+Windows (base map): 0x05->ORIGIN
+Windows (base map): 0x06->QUIT
+Windows (base map): 0x07->RECTANGLE
+Windows (base map): 0x08->SWAP
+Windows (base map): 0x09->SYS
+Windows (base map): 0x0A->TINT
+Windows (base map): 0x0B->WAIT
+Windows (base map): 0x0C->INSTALL
+Windows (base map): 0x0D->(maps to itself)
+Windows (base map): 0x0E->PRIVATE
+Windows (base map): 0x0F->BY
+Windows (base map): 0x10->EXIT
+Windows (base map): 0x11->(maps to itself)
+Windows (base map): 0x12->(maps to itself)
+Windows (base map): 0x13->(maps to itself)
+Windows (base map): 0x14->(maps to itself)
+Windows (base map): 0x15->(maps to itself)
+Windows (base map): 0x16->(maps to itself)
+Windows (base map): 0x17->(maps to itself)
+Windows (base map): 0x18->__fastvar__
+Windows (base map): 0x19->__fastvar__
+Windows (base map): 0x1A->__fastvar__
+Windows (base map): 0x1B->__fastvar__
+Windows (base map): 0x1C->__fastvar__
+Windows (base map): 0x1D->__fastvar__
+Windows (base map): 0x1E->__fastvar__
+Windows (base map): 0x1F->__fastvar__
+Windows (base map): 0x20->(maps to itself)
+Windows (base map): 0x21->(maps to itself)
+Windows (base map): 0x22->(maps to itself)
+Windows (base map): 0x23->(maps to itself)
+Windows (base map): 0x24->(maps to itself)
+Windows (base map): 0x25->(maps to itself)
+Windows (base map): 0x26->(maps to itself)
+Windows (base map): 0x27->(maps to itself)
+Windows (base map): 0x28->(maps to itself)
+Windows (base map): 0x29->(maps to itself)
+Windows (base map): 0x2A->(maps to itself)
+Windows (base map): 0x2B->(maps to itself)
+Windows (base map): 0x2C->(maps to itself)
+Windows (base map): 0x2D->(maps to itself)
+Windows (base map): 0x2E->(maps to itself)
+Windows (base map): 0x2F->(maps to itself)
+Windows (base map): 0x30->(maps to itself)
+Windows (base map): 0x31->(maps to itself)
+Windows (base map): 0x32->(maps to itself)
+Windows (base map): 0x33->(maps to itself)
+Windows (base map): 0x34->(maps to itself)
+Windows (base map): 0x35->(maps to itself)
+Windows (base map): 0x36->(maps to itself)
+Windows (base map): 0x37->(maps to itself)
+Windows (base map): 0x38->(maps to itself)
+Windows (base map): 0x39->(maps to itself)
+Windows (base map): 0x3A->(maps to itself)
+Windows (base map): 0x3B->(maps to itself)
+Windows (base map): 0x3C->(maps to itself)
+Windows (base map): 0x3D->(maps to itself)
+Windows (base map): 0x3E->(maps to itself)
+Windows (base map): 0x3F->(maps to itself)
+Windows (base map): 0x40->(maps to itself)
+Windows (base map): 0x41->(maps to itself)
+Windows (base map): 0x42->(maps to itself)
+Windows (base map): 0x43->(maps to itself)
+Windows (base map): 0x44->(maps to itself)
+Windows (base map): 0x45->(maps to itself)
+Windows (base map): 0x46->(maps to itself)
+Windows (base map): 0x47->(maps to itself)
+Windows (base map): 0x48->(maps to itself)
+Windows (base map): 0x49->(maps to itself)
+Windows (base map): 0x4A->(maps to itself)
+Windows (base map): 0x4B->(maps to itself)
+Windows (base map): 0x4C->(maps to itself)
+Windows (base map): 0x4D->(maps to itself)
+Windows (base map): 0x4E->(maps to itself)
+Windows (base map): 0x4F->(maps to itself)
+Windows (base map): 0x50->(maps to itself)
+Windows (base map): 0x51->(maps to itself)
+Windows (base map): 0x52->(maps to itself)
+Windows (base map): 0x53->(maps to itself)
+Windows (base map): 0x54->(maps to itself)
+Windows (base map): 0x55->(maps to itself)
+Windows (base map): 0x56->(maps to itself)
+Windows (base map): 0x57->(maps to itself)
+Windows (base map): 0x58->(maps to itself)
+Windows (base map): 0x59->(maps to itself)
+Windows (base map): 0x5A->(maps to itself)
+Windows (base map): 0x5B->(maps to itself)
+Windows (base map): 0x5C->(maps to itself)
+Windows (base map): 0x5D->(maps to itself)
+Windows (base map): 0x5E->(maps to itself)
+Windows (base map): 0x5F->(maps to itself)
+Windows (base map): 0x60->(maps to itself)
+Windows (base map): 0x61->(maps to itself)
+Windows (base map): 0x62->(maps to itself)
+Windows (base map): 0x63->(maps to itself)
+Windows (base map): 0x64->(maps to itself)
+Windows (base map): 0x65->(maps to itself)
+Windows (base map): 0x66->(maps to itself)
+Windows (base map): 0x67->(maps to itself)
+Windows (base map): 0x68->(maps to itself)
+Windows (base map): 0x69->(maps to itself)
+Windows (base map): 0x6A->(maps to itself)
+Windows (base map): 0x6B->(maps to itself)
+Windows (base map): 0x6C->(maps to itself)
+Windows (base map): 0x6D->(maps to itself)
+Windows (base map): 0x6E->(maps to itself)
+Windows (base map): 0x6F->(maps to itself)
+Windows (base map): 0x70->(maps to itself)
+Windows (base map): 0x71->(maps to itself)
+Windows (base map): 0x72->(maps to itself)
+Windows (base map): 0x73->(maps to itself)
+Windows (base map): 0x74->(maps to itself)
+Windows (base map): 0x75->(maps to itself)
+Windows (base map): 0x76->(maps to itself)
+Windows (base map): 0x77->(maps to itself)
+Windows (base map): 0x78->(maps to itself)
+Windows (base map): 0x79->(maps to itself)
+Windows (base map): 0x7A->(maps to itself)
+Windows (base map): 0x7B->(maps to itself)
+Windows (base map): 0x7C->(maps to itself)
+Windows (base map): 0x7D->(maps to itself)
+Windows (base map): 0x7E->(maps to itself)
+Windows (base map): 0x7F->(maps to itself)
+Windows (base map): 0x80->AND
+Windows (base map): 0x81->DIV
+Windows (base map): 0x82->EOR
+Windows (base map): 0x83->MOD
+Windows (base map): 0x84->OR
+Windows (base map): 0x85->ERROR
+Windows (base map): 0x86->LINE
+Windows (base map): 0x87->OFF
+Windows (base map): 0x88->STEP
+Windows (base map): 0x89->SPC
+Windows (base map): 0x8A->TAB(
+Windows (base map): 0x8B->ELSE
+Windows (base map): 0x8C->THEN
+Windows (base map): 0x8D->__line_num__
+Windows (base map): 0x8E->OPENIN
+Windows (base map): 0x8F->PTR
+Windows (base map): 0x90->PAGE
+Windows (base map): 0x91->TIME
+Windows (base map): 0x92->LOMEM
+Windows (base map): 0x93->HIMEM
+Windows (base map): 0x94->ABS
+Windows (base map): 0x95->ACS
+Windows (base map): 0x96->ADVAL
+Windows (base map): 0x97->ASC
+Windows (base map): 0x98->ASN
+Windows (base map): 0x99->ATN
+Windows (base map): 0x9A->BGET
+Windows (base map): 0x9B->COS
+Windows (base map): 0x9C->COUNT
+Windows (base map): 0x9D->DEG
+Windows (base map): 0x9E->ERL
+Windows (base map): 0x9F->ERR
+Windows (base map): 0xA0->EVAL
+Windows (base map): 0xA1->EXP
+Windows (base map): 0xA2->EXT
+Windows (base map): 0xA3->FALSE
+Windows (base map): 0xA4->FN
+Windows (base map): 0xA5->GET
+Windows (base map): 0xA6->INKEY
+Windows (base map): 0xA7->INSTR(
+Windows (base map): 0xA8->INT
+Windows (base map): 0xA9->LEN
+Windows (base map): 0xAA->LN
+Windows (base map): 0xAB->LOG
+Windows (base map): 0xAC->NOT
+Windows (base map): 0xAD->OPENUP
+Windows (base map): 0xAE->OPENOUT
+Windows (base map): 0xAF->PI
+Windows (base map): 0xB0->POINT(
+Windows (base map): 0xB1->POS
+Windows (base map): 0xB2->RAD
+Windows (base map): 0xB3->RND
+Windows (base map): 0xB4->SGN
+Windows (base map): 0xB5->SIN
+Windows (base map): 0xB6->SQR
+Windows (base map): 0xB7->TAN
+Windows (base map): 0xB8->TO
+Windows (base map): 0xB9->TRUE
+Windows (base map): 0xBA->USR
+Windows (base map): 0xBB->VAL
+Windows (base map): 0xBC->VPOS
+Windows (base map): 0xBD->CHR$
+Windows (base map): 0xBE->GET$
+Windows (base map): 0xBF->INKEY$
+Windows (base map): 0xC0->LEFT$(
+Windows (base map): 0xC1->MID$(
+Windows (base map): 0xC2->RIGHT$(
+Windows (base map): 0xC3->STR$
+Windows (base map): 0xC4->STRING$(
+Windows (base map): 0xC5->EOF
+Windows (base map): 0xC6->SUM
+Windows (base map): 0xC7->WHILE
+Windows (base map): 0xC8->CASE
+Windows (base map): 0xC9->WHEN
+Windows (base map): 0xCA->OF
+Windows (base map): 0xCB->ENDCASE
+Windows (base map): 0xCC->OTHERWISE
+Windows (base map): 0xCD->ENDIF
+Windows (base map): 0xCE->ENDWHILE
+Windows (base map): 0xCF->PTR
+Windows (base map): 0xD0->PAGE
+Windows (base map): 0xD1->TIME
+Windows (base map): 0xD2->LOMEM
+Windows (base map): 0xD3->HIMEM
+Windows (base map): 0xD4->SOUND
+Windows (base map): 0xD5->BPUT
+Windows (base map): 0xD6->CALL
+Windows (base map): 0xD7->CHAIN
+Windows (base map): 0xD8->CLEAR
+Windows (base map): 0xD9->CLOSE
+Windows (base map): 0xDA->CLG
+Windows (base map): 0xDB->CLS
+Windows (base map): 0xDC->DATA
+Windows (base map): 0xDD->DEF
+Windows (base map): 0xDE->DIM
+Windows (base map): 0xDF->DRAW
+Windows (base map): 0xE0->END
+Windows (base map): 0xE1->ENDPROC
+Windows (base map): 0xE2->ENVELOPE
+Windows (base map): 0xE3->FOR
+Windows (base map): 0xE4->GOSUB
+Windows (base map): 0xE5->GOTO
+Windows (base map): 0xE6->GCOL
+Windows (base map): 0xE7->IF
+Windows (base map): 0xE8->INPUT
+Windows (base map): 0xE9->LET
+Windows (base map): 0xEA->LOCAL
+Windows (base map): 0xEB->MODE
+Windows (base map): 0xEC->MOVE
+Windows (base map): 0xED->NEXT
+Windows (base map): 0xEE->ON
+Windows (base map): 0xEF->VDU
+Windows (base map): 0xF0->PLOT
+Windows (base map): 0xF1->PRINT
+Windows (base map): 0xF2->PROC
+Windows (base map): 0xF3->READ
+Windows (base map): 0xF4->REM
+Windows (base map): 0xF5->REPEAT
+Windows (base map): 0xF6->REPORT
+Windows (base map): 0xF7->RESTORE
+Windows (base map): 0xF8->RETURN
+Windows (base map): 0xF9->RUN
+Windows (base map): 0xFA->STOP
+Windows (base map): 0xFB->COLOR
+Windows (base map): 0xFC->TRACE
+Windows (base map): 0xFD->UNTIL
+Windows (base map): 0xFE->WIDTH
+Windows (base map): 0xFF->OSCLI
+dialect SDL=Windows
+dialect MacOSX=Windows
+dialect Mac:
+Mac (base map): 0x00->__invalid__
+Mac (base map): 0x01->__invalid__
+Mac (base map): 0x02->__invalid__
+Mac (base map): 0x03->__invalid__
+Mac (base map): 0x04->__invalid__
+Mac (base map): 0x05->__invalid__
+Mac (base map): 0x06->__invalid__
+Mac (base map): 0x07->__invalid__
+Mac (base map): 0x08->__invalid__
+Mac (base map): 0x09->__invalid__
+Mac (base map): 0x0A->__invalid__
+Mac (base map): 0x0B->__invalid__
+Mac (base map): 0x0C->__invalid__
+Mac (base map): 0x0D->(maps to itself)
+Mac (base map): 0x0E->__invalid__
+Mac (base map): 0x0F->__invalid__
+Mac (base map): 0x10->__invalid__
+Mac (base map): 0x11->(maps to itself)
+Mac (base map): 0x12->(maps to itself)
+Mac (base map): 0x13->(maps to itself)
+Mac (base map): 0x14->(maps to itself)
+Mac (base map): 0x15->(maps to itself)
+Mac (base map): 0x16->(maps to itself)
+Mac (base map): 0x17->(maps to itself)
+Mac (base map): 0x18->(maps to itself)
+Mac (base map): 0x19->(maps to itself)
+Mac (base map): 0x1A->(maps to itself)
+Mac (base map): 0x1B->(maps to itself)
+Mac (base map): 0x1C->(maps to itself)
+Mac (base map): 0x1D->(maps to itself)
+Mac (base map): 0x1E->(maps to itself)
+Mac (base map): 0x1F->(maps to itself)
+Mac (base map): 0x20->(maps to itself)
+Mac (base map): 0x21->(maps to itself)
+Mac (base map): 0x22->(maps to itself)
+Mac (base map): 0x23->(maps to itself)
+Mac (base map): 0x24->(maps to itself)
+Mac (base map): 0x25->(maps to itself)
+Mac (base map): 0x26->(maps to itself)
+Mac (base map): 0x27->(maps to itself)
+Mac (base map): 0x28->(maps to itself)
+Mac (base map): 0x29->(maps to itself)
+Mac (base map): 0x2A->(maps to itself)
+Mac (base map): 0x2B->(maps to itself)
+Mac (base map): 0x2C->(maps to itself)
+Mac (base map): 0x2D->(maps to itself)
+Mac (base map): 0x2E->(maps to itself)
+Mac (base map): 0x2F->(maps to itself)
+Mac (base map): 0x30->(maps to itself)
+Mac (base map): 0x31->(maps to itself)
+Mac (base map): 0x32->(maps to itself)
+Mac (base map): 0x33->(maps to itself)
+Mac (base map): 0x34->(maps to itself)
+Mac (base map): 0x35->(maps to itself)
+Mac (base map): 0x36->(maps to itself)
+Mac (base map): 0x37->(maps to itself)
+Mac (base map): 0x38->(maps to itself)
+Mac (base map): 0x39->(maps to itself)
+Mac (base map): 0x3A->(maps to itself)
+Mac (base map): 0x3B->(maps to itself)
+Mac (base map): 0x3C->(maps to itself)
+Mac (base map): 0x3D->(maps to itself)
+Mac (base map): 0x3E->(maps to itself)
+Mac (base map): 0x3F->(maps to itself)
+Mac (base map): 0x40->(maps to itself)
+Mac (base map): 0x41->(maps to itself)
+Mac (base map): 0x42->(maps to itself)
+Mac (base map): 0x43->(maps to itself)
+Mac (base map): 0x44->(maps to itself)
+Mac (base map): 0x45->(maps to itself)
+Mac (base map): 0x46->(maps to itself)
+Mac (base map): 0x47->(maps to itself)
+Mac (base map): 0x48->(maps to itself)
+Mac (base map): 0x49->(maps to itself)
+Mac (base map): 0x4A->(maps to itself)
+Mac (base map): 0x4B->(maps to itself)
+Mac (base map): 0x4C->(maps to itself)
+Mac (base map): 0x4D->(maps to itself)
+Mac (base map): 0x4E->(maps to itself)
+Mac (base map): 0x4F->(maps to itself)
+Mac (base map): 0x50->(maps to itself)
+Mac (base map): 0x51->(maps to itself)
+Mac (base map): 0x52->(maps to itself)
+Mac (base map): 0x53->(maps to itself)
+Mac (base map): 0x54->(maps to itself)
+Mac (base map): 0x55->(maps to itself)
+Mac (base map): 0x56->(maps to itself)
+Mac (base map): 0x57->(maps to itself)
+Mac (base map): 0x58->(maps to itself)
+Mac (base map): 0x59->(maps to itself)
+Mac (base map): 0x5A->(maps to itself)
+Mac (base map): 0x5B->(maps to itself)
+Mac (base map): 0x5C->(maps to itself)
+Mac (base map): 0x5D->(maps to itself)
+Mac (base map): 0x5E->(maps to itself)
+Mac (base map): 0x5F->(maps to itself)
+Mac (base map): 0x60->(maps to itself)
+Mac (base map): 0x61->(maps to itself)
+Mac (base map): 0x62->(maps to itself)
+Mac (base map): 0x63->(maps to itself)
+Mac (base map): 0x64->(maps to itself)
+Mac (base map): 0x65->(maps to itself)
+Mac (base map): 0x66->(maps to itself)
+Mac (base map): 0x67->(maps to itself)
+Mac (base map): 0x68->(maps to itself)
+Mac (base map): 0x69->(maps to itself)
+Mac (base map): 0x6A->(maps to itself)
+Mac (base map): 0x6B->(maps to itself)
+Mac (base map): 0x6C->(maps to itself)
+Mac (base map): 0x6D->(maps to itself)
+Mac (base map): 0x6E->(maps to itself)
+Mac (base map): 0x6F->(maps to itself)
+Mac (base map): 0x70->(maps to itself)
+Mac (base map): 0x71->(maps to itself)
+Mac (base map): 0x72->(maps to itself)
+Mac (base map): 0x73->(maps to itself)
+Mac (base map): 0x74->(maps to itself)
+Mac (base map): 0x75->(maps to itself)
+Mac (base map): 0x76->(maps to itself)
+Mac (base map): 0x77->(maps to itself)
+Mac (base map): 0x78->(maps to itself)
+Mac (base map): 0x79->(maps to itself)
+Mac (base map): 0x7A->(maps to itself)
+Mac (base map): 0x7B->(maps to itself)
+Mac (base map): 0x7C->(maps to itself)
+Mac (base map): 0x7D->(maps to itself)
+Mac (base map): 0x7E->(maps to itself)
+Mac (base map): 0x7F->OTHERWISE
+Mac (base map): 0x80->AND
+Mac (base map): 0x81->DIV
+Mac (base map): 0x82->EOR
+Mac (base map): 0x83->MOD
+Mac (base map): 0x84->OR
+Mac (base map): 0x85->ERROR
+Mac (base map): 0x86->LINE
+Mac (base map): 0x87->OFF
+Mac (base map): 0x88->STEP
+Mac (base map): 0x89->SPC
+Mac (base map): 0x8A->TAB(
+Mac (base map): 0x8B->ELSE
+Mac (base map): 0x8C->THEN
+Mac (base map): 0x8D->__line_num__
+Mac (base map): 0x8E->OPENIN
+Mac (base map): 0x8F->PTR
+Mac (base map): 0x90->PAGE
+Mac (base map): 0x91->TIME
+Mac (base map): 0x92->LOMEM
+Mac (base map): 0x93->HIMEM
+Mac (base map): 0x94->ABS
+Mac (base map): 0x95->ACS
+Mac (base map): 0x96->ADVAL
+Mac (base map): 0x97->ASC
+Mac (base map): 0x98->ASN
+Mac (base map): 0x99->ATN
+Mac (base map): 0x9A->BGET
+Mac (base map): 0x9B->COS
+Mac (base map): 0x9C->COUNT
+Mac (base map): 0x9D->DEG
+Mac (base map): 0x9E->ERL
+Mac (base map): 0x9F->ERR
+Mac (base map): 0xA0->EVAL
+Mac (base map): 0xA1->EXP
+Mac (base map): 0xA2->EXT
+Mac (base map): 0xA3->FALSE
+Mac (base map): 0xA4->FN
+Mac (base map): 0xA5->GET
+Mac (base map): 0xA6->INKEY
+Mac (base map): 0xA7->INSTR(
+Mac (base map): 0xA8->INT
+Mac (base map): 0xA9->LEN
+Mac (base map): 0xAA->LN
+Mac (base map): 0xAB->LOG
+Mac (base map): 0xAC->NOT
+Mac (base map): 0xAD->OPENUP
+Mac (base map): 0xAE->OPENOUT
+Mac (base map): 0xAF->PI
+Mac (base map): 0xB0->POINT(
+Mac (base map): 0xB1->POS
+Mac (base map): 0xB2->RAD
+Mac (base map): 0xB3->RND
+Mac (base map): 0xB4->SGN
+Mac (base map): 0xB5->SIN
+Mac (base map): 0xB6->SQR
+Mac (base map): 0xB7->TAN
+Mac (base map): 0xB8->TO
+Mac (base map): 0xB9->TRUE
+Mac (base map): 0xBA->USR
+Mac (base map): 0xBB->VAL
+Mac (base map): 0xBC->VPOS
+Mac (base map): 0xBD->CHR$
+Mac (base map): 0xBE->GET$
+Mac (base map): 0xBF->INKEY$
+Mac (base map): 0xC0->LEFT$(
+Mac (base map): 0xC1->MID$(
+Mac (base map): 0xC2->RIGHT$(
+Mac (base map): 0xC3->STR$
+Mac (base map): 0xC4->STRING$(
+Mac (base map): 0xC5->EOF
+Mac (base map): 0xC6->__c6__
+Mac (base map): 0xC7->__c7__
+Mac (base map): 0xC8->__c8__
+Mac (base map): 0xC9->WHEN
+Mac (base map): 0xCA->OF
+Mac (base map): 0xCB->ENDCASE
+Mac (base map): 0xCC->ELSE
+Mac (base map): 0xCD->ENDIF
+Mac (base map): 0xCE->ENDWHILE
+Mac (base map): 0xCF->PTR
+Mac (base map): 0xD0->PAGE
+Mac (base map): 0xD1->TIME
+Mac (base map): 0xD2->LOMEM
+Mac (base map): 0xD3->HIMEM
+Mac (base map): 0xD4->SOUND
+Mac (base map): 0xD5->BPUT
+Mac (base map): 0xD6->CALL
+Mac (base map): 0xD7->CHAIN
+Mac (base map): 0xD8->CLEAR
+Mac (base map): 0xD9->CLOSE
+Mac (base map): 0xDA->CLG
+Mac (base map): 0xDB->CLS
+Mac (base map): 0xDC->DATA
+Mac (base map): 0xDD->DEF
+Mac (base map): 0xDE->DIM
+Mac (base map): 0xDF->DRAW
+Mac (base map): 0xE0->END
+Mac (base map): 0xE1->ENDPROC
+Mac (base map): 0xE2->ENVELOPE
+Mac (base map): 0xE3->FOR
+Mac (base map): 0xE4->GOSUB
+Mac (base map): 0xE5->GOTO
+Mac (base map): 0xE6->GCOL
+Mac (base map): 0xE7->IF
+Mac (base map): 0xE8->INPUT
+Mac (base map): 0xE9->LET
+Mac (base map): 0xEA->LOCAL
+Mac (base map): 0xEB->MODE
+Mac (base map): 0xEC->MOVE
+Mac (base map): 0xED->NEXT
+Mac (base map): 0xEE->ON
+Mac (base map): 0xEF->VDU
+Mac (base map): 0xF0->PLOT
+Mac (base map): 0xF1->PRINT
+Mac (base map): 0xF2->PROC
+Mac (base map): 0xF3->READ
+Mac (base map): 0xF4->REM
+Mac (base map): 0xF5->REPEAT
+Mac (base map): 0xF6->REPORT
+Mac (base map): 0xF7->RESTORE
+Mac (base map): 0xF8->RETURN
+Mac (base map): 0xF9->RUN
+Mac (base map): 0xFA->STOP
+Mac (base map): 0xFB->COLOR
+Mac (base map): 0xFC->TRACE
+Mac (base map): 0xFD->UNTIL
+Mac (base map): 0xFE->WIDTH
+Mac (base map): 0xFF->OSCLI

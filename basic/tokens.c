@@ -27,7 +27,7 @@ const char ext_c8[] = "__c8__";
 #define DO_C6 ext_c6
 #define DO_C7 ext_c7
 #define DO_C8 ext_c8
-
+#define EVERYWHERE(word) word, word, word, word
 
 /* multi_mapping describes the mapping from input byte to
  * expanded token in a form that's convenient to maintain.
@@ -62,6 +62,7 @@ static const struct multi_mapping base_map[NUM_TOKENS] = {
 { 0x0A, {BAD,                  BAD,              BAD,                "TINT"           }},
 { 0x0B, {BAD,                  BAD,              BAD,                "WAIT"           }},
 { 0x0C, {BAD,                  BAD,              BAD,                "INSTALL"        }},
+/*  0x0D is end-of line on all platforms, including SDL for Linux */
 { 0x0E, {BAD,                  BAD,              BAD,                "PRIVATE"        }},
 { 0x0F, {BAD,                  BAD,              BAD,                "BY"             }},
 { 0x10, {BAD,                  BAD,              BAD,                "EXIT"           }},
@@ -443,6 +444,68 @@ bool set_dialect(const char* name, enum Dialect* d)
   return false;
 }
 
+bool dump_map(FILE *f, const char* dialect_name, const char* map_name, const char *map[NUM_TOKENS])
+{
+  for (unsigned int i = 0; i < NUM_TOKENS; ++i)
+    {
+      const char *dest = map[i];
+      if (map[i][0] == (char)i && map[i][1] == 0)
+	dest = "(maps to itself)";
+      if (fprintf(f, "%s (%s map): 0x%02X->%s\n", dialect_name, map_name, i, dest) < 0)
+	return false;
+    }
+  return true;
+}
+
+static bool internal_dump_all_dialects_to_file(FILE *f)
+{
+  const struct dialect_mapping *m;
+  for (m = dialects; m->name != NULL; ++m)
+    {
+      struct expansion_map xmap;
+      if (m->synonym_for != NULL)
+	{
+	  fprintf(f, "dialect %s=%s\n", m->name, m->synonym_for);
+	  continue;
+	}
+      fprintf(f, "dialect %s:\n", m->name);
+      if (!build_mapping(m->value, &xmap))
+	return false;
+      if (!dump_map(f, m->name, "base", xmap.base) &&
+	  dump_map(f, m->name, "c6", xmap.c6) &&
+	  dump_map(f, m->name, "c7", xmap.c7) &&
+	  dump_map(f, m->name, "c8", xmap.c8))
+	{
+	  return false;
+	}
+    }
+  return true;
+}
+
+bool internal_dump_all_dialects(const char *file_name)
+{
+  if (0 == strcmp(file_name, "-"))
+    {
+      return internal_dump_all_dialects_to_file(stdout);
+    }
+  else
+    {
+      bool ok = true;
+      FILE *f = fopen(file_name, "w");
+      if (NULL == f)
+	{
+	  perror(file_name);
+	  return false;
+	}
+      ok = internal_dump_all_dialects_to_file(f);
+      if (EOF == fclose(f))
+	{
+	  perror(file_name);
+	  ok = false;
+	}
+      return ok;
+    }
+}
 
 bool print_dialects(FILE *f, const char *default_dialect_name)
 {

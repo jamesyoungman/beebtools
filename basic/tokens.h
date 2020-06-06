@@ -22,6 +22,10 @@ bool decode_little_endian_program(FILE *f, const char *filename,
 bool decode_big_endian_program(FILE *f, const char *filename,
 			       const struct expansion_map *m, int listo);
 void please_submit_bug_report();
+/* internal_dump_all_dialects dumps the known tokens to the specified file.
+ * The file format is not guaranteed to remain stable.
+ */
+bool internal_dump_all_dialects(const char *file_name);
 
 
 #endif

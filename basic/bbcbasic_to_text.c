@@ -71,6 +71,7 @@ int wrapped_main(int argc, char *argv[])
      { "dialect", 1, NULL, 'd' },
      { "help", 0, NULL, 'h'},
      { "listo", 1, NULL, 'l' },
+     { "dump-token-maps", 0, NULL, 'D' },
      { NULL, 0, NULL, 0 },
     };
   if (progname == NULL)
@@ -80,7 +81,7 @@ int wrapped_main(int argc, char *argv[])
     }
   assert(set_dialect(default_dialect_name, &dialect)); /* set the default */
   int opt;
-  while ((opt=getopt_long(argc, argv, "+d:l:", opts, &longindex)) != -1)
+  while ((opt=getopt_long(argc, argv, "+d:D:l:", opts, &longindex)) != -1)
     {
       switch (opt)
 	{
@@ -88,6 +89,15 @@ int wrapped_main(int argc, char *argv[])
 	  // An error message was already issued.
 	  usage(stderr, progname);
 	  return 1;
+
+	case 'D':
+	  /* We don't document this option because we don't want to
+	   * have to maintain backward compatibility in the output
+	   * format.  This option is mainly for regression testing.
+	   */
+	  if (!internal_dump_all_dialects(optarg))
+	    return 1;
+	  return 0;
 
 	case 'h':
 	  if (!help(stdout, progname))
