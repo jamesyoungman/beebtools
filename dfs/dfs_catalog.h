@@ -134,7 +134,6 @@ public:
   }
 
   std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
-  std::optional<int> find_catalog_slot_for_name(const ParsedFileName& name) const;
   BootSetting boot_setting() const { return boot_; }
   sector_count_type total_sectors() const { return total_sectors_; };
   void read_sector(sector_count_type n, DFS::AbstractDrive::SectorBuffer* buf, bool& beyond_eof) const;
@@ -173,11 +172,6 @@ class Catalog
 
   static constexpr int global_catalog_slot_self = 0;
   std::vector<std::optional<int>> sector_to_global_catalog_slot_mapping() const;
-
-  // Get the total number of catalog gragments.  Acorn DFS has 1, in
-  // sectors 0 and 1.  Watford DFS has 2, the second of which lives in
-  // sectors 2 and 3.
-  size_t get_number_of_fragments() const;
 
   // Get the total number of entries in all catalog fragments.
   unsigned short global_catalog_entry_count() const;

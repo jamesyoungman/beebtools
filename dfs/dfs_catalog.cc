@@ -300,11 +300,6 @@ namespace DFS
     return disc_format() == Format::WDFS ? 62 : 31;
   }
 
-  size_t Catalog::get_number_of_fragments() const
-  {
-    return fragments_.size();
-  }
-
   unsigned short Catalog::global_catalog_entry_count() const
   {
     unsigned short count = 0u;
