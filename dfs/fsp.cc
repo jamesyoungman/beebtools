@@ -18,7 +18,7 @@ bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileNam
     {
       if (fsp.size() < 3 || !isdigit(fsp[1]) || fsp[2] != '.')
 	{
-	  std::cerr << "File name " << fsp << " has a bad drive specification";
+	  std::cerr << "File name " << fsp << " has a bad drive specification\n";
 	  return false;
 	}
       result.drive = fsp[1] - '0';
