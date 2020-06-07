@@ -1,5 +1,5 @@
-#ifndef INC_DFSIMAGE_H
-#define INC_DFSIMAGE_H 1
+#ifndef INC_DFS_FILESYSTEM_H
+#define INC_DFS_FILESYSTEM_H 1
 
 #include <assert.h>
 
@@ -22,8 +22,6 @@
 
 namespace DFS
 {
-BadFileSystem eof_in_catalog();
-
 // FileSystem is an image of a single file system (as opposed to a
 // wrapper around a disk image file, which might for example contain a
 // separate file system for each surface).
@@ -44,12 +42,6 @@ public:
 
   sector_count_type disc_sector_count() const;
 
-  // sector_to_catalog_entry_mapping uses special values to represent the
-  // catalog itself (0) and free sectors (-1).
-  static constexpr int sector_unused = -1;
-  static constexpr int sector_catalogue = 0;
-  std::vector<int> sector_to_catalog_entry_mapping() const;
-
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;
 
@@ -59,10 +51,5 @@ private:
 };
 
 }  // namespace DFS
-
-namespace std
-{
-  std::ostream& operator<<(std::ostream& os, const DFS::Format& f);
-}  // namespace std
 
 #endif

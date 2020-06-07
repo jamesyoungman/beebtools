@@ -17,6 +17,8 @@ class BadFileSystem : public std::exception
   std::string error_message_;
 };
 
+BadFileSystem eof_in_catalog();
+
 class FileIOError : public std::exception
 {
 public:

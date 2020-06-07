@@ -30,11 +30,6 @@ namespace
 
 namespace DFS
 {
-  DFS::BadFileSystem eof_in_catalog()
-  {
-    return BadFileSystem("file system image is too short to contain a catalog");
-  }
-
   Format FileSystem::identify_format(AbstractDrive* drive)
   {
     AbstractDrive::SectorBuffer buf;

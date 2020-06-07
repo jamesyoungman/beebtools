@@ -91,7 +91,7 @@ public:
 	  {
   	    name = "-";
 	  }
-	else if (*occupied_by[sec] == DFS::FileSystem::sector_catalogue)
+	else if (*occupied_by[sec] == DFS::Catalog::global_catalog_slot_self)
 	  {
 	    name = "catalog";
 	  }

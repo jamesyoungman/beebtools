@@ -22,6 +22,11 @@ BadFileSystem::what() const noexcept
   return error_message_.c_str();
 }
 
+DFS::BadFileSystem eof_in_catalog()
+{
+  return BadFileSystem("file system image is too short to contain a catalog");
+}
+
 FileIOError::FileIOError(const std::string& file_name, int errno_value)
   : msg_(make_file_errno_message(file_name, errno_value))
 {

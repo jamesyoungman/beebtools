@@ -101,8 +101,6 @@ private:
   std::array<byte, 8> raw_metadata_;
 };
 
-BadFileSystem eof_in_catalog();
-
 enum class BootSetting
   {
    None, Load, Run, Exec
