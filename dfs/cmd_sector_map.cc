@@ -61,7 +61,8 @@ public:
     if (!storage.select_drive(drive_number, &drive))
       return false;
     DFS::FileSystem fs(drive);
-    const std::vector<int> occupied_by = fs.sector_to_catalog_entry_mapping();
+    const auto& catalog(fs.root());
+    const std::vector<std::optional<int>> occupied_by = catalog.sector_to_global_catalog_slot_mapping();
 
     int column = 0;
     constexpr int max_col = 5;
@@ -86,25 +87,21 @@ public:
 	  }
 
 	std::string name = "?";
-	switch (occupied_by[sec])
+	if (!occupied_by[sec])
 	  {
-	  case DFS::FileSystem::sector_unused:
   	    name = "-";
-	    break;
-
-	  case DFS::FileSystem::sector_catalogue:
+	  }
+	else if (*occupied_by[sec] == DFS::FileSystem::sector_catalogue)
+	  {
 	    name = "catalog";
-	    break;
-
-	  default:
-	    {
-	      assert(occupied_by[sec] > 0);
-	      assert(occupied_by[sec] < std::numeric_limits<unsigned short>::max());
-	      auto e = fs.get_global_catalog_entry(static_cast<unsigned short>(occupied_by[sec]));
-	      name = std::string(1, e.directory()) + "." + e.name();
-	      assert(name.size() <= name_col_width);
-	      break;
-	    }
+	  }
+	else
+	  {
+	    assert(*occupied_by[sec] > 0);
+	    assert(*occupied_by[sec] < std::numeric_limits<unsigned short>::max());
+	    auto e = catalog.get_global_catalog_entry(static_cast<unsigned short>(*occupied_by[sec]));
+	    name = std::string(1, e.directory()) + "." + e.name();
+	    assert(name.size() <= name_col_width);
 	  }
 	std::cout << std::setw(name_col_width) << std::setfill(' ') << std::left << name << ' ';
 	if (++column == max_col)

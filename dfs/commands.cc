@@ -6,19 +6,16 @@
 
 namespace
 {
-  void read_file_body(const DFS::FileSystem *fs,
-		      unsigned short slot,
+  void read_file_body(const DFS::CatalogEntry& entry,
 		      std::vector<DFS::byte>* body)
   {
-    using DFS::byte;
-    using std::copy;
-    fs->visit_file_body_piecewise(slot, [body]
-				  (const byte* begin, const byte* end)
-					{
-					  copy(begin, end,
-					       std::back_inserter(*body));
-					  return true;
-					});
+    entry.visit_file_body_piecewise([body]
+				    (const DFS::byte* begin, const DFS::byte* end)
+				    {
+				      std::copy(begin, end,
+						std::back_inserter(*body));
+				      return true;
+				    });
   }
 
 }  // namespace
@@ -76,22 +73,20 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   if (!parse_filename(ctx, args[1], &name))
     return false;
 
-
-
   DFS::AbstractDrive *drive;
   if (!storage.select_drive(name.drive, &drive))
     return false;
   assert(drive != 0);
   const DFS::FileSystem file_system(drive);
-  const int slot = file_system.find_catalog_slot_for_name(name);
-  if (slot < 0)
+  const auto& root(file_system.root());
+  const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(name);
+  if (!entry)
     {
       std::cerr << args[1] << ": not found\n";
       return false;
     }
   std::vector<DFS::byte> body;
-  assert(slot < std::numeric_limits<unsigned short>::max());
-  read_file_body(&file_system, static_cast<unsigned short>(slot), &body);
+  read_file_body(*entry, &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(body.data(), body.data() + body.size(), tail);
 }

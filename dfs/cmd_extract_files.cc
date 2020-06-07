@@ -99,14 +99,14 @@ public:
 	return false;
       }
     const DFS::FileSystem file_system(drive);
-    const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
+    auto catalog = file_system.root();
     std::vector<DFS::byte> file_body;
 
-    const unsigned short entries = fs->global_catalog_entry_count();
+    const unsigned short entries = catalog.global_catalog_entry_count();
     for (unsigned short i = 1; i <= entries; ++i)
       {
 	file_body.clear();
-	const auto& entry = fs->get_global_catalog_entry(i);
+	const auto& entry = catalog.get_global_catalog_entry(i);
 	DFS::CRC crc;
 	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
 	string output_basename;
@@ -122,22 +122,23 @@ public:
 
 	std::ofstream outfile(output_body_file, std::ofstream::out);
 
-	auto ok = fs->visit_file_body_piecewise(i, [&crc, &outfile, &output_body_file]
-						(const DFS::byte* begin,
-						 const DFS::byte* end)
-						   {
-						     crc.update(begin, end);
-						     outfile.write(reinterpret_cast<const char*>(begin),
-								   end - begin);
-						     if (!outfile)
-						       {
-							 std::cerr << output_body_file
-								   << ": "
-								   << strerror(errno) << "\n";
-							 return false;
-						       }
-						     return true;
-						   });
+	auto ok = entry.visit_file_body_piecewise
+	  ([&crc, &outfile, &output_body_file]
+	   (const DFS::byte* begin,
+	    const DFS::byte* end)
+	   {
+	     crc.update(begin, end);
+	     outfile.write(reinterpret_cast<const char*>(begin),
+			   end - begin);
+	     if (!outfile)
+	       {
+		 std::cerr << output_body_file
+			   << ": "
+			   << strerror(errno) << "\n";
+		 return false;
+	       }
+	     return true;
+	   });
 	outfile.close();
 	if (!ok)
 	  return false;

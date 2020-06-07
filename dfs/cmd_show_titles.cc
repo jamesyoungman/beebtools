@@ -34,7 +34,7 @@ class CommandShowTitles : public DFS::CommandInterface
     if (!storage.select_drive(d, &drive))
       return false;
     DFS::FileSystem file_system(drive);
-    std::cout << d << ":" << file_system.title() << "\n";
+    std::cout << d << ":" << file_system.root().title() << "\n";
     return std::cout.good();
   }
 

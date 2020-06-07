@@ -16,6 +16,7 @@ using std::cout;
 
 namespace
 {
+  using DFS::Catalog;
   using DFS::FileSystem;
   using DFS::Format;
 
@@ -65,31 +66,32 @@ namespace
 	return false;
 
       FileSystem file_system(drive);
-      const FileSystem* fs = &file_system; // TODO: this is a bit untidy
+      const Catalog& catalog(file_system.root());
 
-      cout << fs->title();
-      std::optional<int> cycle_count = fs->cycle_count();
+      cout << catalog.title();
+      std::optional<int> cycle_count = catalog.sequence_number();
       if (cycle_count)
 	{
-	  // HDFS uses this field for something else.
+	  // HDFS uses this field of the root catalog as a checksum
+	  // instead.
 	  cout << " ("  << std::setbase(16) << cycle_count.value() << ")";
 	}
       // TODO: determine whether then image is FM or MFM, print the
       // right indicator (and spell it appropriately for the UI).
       cout << std::setbase(10) << " FM\n";
-      const auto opt = fs->opt_value();
+      const auto opt = catalog.boot_setting();
       cout << "Drive "<< ctx.current_drive
 	   << "            Option " << opt << "\n";
       cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
 	   << "          "
 	   << "Lib. :0.$\n";
-      if (fs->ui_style(ctx) == DFS::UiStyle::Watford)
+      if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
 	{
 	  cout << "Work file $.\n";
 	}
       cout << "\n";
 
-      const unsigned short entries = fs->global_catalog_entry_count();
+      const unsigned short entries = catalog.global_catalog_entry_count();
       vector<unsigned short int> ordered_catalog_index;
       ordered_catalog_index.reserve(entries);
       ordered_catalog_index.push_back(0);	  // dummy for title
@@ -98,10 +100,10 @@ namespace
 
 
       auto compare_entries =
-	[&fs, &ctx](unsigned short left, unsigned short int right) -> bool
+	[&catalog, &ctx](unsigned short left, unsigned short int right) -> bool
 	{
-	  const auto& l = fs->get_global_catalog_entry(left);
-	  const auto& r = fs->get_global_catalog_entry(right);
+	  const auto& l = catalog.get_global_catalog_entry(left);
+	  const auto& r = catalog.get_global_catalog_entry(right);
 	  // Ensure that entries in the current directory sort
 	  // first.
 	  auto mapdir =
@@ -117,8 +119,8 @@ namespace
 	    return false;
 	  // Same directory, compare names.
 	  return DFS::stringutil::case_insensitive_less
-	    (fs->get_global_catalog_entry(left).name(),
-	     fs->get_global_catalog_entry(right).name());
+	    (catalog.get_global_catalog_entry(left).name(),
+	     catalog.get_global_catalog_entry(right).name());
 	};
 
       std::sort(ordered_catalog_index.begin()+1,
@@ -131,7 +133,7 @@ namespace
       constexpr int name_col_width = 8;
       for (int i = 1; i <= entries; ++i)
 	{
-	  auto entry = fs->get_global_catalog_entry(ordered_catalog_index[i]);
+	  auto entry = catalog.get_global_catalog_entry(ordered_catalog_index[i]);
 	  if (entry.directory() != ctx.current_directory)
 	    {
 	      if (!printed_gap)
@@ -158,11 +160,11 @@ namespace
 	  left_column = !left_column;
 	}
       cout << "\n";
-      if (fs->ui_style(ctx) == DFS::UiStyle::Watford)
+      if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
 	{
 	  // TODO: Watford DFS states the number of tracks too.
-	  cout << fs->global_catalog_entry_count() << " files of "
-	       << fs->max_file_count() << "\n";
+	  cout << catalog.global_catalog_entry_count() << " files of "
+	       << catalog.max_file_count() << "\n";
 	}
       return true;
     }

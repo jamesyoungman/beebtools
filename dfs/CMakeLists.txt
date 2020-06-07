@@ -29,7 +29,9 @@ set(HEADERS
   crc.h
   dfscontext.h
   dfs.h
+  dfs_catalog.h
   dfs_filesystem.h
+  dfs_format.h
   dfstypes.h
   exceptions.h
   fsp.h
@@ -55,6 +57,7 @@ target_sources(dfs
   cmd_show_titles.cc
   cmd_space.cc
   commands.cc
+  dfs_catalog.cc
   dfs_filesystem.cc
   main.cc
   media.cc

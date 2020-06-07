@@ -66,13 +66,13 @@ public:
 	  return false;
       }
     const DFS::FileSystem file_system(drive);
-    const DFS::FileSystem* fs = &file_system; // TODO: this is a bit untidy
+    auto catalog(file_system.root());
 
     int sectors_used = 2;
-    const unsigned short entries = fs->global_catalog_entry_count();
+    const unsigned short entries = catalog.global_catalog_entry_count();
     for (unsigned short int i = 1; i <= entries; ++i)
       {
-	const auto& entry = fs->get_global_catalog_entry(i);
+	const auto& entry = catalog.get_global_catalog_entry(i);
 	assert(entry.file_length() < std::numeric_limits<int>::max());
 	div_t division = div(static_cast<int>(entry.file_length()), DFS::SECTOR_BYTES);
 	const int sectors_for_this_file = division.quot + (division.rem ? 1 : 0);
@@ -82,8 +82,8 @@ public:
 	    sectors_used = last_sector_of_file;
 	  }
       }
-    int files_free = fs->max_file_count() - fs->global_catalog_entry_count();
-    int sectors_free = fs->disc_sector_count() - sectors_used;
+    int files_free = catalog.max_file_count() - catalog.global_catalog_entry_count();
+    int sectors_free = catalog.total_sectors() - sectors_used;
     std::cout << std::uppercase;
     auto show = [](int files, int sectors, const std::string& desc)
 		{
@@ -99,7 +99,7 @@ public:
     auto prevlocale = std::cout.imbue(std::locale(std::cout.getloc(),
 					     new comma_thousands)); // takes ownership
     show(files_free, sectors_free, "Free");
-    show(fs->global_catalog_entry_count(), sectors_used, "Used");
+    show(catalog.global_catalog_entry_count(), sectors_used, "Used");
     std::cout.imbue(prevlocale);
     return true;
   }

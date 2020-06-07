@@ -62,16 +62,17 @@ public:
 	drive_num = ctx.current_drive;
       }
     DFS::FileSystem file_system(drive);
+    const auto& root(file_system.root());
 
     std::cerr << "Disc total sectors = "
        << std::setw(3) << std::hex << std::uppercase
        << file_system.disc_sector_count() << "\n";
     std::cerr << "Disc sectors occupied by catalog = "
 	      << std::setw(3) << std::hex << std::uppercase
-	      << file_system.catalog_sectors() << "\n";
+	      << root.catalog_sectors() << "\n";
     std::cerr << "Total file storage space in sectors = "
 	      << (file_system.disc_sector_count()
-		  - file_system.catalog_sectors()) << "\n";
+		  - root.catalog_sectors()) << "\n";
 
     // Files occur on the disk in a kind of reverse order.  The last
     // file on the disk is the first one mentioned in the catalog in
@@ -93,9 +94,9 @@ public:
     // Note that indexing within catalogs[][] is 0-based, unlike the
     // normal usage for DFS catalogs, because the 0-entry for the disc
     // title is not included.
-    const std::vector<std::vector<DFS::CatalogEntry>> catalogs = file_system.get_catalog_in_disc_order();
+    const std::vector<std::vector<DFS::CatalogEntry>> catalogs = root.get_catalog_in_disc_order();
     assert(catalogs.size() <= std::numeric_limits<int>::max());
-    auto start_sec_of_next = [&catalogs, &file_system]
+    auto start_sec_of_next = [&catalogs, &root]
       (unsigned int catalog, unsigned int entry) -> DFS::sector_count_type
 			     {
 			       assert(catalog < catalogs.size());
@@ -103,7 +104,7 @@ public:
 			       if (entry > 0)
 				 return catalogs[catalog][entry-1].start_sector();
 			       if (catalog == catalogs.size()-1)
-				 return file_system.disc_sector_count();
+				 return root.total_sectors();
 			       return catalogs[catalog+1].back().start_sector();
 			     };
     std::vector<unsigned int> gaps;
@@ -125,9 +126,13 @@ public:
 	  {
 	    if (c == 0)
 	      {
-		// Account for any gap between the catalog and the first
-		// file of the first catalog.
-		maybe_gap(DFS::sector_count(file_system.catalog_sectors() - 1u),
+		// Account for any gap between the catalog and the
+		// first file of the first catalog.
+		//
+		// TODO: this won't work correctly for Opus, where the
+		// volume catalog and the file storage are on
+		// different parts of the disc.
+		maybe_gap(DFS::sector_count(root.catalog_sectors() - 1u),
 			  catalogs[0].back().start_sector());
 	      }
 	    assert(catalogs[c].size() < std::numeric_limits<int>::max());

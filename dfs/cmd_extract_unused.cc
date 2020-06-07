@@ -75,7 +75,8 @@ public:
     assert(0 != drive);
 
     DFS::FileSystem fs(drive);
-    std::vector<int> occupied_by = fs.sector_to_catalog_entry_mapping();
+    const auto& root = fs.root();
+    std::vector<std::optional<int>> occupied_by = root.sector_to_global_catalog_slot_mapping();
     int begin = -1;
     unsigned short count = 0;
     // We're going to loop over the unoccupied areas of the disc,
@@ -85,7 +86,7 @@ public:
     occupied_by.push_back(std::numeric_limits<int>::max()); // sentinel
     for (DFS::sector_count_type sec = 0; sec < occupied_by.size(); ++sec)
       {
-	if (occupied_by[sec] != DFS::FileSystem::sector_unused)
+	if (*occupied_by[sec])
 	  {
 	    if (begin >= 0)
 	      {
