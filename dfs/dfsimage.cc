@@ -1,4 +1,4 @@
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 
 #include <assert.h>
 

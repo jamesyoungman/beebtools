@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "dfscontext.h"
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 
 namespace DFS
 {

@@ -29,7 +29,7 @@ set(HEADERS
   crc.h
   dfscontext.h
   dfs.h
-  dfsimage.h
+  dfs_filesystem.h
   dfstypes.h
   exceptions.h
   fsp.h

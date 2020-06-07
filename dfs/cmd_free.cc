@@ -5,7 +5,7 @@
 #include <locale>
 #include <string>
 
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 
 namespace
 {

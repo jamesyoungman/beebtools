@@ -9,7 +9,7 @@
 
 #include "crc.h"
 #include "dfs.h"
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 #include "media.h"
 #include "storage.h"
 #include "stringutil.h"

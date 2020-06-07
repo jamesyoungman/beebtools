@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "commands.h"
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 #include "stringutil.h"
 
 using std::string;

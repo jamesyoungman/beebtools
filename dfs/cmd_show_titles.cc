@@ -2,7 +2,7 @@
 
 #include <sstream>
 
-#include "dfsimage.h"
+#include "dfs_filesystem.h"
 
 namespace
 {
