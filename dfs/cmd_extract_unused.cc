@@ -8,6 +8,7 @@
 
 #include "dfscontext.h"
 #include "dfs_filesystem.h"
+#include "dfs_unused.h"
 #include "dfstypes.h"
 #include "media.h"
 
@@ -76,17 +77,19 @@ public:
 
     DFS::FileSystem fs(drive);
     const auto& root = fs.root();
-    std::vector<std::optional<int>> occupied_by = root.sector_to_global_catalog_slot_mapping();
-    int begin = -1;
-    unsigned short count = 0;
     // We're going to loop over the unoccupied areas of the disc,
     // extracting each.  We add a sentinel value to ensure that we
     // also extract the final free span, if any (this avoids
     // duplication of code).
-    occupied_by.push_back(std::numeric_limits<int>::max()); // sentinel
-    for (DFS::sector_count_type sec = 0; sec < occupied_by.size(); ++sec)
+    const std::string end_of_disc_sentinel = ":::end";
+    const DFS::SpaceMap occupied_by(root, end_of_disc_sentinel);
+    const sector_count_type last_sec = root.total_sectors();
+    int begin = -1;
+    unsigned short count = 0;
+    for (DFS::sector_count_type sec = 0; sec <= last_sec; ++sec)
       {
-	if (*occupied_by[sec])
+	std::optional<std::string> name = occupied_by.at(sec);
+	if (name)
 	  {
 	    if (begin >= 0)
 	      {

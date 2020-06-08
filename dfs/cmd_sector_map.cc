@@ -62,7 +62,24 @@ public:
       return false;
     DFS::FileSystem fs(drive);
     const auto& catalog(fs.root());
-    const std::vector<std::optional<int>> occupied_by = catalog.sector_to_global_catalog_slot_mapping();
+    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
+    typedef std::vector<DFS::CatalogEntry>::size_type catalog_entry_index;
+    std::vector<std::optional<std::vector<DFS::CatalogEntry>::size_type>> occupied_by;
+    occupied_by.resize(fs.disc_sector_count());
+    catalog_entry_index occ_by_catalog = entries.size();
+    for (std::vector<DFS::CatalogEntry>::size_type i = 0;
+	 i < entries.size();
+	 ++i)
+      {
+	const DFS::CatalogEntry& entry(entries[i]);
+	assert(entry.start_sector() < occupied_by.size());
+	assert(entry.last_sector() < occupied_by.size());
+	std::fill(occupied_by.begin() + entry.start_sector(),
+		  occupied_by.begin() + entry.last_sector() + 1,
+		  i);
+      }
+    for (DFS::sector_count_type sec : catalog.get_sectors_occupied_by_catalog())
+      occupied_by[sec] = occ_by_catalog;
 
     int column = 0;
     constexpr int max_col = 5;
@@ -91,15 +108,14 @@ public:
 	  {
   	    name = "-";
 	  }
-	else if (*occupied_by[sec] == DFS::Catalog::global_catalog_slot_self)
+	else if (*occupied_by[sec] == occ_by_catalog)
 	  {
 	    name = "catalog";
 	  }
 	else
 	  {
-	    assert(*occupied_by[sec] > 0);
-	    assert(*occupied_by[sec] < std::numeric_limits<unsigned short>::max());
-	    auto e = catalog.get_global_catalog_entry(static_cast<unsigned short>(*occupied_by[sec]));
+	    assert(*occupied_by[sec] <= entries.size());
+	    const auto& e = entries[*occupied_by[sec]];
 	    name = std::string(1, e.directory()) + "." + e.name();
 	    assert(name.size() <= name_col_width);
 	  }

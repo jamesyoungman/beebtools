@@ -17,6 +17,7 @@ using std::cout;
 namespace
 {
   using DFS::Catalog;
+  using DFS::CatalogEntry;
   using DFS::FileSystem;
   using DFS::Format;
 
@@ -91,19 +92,10 @@ namespace
 	}
       cout << "\n";
 
-      const unsigned short entries = catalog.global_catalog_entry_count();
-      vector<unsigned short int> ordered_catalog_index;
-      ordered_catalog_index.reserve(entries);
-      ordered_catalog_index.push_back(0);	  // dummy for title
-      for (unsigned short i = 1; i <= entries; ++i)
-	ordered_catalog_index.push_back(i);
-
-
+      auto entries = catalog.entries();
       auto compare_entries =
-	[&catalog, &ctx](unsigned short left, unsigned short int right) -> bool
+	[&catalog, &ctx](const CatalogEntry& l, const CatalogEntry& r) -> bool
 	{
-	  const auto& l = catalog.get_global_catalog_entry(left);
-	  const auto& r = catalog.get_global_catalog_entry(right);
 	  // Ensure that entries in the current directory sort
 	  // first.
 	  auto mapdir =
@@ -118,32 +110,29 @@ namespace
 	  if (mapdir(r.directory()) < mapdir(l.directory()))
 	    return false;
 	  // Same directory, compare names.
-	  return DFS::stringutil::case_insensitive_less
-	    (catalog.get_global_catalog_entry(left).name(),
-	     catalog.get_global_catalog_entry(right).name());
+	  return DFS::stringutil::case_insensitive_less(l.name(), r.name());
 	};
 
-      std::sort(ordered_catalog_index.begin()+1,
-		ordered_catalog_index.end(),
-		compare_entries);
+      std::sort(entries.begin(), entries.end(), compare_entries);
 
       bool left_column = true;
       bool printed_gap = false;
       std::cout << std::left;
       constexpr int name_col_width = 8;
-      for (int i = 1; i <= entries; ++i)
+      bool first = true;
+      for (const auto& entry : entries)
 	{
-	  auto entry = catalog.get_global_catalog_entry(ordered_catalog_index[i]);
 	  if (entry.directory() != ctx.current_directory)
 	    {
 	      if (!printed_gap)
 		{
-		  if (i > 1)
+		  if (!first)
 		    cout << (left_column ? "\n" : "\n\n");
 		  left_column = true;
 		  printed_gap = true;
 		}
 	    }
+	  first = false;
 
 	  cout << std::setw(left_column ? 1 : 6) << "";
 	  std::cout << std::setw(0);
@@ -163,7 +152,7 @@ namespace
       if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
 	{
 	  // TODO: Watford DFS states the number of tracks too.
-	  cout << catalog.global_catalog_entry_count() << " files of "
+	  cout << entries.size() << " files of "
 	       << catalog.max_file_count() << "\n";
 	}
       return true;

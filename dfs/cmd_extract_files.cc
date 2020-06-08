@@ -102,11 +102,9 @@ public:
     auto catalog = file_system.root();
     std::vector<DFS::byte> file_body;
 
-    const unsigned short entries = catalog.global_catalog_entry_count();
-    for (unsigned short i = 1; i <= entries; ++i)
+    for (const auto& entry : catalog.entries())
       {
 	file_body.clear();
-	const auto& entry = catalog.get_global_catalog_entry(i);
 	DFS::CRC crc;
 	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
 	string output_basename;

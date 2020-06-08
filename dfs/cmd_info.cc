@@ -86,14 +86,13 @@ public:
     const DFS::FileSystem file_system(drive);
     const auto& catalog(file_system.root());
 
-    const unsigned short entries = catalog.global_catalog_entry_count();
     cout << std::hex;
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
-    for (unsigned short i = 1; i <= entries; ++i)
+    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
+    for (const auto& entry : entries)
       {
-	const auto& entry = catalog.get_global_catalog_entry(i);
 #if VERBOSE_FOR_TESTS
 	std::cerr << "info: directory is '" << entry.directory() << "'\n";
 	std::cerr << "info: item is '" << entry.name() << "'\n";

@@ -32,6 +32,7 @@ set(HEADERS
   dfs_catalog.h
   dfs_filesystem.h
   dfs_format.h
+  dfs_unused.h
   dfstypes.h
   exceptions.h
   fsp.h
@@ -59,6 +60,7 @@ target_sources(dfs
   commands.cc
   dfs_catalog.cc
   dfs_filesystem.cc
+  dfs_unused.cc
   main.cc
   media.cc
   storage.cc

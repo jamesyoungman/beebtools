@@ -1,5 +1,6 @@
 #include "dfs_catalog.h"
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -237,6 +238,19 @@ namespace DFS
     return std::nullopt;
   }
 
+  std::vector<CatalogEntry> CatalogFragment::entries() const
+  {
+    std::vector<CatalogEntry> result;
+    unsigned short last = position_of_last_catalog_entry();
+    for (unsigned short pos = 8;
+	 pos <= last;
+	 pos = static_cast<unsigned short>(pos + 8))
+      {
+	result.push_back(get_entry_at_offset(pos));
+      }
+    return result;
+  }
+
   void CatalogFragment::read_sector(sector_count_type i, DFS::AbstractDrive::SectorBuffer* buf, bool& beyond_eof) const
   {
     // TODO: this implementation won't work for the Opus format, where
@@ -300,21 +314,6 @@ namespace DFS
     return disc_format() == Format::WDFS ? 62 : 31;
   }
 
-  unsigned short Catalog::global_catalog_entry_count() const
-  {
-    unsigned short count = 0u;
-    for (const auto& frag : fragments_)
-      {
-	unsigned short pos = frag.position_of_last_catalog_entry();
-	if (pos % 8)
-	  {
-	    throw BadFileSystem("position of last catalog entry is not a multiple of 8");
-	  }
-	count = static_cast<unsigned short>(count + pos / 8);
-      }
-    return count;
-  }
-
   std::optional<CatalogEntry> Catalog::find_catalog_entry_for_name(const ParsedFileName& name) const
   {
     for (const auto& frag : fragments_)
@@ -326,29 +325,16 @@ namespace DFS
     return std::nullopt;
   }
 
-  CatalogEntry Catalog::get_global_catalog_entry(unsigned short slot) const
+  std::vector<CatalogEntry> Catalog::entries() const
   {
-    if (slot > 62 || slot < 1)
-      {
-	throw std::range_error("request for impossible catalog slot");
-      }
-    if (slot > 31 && disc_format() != Format::WDFS)
-      {
-	throw std::range_error("request for extended catalog slot in non-Watford disk");
-      }
-    assert(slot <= global_catalog_entry_count());
-
-    unsigned short offset = static_cast<unsigned short>(slot * 8);
+    std::vector<CatalogEntry> result;
     for (const auto& frag : fragments_)
       {
-	unsigned short last = frag.position_of_last_catalog_entry();
-	if (offset <= last)
-	  {
-	    return frag.get_entry_at_offset(offset);
-	  }
-	offset = static_cast<unsigned short>(offset - last);
+	std::vector<CatalogEntry> frag_entries = frag.entries();
+	std::copy(frag_entries.begin(), frag_entries.end(),
+		  std::back_inserter(result));
       }
-    throw std::range_error("request for unused catalog slot");
+    return result;
   }
 
   std::vector<std::vector<CatalogEntry>>
@@ -370,32 +356,12 @@ namespace DFS
     return result;
   }
 
-
-  std::vector<std::optional<int>> Catalog::sector_to_global_catalog_slot_mapping() const
+  std::vector<sector_count_type> Catalog::get_sectors_occupied_by_catalog() const
   {
-    // occupied_by is a mapping from sector number to catalog position.
-    std::vector<std::optional<int>> occupied_by(total_sectors());
-
+    std::vector<sector_count_type> result;
     for (int i = 0; i < catalog_sectors(); ++i)
-      occupied_by[i] = global_catalog_slot_self;
-    if (disc_format() == DFS::Format::WDFS)
-      {
-	// occupied_by[2] = occupied_by[3] = sector_catalogue;
-	assert(occupied_by[2] == global_catalog_slot_self);
-	assert(occupied_by[3] == global_catalog_slot_self);
-      }
-
-    const auto limit = global_catalog_entry_count();
-    for (unsigned short i = 1u; i <= limit; ++i)
-      {
-	const auto& entry(get_global_catalog_entry(i));
-	assert(entry.start_sector() < occupied_by.size());
-	assert(entry.last_sector() < occupied_by.size());
-	std::fill(occupied_by.begin() + entry.start_sector(),
-		  occupied_by.begin() + entry.last_sector() + 1,
-		  i);
-      }
-    return occupied_by;
+      result.push_back(DFS::sector_count(i));
+    return result;
   }
 
 }  // namespace DFS

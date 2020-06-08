@@ -125,13 +125,7 @@ public:
     return sequence_number_;
   }
 
-  // TODO: replace get_entry_at_offset() with some kind of iterator.
-  CatalogEntry get_entry_at_offset(unsigned) const;
-
-  unsigned short position_of_last_catalog_entry() const
-  {
-    return position_of_last_catalog_entry_;
-  }
+  std::vector<CatalogEntry> entries() const;
 
   std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
   BootSetting boot_setting() const { return boot_; }
@@ -139,7 +133,13 @@ public:
   void read_sector(sector_count_type n, DFS::AbstractDrive::SectorBuffer* buf, bool& beyond_eof) const;
 
  private:
+  friend class Catalog;
   static std::string read_title(AbstractDrive*, sector_count_type location);
+  CatalogEntry get_entry_at_offset(unsigned) const;
+  unsigned short position_of_last_catalog_entry() const
+  {
+    return position_of_last_catalog_entry_;
+  }
 
   DFS::Format disc_format_;
   // class invariant: drive_ != 0
@@ -170,17 +170,12 @@ class Catalog
   Format disc_format() const;
   int max_file_count() const;
 
-  static constexpr int global_catalog_slot_self = 0;
-  std::vector<std::optional<int>> sector_to_global_catalog_slot_mapping() const;
-
-  // Get the total number of entries in all catalog fragments.
-  unsigned short global_catalog_entry_count() const;
-
   std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
 
-  // Get a catalog entry using a numbering scheme starting with 1 and
-  // ending at global_catalog_entry_count().
-  CatalogEntry get_global_catalog_entry(unsigned short index) const;
+  // Return all the catalog entries.  This is normally the best way to
+  // iterate over entries.  The entries are returned in the same order
+  // as "*INFO".
+  std::vector<CatalogEntry> entries() const;
 
   // Return catalog entries in on-disc order.  The outermost vector is
   // the order in which the datalog is stored.  In the case of a
@@ -190,18 +185,14 @@ class Catalog
   //
   // The innermost vector simply stores the catalog entries in the
   // order they occur in the relevant sector.
-  std::vector<std::vector<CatalogEntry>>
-  get_catalog_in_disc_order() const;
+  std::vector<std::vector<CatalogEntry>> get_catalog_in_disc_order() const;
 
   sector_count_type catalog_sectors() const
   {
     return disc_format() == Format::WDFS ? 4 : 2;
   }
 
-  unsigned short position_of_last_catalog_entry(sector_count_type i) const
-  {
-    return fragments_.at(i).position_of_last_catalog_entry();
-  }
+  std::vector<sector_count_type> get_sectors_occupied_by_catalog() const;
 
 private:
   DFS::Format disc_format_;
