@@ -224,6 +224,10 @@ namespace
       std::ifstream* f = get_file();
       const DFS::sector_count_type total_sectors = DFS::sector_count(file_size() / DFS::SECTOR_BYTES);
       std::string desc = std::string("SSD file ") + name;
+      // Per https://stardot.org.uk/forums/viewtopic.php?t=11924, SSD
+      // is actually "sequential sided disk".  That is, it's possible
+      // for the data of side 1 to directly follow that of side 0.  We
+      // do not implement this.
       FileView v(f, name, desc, 0, total_sectors, 0, total_sectors);
       add_view(v);
     }
