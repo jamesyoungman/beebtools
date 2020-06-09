@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "dfstypes.h"
+#include "geometry.h"
 
 namespace DFS
 {
@@ -28,8 +29,6 @@ namespace DFS
      FIRST = 1,  // always use the next available slot
      PHYSICAL = 2, // behave as if image files were physical discs
     };
-
-  constexpr unsigned int SECTOR_BYTES = 256;
 
   class AbstractDrive
   {

@@ -36,6 +36,7 @@ set(HEADERS
   dfstypes.h
   exceptions.h
   fsp.h
+  geometry.h
   media.h
   regularexpression.h
   storage.h
@@ -65,6 +66,7 @@ target_sources(dfs
   media.cc
   storage.cc
   fsp.cc
+  geometry.cc
   afsp.cc
   ${HEADERS}
   )
@@ -93,6 +95,18 @@ target_compile_options(test_afsp
 target_link_libraries(test_afsp dfsbase)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
 set_property(TEST dfs_test_afsp_passes PROPERTY LABELS dfs unit_test)
+
+add_executable(test_geometry)
+target_sources(test_geometry
+  PRIVATE
+  tests/test_geometry.cc
+  geometry.cc
+  geometry.h)
+target_compile_options(test_geometry
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
+add_test(NAME dfs_test_geometry_passes COMMAND test_geometry)
+set_property(TEST dfs_test_geometry_passes PROPERTY LABELS dfs unit_test)
 
 add_executable(test_regularexpression)
 target_sources(test_regularexpression
