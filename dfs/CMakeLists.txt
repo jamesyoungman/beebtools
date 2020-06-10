@@ -62,6 +62,7 @@ target_sources(dfs
   dfs_catalog.cc
   dfs_filesystem.cc
   dfs_unused.cc
+  identify.cc
   main.cc
   media.cc
   storage.cc

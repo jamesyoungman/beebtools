@@ -94,9 +94,12 @@ check_cat acorn-dfs-sd-40t.ssd.gz \
 	  '[ ]NOTHING' \
 	  'INIT +L'
 
+# TODO: ensure geometry guessing works everywhere
+# and make the "on 80 tracks" part of the regex
+# below mandatory.
 check_cat watford-sd-62-with-62-files.ssd.gz \
 	  'Option 0 [(]off[)]' \
-	  '^ *62 files of 62$' \
+	  '^ *62 files of 62( on 80 tracks)?$' \
 	  "^ +FILE01 +FILE02 *$" \
 	  "^ +FILE03 +FILE04 *$" \
 	  "^ +FILE05 +FILE06 *$" \

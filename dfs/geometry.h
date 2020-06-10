@@ -3,10 +3,10 @@
 
 #include <optional>
 
+#include "dfstypes.h"
+
 namespace DFS
 {
-  constexpr unsigned int SECTOR_BYTES = 256;
-
   enum class Encoding
     {
      FM,			// AKA, single density

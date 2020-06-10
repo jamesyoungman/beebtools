@@ -1,7 +1,9 @@
 #ifndef INC_DFS_FORMAT_H
 #define INC_DFS_FORMAT_H 1
 
+#include <functional>
 #include <iostream>
+#include <string>
 
 #include "storage.h"
 
@@ -16,8 +18,12 @@ enum class Format
    Solidisk,
    // I have no documentation for Opus's format.
   };
-  Format identify_format(AbstractDrive* device);
   std::string format_name(Format f);
+
+  Format identify_format(std::function<void(DFS::sector_count_type,
+					    DFS::SectorBuffer*,
+					    bool&)> sector_reader);
+  Format identify_format(AbstractDrive*);
 
 }  // namespace DFS
 

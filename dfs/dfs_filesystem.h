@@ -28,7 +28,8 @@ namespace DFS
 class FileSystem
 {
 public:
-  static Format identify_format(AbstractDrive* drive);
+  // TODO: pass in the filesystem type, now that we need to figure it
+  // out before we call the FileSystem constructor.
   explicit FileSystem(AbstractDrive* drive);
   const Catalog& root() const;
 
