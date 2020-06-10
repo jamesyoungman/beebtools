@@ -175,7 +175,6 @@ namespace DFS
       throw eof_in_catalog();
 
     const DFS::byte title_initial(s[0]);
-    sequence_number_ = s[4];
     read_sector(1, &s, beyond_eof);
     if (location > 1)		// TODO: this check won't be right for Opus DDOS.
       {
@@ -190,6 +189,7 @@ namespace DFS
 	  throw eof_in_catalog;
       }
 
+    sequence_number_ = s[4];
     position_of_last_catalog_entry_ = s[5];
     switch ((s[6] >> 4) & 0x03)
       {
