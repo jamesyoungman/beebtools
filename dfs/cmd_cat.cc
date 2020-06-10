@@ -67,8 +67,8 @@ namespace
 	return false;
 
       FileSystem file_system(drive);
+      const auto ui = file_system.ui_style(ctx);
       const Catalog& catalog(file_system.root());
-
       cout << catalog.title();
       std::optional<int> cycle_count = catalog.sequence_number();
       if (cycle_count)
@@ -77,18 +77,33 @@ namespace
 	  // instead.
 	  cout << " ("  << std::setbase(16) << cycle_count.value() << ")";
 	}
+      cout << std::setbase(10);
       // TODO: determine whether then image is FM or MFM, print the
       // right indicator (and spell it appropriately for the UI).
-      cout << std::setbase(10) << " FM\n";
+
+      if (DFS::UiStyle::Watford == ui)
+	{
+	  cout << "   Single density\n";
+	}
+      else
+	{
+	  cout << " FM\n";
+	}
       const auto opt = catalog.boot_setting();
       cout << "Drive "<< ctx.current_drive
 	   << "             Option " << opt << "\n";
-      cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
-	   << "           "
-	   << "Lib. :0.$\n";
-      if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
+      if (DFS::UiStyle::Watford == ui)
 	{
+	  cout << "Directory :" << ctx.current_drive << "." << ctx.current_directory
+	       << "      "
+	       << "Library :0.$\n";
 	  cout << "Work file $.\n";
+	}
+      else
+	{
+	  cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
+	       << "           "
+	       << "Lib. :0.$\n";
 	}
       cout << "\n";
 
@@ -120,6 +135,7 @@ namespace
       std::cout << std::left;
       constexpr int name_col_width = 8;
       bool first = true;
+      const int left_col_indent = (DFS::UiStyle::Watford == ui) ? 2 : 1;
       for (const auto& entry : entries)
 	{
 	  if (entry.directory() != ctx.current_directory)
@@ -134,7 +150,7 @@ namespace
 	    }
 	  first = false;
 
-	  cout << std::setw(left_column ? 1 : 7) << "";
+	  cout << std::setw(left_column ? left_col_indent : 7) << "";
 	  std::cout << std::setw(0);
 	  if (entry.directory() != ctx.current_directory)
 	    cout << " " << entry.directory() << ".";
@@ -153,12 +169,14 @@ namespace
 	    }
 	  left_column = !left_column;
 	}
-      if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
+      if (DFS::UiStyle::Watford == ui)
 	{
 	  cout << "\n";
 	  // TODO: Watford DFS states the number of tracks too.
-	  cout << entries.size() << " files of "
-	       << catalog.max_file_count() << "\n";
+	  cout << std::setw(2) << std::setfill('0') << std::right << entries.size()
+	       << " files of " << catalog.max_file_count()
+	       << " on 80 tracks\n";
+	  // TODO: plumb in the real geometry.
 	}
       return true;
     }

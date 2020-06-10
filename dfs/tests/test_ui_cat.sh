@@ -64,3 +64,21 @@ Dir. :0.$           Lib. :0.$
   %.S0B01             B.S0B01    L
   B.S0B02    L        V.S0B01
 "
+
+check_cat \
+    acorn-dfs-ss-80t-manyfiles.ssd \
+    watford \
+"S0:ABCDEFGHI (26)   Single density
+Drive 0             Option 0 (off)
+Directory :0.$      Library :0.$
+Work file $.
+
+     S0F01    L          S0F02    L
+     S0F03               S0F04
+     S0F05    L
+
+   %.S0B01             B.S0B01    L
+   B.S0B02    L        V.S0B01
+
+09 files of 31 on 80 tracks
+"
