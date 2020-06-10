@@ -82,9 +82,9 @@ namespace
       cout << std::setbase(10) << " FM\n";
       const auto opt = catalog.boot_setting();
       cout << "Drive "<< ctx.current_drive
-	   << "            Option " << opt << "\n";
+	   << "             Option " << opt << "\n";
       cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
-	   << "          "
+	   << "           "
 	   << "Lib. :0.$\n";
       if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
 	{
@@ -134,23 +134,28 @@ namespace
 	    }
 	  first = false;
 
-	  cout << std::setw(left_column ? 1 : 6) << "";
+	  cout << std::setw(left_column ? 1 : 7) << "";
 	  std::cout << std::setw(0);
 	  if (entry.directory() != ctx.current_directory)
 	    cout << " " << entry.directory() << ".";
 	  else
 	    cout << "   ";
-	  cout << std::setw(name_col_width) << std::left << entry.name();
-	  cout << std::setw(2) << std::right << (entry.is_locked() ? "L": "");
+	  cout << std::setw(0) << std::left << entry.name();
+	  int acc_col_width = name_col_width - static_cast<int>(entry.name().size());
+	  if (entry.is_locked() || left_column)
+	    {
+	      cout << std::setfill(' ') << std::setw(2 + acc_col_width)
+		   << std::right << (entry.is_locked() ? "L": "") << std::setfill(' ');
+	    }
 	  if (!left_column)
 	    {
 	      cout << "\n";
 	    }
 	  left_column = !left_column;
 	}
-      cout << "\n";
       if (file_system.ui_style(ctx) == DFS::UiStyle::Watford)
 	{
+	  cout << "\n";
 	  // TODO: Watford DFS states the number of tracks too.
 	  cout << entries.size() << " files of "
 	       << catalog.max_file_count() << "\n";
