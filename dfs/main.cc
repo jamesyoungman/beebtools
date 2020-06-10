@@ -2,7 +2,9 @@
 #include <limits.h>
 #include <string.h>
 
+#include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -15,6 +17,38 @@ namespace
 {
   using DFS::StorageConfiguration;
 
+  std::optional<DFS::UiStyle> parse_ui_style(const std::string& name, std::string& err)
+  {
+    std::map<std::string, DFS::UiStyle> styles =
+      {
+       {"Acorn",   DFS::UiStyle::Acorn},
+       {"acorn",   DFS::UiStyle::Acorn},
+       {"watford", DFS::UiStyle::Watford},
+       {"Watford", DFS::UiStyle::Watford},
+      };
+    auto it = styles.find(name);
+    if (it != styles.end())
+      return it->second;
+    std::ostringstream os;
+    os << "Unknown UI style " << name << "; known UI styles are ";
+    bool comma = false;
+    for (const auto& mapping : styles)
+      {
+	// Don't print the initial-uppercase names, we won't use those
+	// as the canonical ones (while they are proper nouns,
+	// lower-case fits better with the CLI conventions).
+	if (mapping.first.empty() || isupper(mapping.first[0]))
+	  continue;
+	if (comma)
+	  os << ", ";
+	else
+	  comma = true;
+	os << mapping.first;
+      }
+    err = os.str();
+    return std::nullopt;
+  }
+
   enum OptSignifier
     {
      OPT_IMAGE_FILE = SCHAR_MIN,
@@ -23,6 +57,7 @@ namespace
      OPT_SHOW_CONFIG,
      OPT_ALLOCATE_PHYSICAL,
      OPT_ALLOCATE_FIRST,
+     OPT_UI_STYLE,
      OPT_HELP,
     };
 
@@ -46,6 +81,7 @@ namespace
      { "drive-physical", 0, NULL, OPT_ALLOCATE_PHYSICAL },
      { "show-config", 0, NULL, OPT_SHOW_CONFIG },
      { "help", 0, NULL, OPT_HELP },
+     { "ui", 1, NULL, OPT_UI_STYLE },
      { 0, 0, 0, 0 },
     };
 
@@ -130,6 +166,7 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
 	"(as if they were physical floppies being inserted)"},
        {"show-config", "show the storage configuraiton before "
 	"performing the operation"},
+       {"ui", "follow the user-interface of this type of DFS ROM"},
        {"help", "print a brief explanation of how to use the program"}
       });
   return std::make_unique<std::map<std::string, std::string>>(m);
@@ -219,6 +256,20 @@ int main (int argc, char *argv[])
 	case OPT_SHOW_CONFIG:
 	  show_config = true;
 	  break;
+
+	case OPT_UI_STYLE:
+	  {
+	    std::string err;
+	    auto ui_opt = parse_ui_style(optarg, err);
+	    if (!ui_opt)
+	      {
+		std::cerr << err << "\n";
+		return 1;
+	      }
+	    ctx = DFS::DFSContext(ctx.current_directory, ctx.current_drive,
+				  *ui_opt);
+	    break;
+	  }
 
 	case OPT_HELP:
 	  {

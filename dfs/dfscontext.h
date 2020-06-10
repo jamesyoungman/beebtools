@@ -2,6 +2,7 @@
 #define INC_DFSCONTEXT_H 1
 
 #include <string>
+#include <optional>
 
 namespace DFS
 {
@@ -19,6 +20,9 @@ namespace DFS
   enum class UiStyle
     {
      Default,
+     // Acorn means "Acorn 1770 DFS" as opposed to the 8271 DFS, so
+     // for example we show the disc encoding after the title in the
+     // "cat" command.
      Acorn,
      Watford
     };
@@ -33,6 +37,11 @@ public:
   {
   }
 
+  DFSContext(char dir, int drive, UiStyle style)
+    : current_directory(dir), current_drive(drive), ui_(style)
+  {
+  }
+
   DFSContext()
     : current_directory('$'), current_drive(0), ui_(UiStyle::Default)
    {
@@ -40,6 +49,7 @@ public:
 
   char current_directory;
   int current_drive;
+
 private:
   friend class FileSystem;
   // ui is accessed via FileSystem so that it can also take into

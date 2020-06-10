@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-06-06 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-06-10 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -51,6 +51,15 @@ specified command, as if the user had executed the command
 .B *DRIVE
 .I D
 but with somewhat narrower validation.
+
+.IP "\-\-ui \fISTYLE\fR"
+Follow the user-interface conventions of DFS ROMs of type
+.IR STYLE .
+Use
+.B \-\-ui help
+to find the list of supported styles. If you don't use this option,
+the user-interface behaviour will mostly be determined by the format
+of disc image being used.
 
 .SH "COMMANDS"
 
