@@ -15,6 +15,6 @@ namespace DFS
     std::string name;
   };
 
-bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileName* p);
+bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileName* p, std::string& error);
 }  // namsespace DFS
 #endif

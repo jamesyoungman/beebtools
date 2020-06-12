@@ -46,6 +46,18 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
+    std::string error;
+    auto faild = [&error](DFS::drive_number d)
+		 {
+		   std::cerr << "failed to select drive " << d << ": " << error << "\n";
+		   return false;
+		 };
+    auto fail = [&error]()
+		 {
+		   std::cerr << error << "\n";
+		   return false;
+		 };
+
     DFS::drive_number drive_num;
     if (args.size() > 2)
       {
@@ -58,16 +70,15 @@ public:
       }
     else
       {
-	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
-	  return false;
+	error.clear();
+	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num, error))
+	  return fail();
+	if (!error.empty())
+	  std::cerr << "warning: " << error << "\n";
       }
-    std::string error;
     auto file_system(storage.mount(drive_num, error));
     if (!file_system)
-      {
-	std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
-	return false;
-      }
+      return faild(drive_num);
     auto catalog(file_system->root());
 
     int sectors_used = 2;

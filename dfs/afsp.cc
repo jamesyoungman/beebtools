@@ -65,7 +65,11 @@ namespace
     RegularExpression rx(regex_pattern);
     if (!rx.compile())
       {
-	std::cerr << "Failed to compile Regex: " << rx.error_message();
+	std::ostringstream ss;
+	ss << "failed to compile regular expression " << regex_pattern
+	   << ": " << rx.error_message();
+	error_message->assign(ss.str());
+	return false;
       }
     assert(rx.valid());
     auto groups = rx.match(input.c_str());

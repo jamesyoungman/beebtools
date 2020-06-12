@@ -70,9 +70,12 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       std::cerr << "warning: ignoring additional arguments.\n";
     }
   ParsedFileName name;
-  if (!parse_filename(ctx, args[1], &name))
-    return false;
   std::string error;
+  if (!parse_filename(ctx, args[1], &name, error))
+    {
+      std::cerr << args[1] << " is not a valid file name: " << error << "\n";
+      return false;
+    }
   std::unique_ptr<DFS::FileSystem> file_system(storage.mount(name.drive, error));
   if (!file_system)
     {

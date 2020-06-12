@@ -47,6 +47,17 @@ namespace
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
     {
+      std::string error;
+      auto fail = [&error]()
+		  {
+		    std::cerr << error << "\n";
+		    return false;
+		  };
+      auto faild = [&error](DFS::drive_number d)
+		  {
+		    std::cerr << "failed to select drive " << d << ": " << error << "\n";
+		    return false;
+		  };
       unsigned int d;
       if (args.size() > 2)
 	{
@@ -55,20 +66,19 @@ namespace
 	}
       else if (args.size() == 2)
 	{
-	  if (!DFS::StorageConfiguration::decode_drive_number(args[1], &d))
-	    return false;
+	  error.clear();
+	  if (!DFS::StorageConfiguration::decode_drive_number(args[1], &d, error))
+	    return fail();
+	  if (!error.empty())
+	    std::cerr << "warning: " << error << "\n";
 	}
       else
 	{
 	  d = ctx.current_drive;
 	}
-      std::string error;
       std::unique_ptr<DFS::FileSystem> file_system = storage.mount(d, error);
       if (!file_system)
-	{
-	  std::cerr << "failed to select drive " << d << ": " << error << "\n";
-	  return false;
-	}
+	return faild(d);
       const Catalog& catalog(file_system->root());
       const auto ui = file_system->ui_style(ctx);
       cout << catalog.title();

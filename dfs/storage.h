@@ -59,7 +59,10 @@ namespace DFS
       return true;
     }
 
-    static bool decode_drive_number(const std::string& s, drive_number *result);
+    // CARE: decode_drive_number returns false when there is an error, but it can
+    // also return true and leave a warning message in |error|.
+    static bool decode_drive_number(const std::string& s, drive_number *result,
+				    std::string& error);
     std::vector<drive_number> get_all_occupied_drive_numbers() const;
     void show_drive_configuration(std::ostream& os) const;
     void connect_internal(drive_number d, AbstractDrive* p);

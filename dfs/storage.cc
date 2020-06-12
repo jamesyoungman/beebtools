@@ -205,7 +205,8 @@ namespace DFS
     return true;
   }
 
-  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, unsigned* num)
+  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, unsigned* num,
+						 std::string& error)
   {
     std::string s;
     if (drive_arg.size() > 0 && drive_arg[0] == ':')
@@ -220,9 +221,13 @@ namespace DFS
     unsigned long int d = std::stoul(s, &end, 10);
     if (end != s.size())
       {
-	std::cerr << "Drive number " << drive_arg
-		  << " has a non-digit in it ("
-		  << s.substr(end) << ") which we will ignore\n";
+	std::ostringstream ss;
+	ss << "drive number " << drive_arg
+	   << " has a non-digit in it ("
+	   << s.substr(end) << ") which we will ignore";
+	error = ss.str();
+	*num = static_cast<unsigned>(d);
+	return true;
       }
     if (d <= std::numeric_limits<unsigned>::max())
       {
@@ -231,8 +236,10 @@ namespace DFS
       }
     else
       {
-	std::cerr << "Drive number " << drive_arg
-		  << " is too large.\n";
+	std::ostringstream ss;
+	ss << "drive number " << drive_arg
+	   << " is too large";
+	error = ss.str();
 	return false;
       }
   }

@@ -41,6 +41,17 @@ class CommandShowTitles : public DFS::CommandInterface
 		  const DFS::DFSContext&,
 		  const std::vector<std::string>& args) override
   {
+    std::string error;
+    auto faild = [&error](DFS::drive_number d)
+		 {
+		   std::cerr << "failed to select drive " << d << ": " << error << "\n";
+		   return false;
+		 };
+    auto fail = [&error]()
+		 {
+		   std::cerr << error << "\n";
+		   return false;
+		 };
     std::vector<DFS::drive_number> todo;
     if (args.size() > 1)
       {
@@ -53,8 +64,11 @@ class CommandShowTitles : public DFS::CommandInterface
 		continue;      // this is the command name, ignore it.
 	      }
 	    DFS::drive_number d;
-	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &d))
-	      return false;
+	    error.clear();
+	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &d, error))
+	      return fail();
+	    if (!error.empty())
+	      std::cerr << "warning: " << error << "\n";
 	    todo.push_back(d);
 	  }
       }
@@ -63,14 +77,10 @@ class CommandShowTitles : public DFS::CommandInterface
 	todo = storage.get_all_occupied_drive_numbers();
       }
 
-    std::string error;
     for (DFS::drive_number drive_num : todo)
       {
 	if (!show_title(storage, drive_num, error))
-	  {
-	    std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
-	    return false;
-	  }
+	  return faild(drive_num);
       }
     return true;
   }

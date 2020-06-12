@@ -1,13 +1,13 @@
 #include "fsp.h"
 
-#include <iostream>
+#include <sstream>
 
 using std::string;
 
 namespace DFS
 {
 
-bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileName* p)
+bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileName* p, std::string& error)
 {
   std::string name(fsp);
   ParsedFileName result;
@@ -16,9 +16,13 @@ bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileNam
   // If there is a drive specification, parse and remove it.
   if (fsp[0] == ':')
     {
+      // TODO: this probably won't cope with drive number with more
+      // than one digit.
       if (fsp.size() < 3 || !isdigit(fsp[1]) || fsp[2] != '.')
 	{
-	  std::cerr << "File name " << fsp << " has a bad drive specification\n";
+	  std::ostringstream ss;
+	  ss << "file name " << fsp << " has a bad drive specification";
+	  error = ss.str();
 	  return false;
 	}
       result.drive = fsp[1] - '0';
