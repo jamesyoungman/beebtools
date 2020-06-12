@@ -28,9 +28,7 @@ namespace DFS
 class FileSystem
 {
 public:
-  // TODO: pass in the filesystem type, now that we need to figure it
-  // out before we call the FileSystem constructor.
-  explicit FileSystem(AbstractDrive* drive);
+  explicit FileSystem(AbstractDrive* drive, DFS::Format fmt, DFS::sector_count_type sectors);
   const Catalog& root() const;
 
   // Determine what UI styling to use for the current file system.

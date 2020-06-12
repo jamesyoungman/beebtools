@@ -46,7 +46,7 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
-    DFS::AbstractDrive *drive;
+    DFS::drive_number drive_num;
     if (args.size() > 2)
       {
 	std::cerr << "at most one command-line argument is needed.\n";
@@ -54,19 +54,15 @@ public:
       }
     if (args.size() < 2)
       {
-	if (!storage.select_drive(ctx.current_drive, &drive))
-	  return false;
+	drive_num = ctx.current_drive;
       }
     else
       {
-	unsigned int drive_num;
 	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
 	  return false;
-	if (!storage.select_drive(drive_num, &drive))
-	  return false;
       }
-    const DFS::FileSystem file_system(drive);
-    auto catalog(file_system.root());
+    auto file_system(storage.mount(drive_num));
+    auto catalog(file_system->root());
 
     int sectors_used = 2;
     const std::vector<DFS::CatalogEntry> entries = catalog.entries();

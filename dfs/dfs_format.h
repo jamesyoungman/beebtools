@@ -4,6 +4,7 @@
 #include <functional>
 #include <iostream>
 #include <string>
+#include <utility>
 
 #include "storage.h"
 
@@ -20,10 +21,12 @@ enum class Format
   };
   std::string format_name(Format f);
 
-  Format identify_format(std::function<void(DFS::sector_count_type,
-					    DFS::SectorBuffer*,
-					    bool&)> sector_reader);
-  Format identify_format(AbstractDrive*);
+  std::pair<Format, DFS::sector_count_type>
+  identify_image_format(std::function<void(DFS::sector_count_type,
+					   DFS::SectorBuffer*,
+					   bool&)> sector_reader);
+  std::pair<Format, DFS::sector_count_type>
+  identify_drive_format(AbstractDrive*);
 
 }  // namespace DFS
 

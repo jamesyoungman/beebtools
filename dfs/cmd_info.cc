@@ -79,12 +79,8 @@ public:
       }
 
     const DFS::drive_number drive_num = matcher->get_drive_number();
-    DFS::AbstractDrive *drive;
-    if (!storage.select_drive(drive_num, &drive))
-      return false;
-    assert(drive != 0);
-    const DFS::FileSystem file_system(drive);
-    const auto& catalog(file_system.root());
+    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(drive_num));
+    const auto& catalog(file_system->root());
 
     cout << std::hex;
     cout << std::uppercase;

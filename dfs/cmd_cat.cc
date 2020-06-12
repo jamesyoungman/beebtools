@@ -47,7 +47,6 @@ namespace
 		    const DFS::DFSContext& ctx,
 		    const std::vector<std::string>& args) override
     {
-      DFS::AbstractDrive *drive;
       unsigned int d;
       if (args.size() > 2)
 	{
@@ -63,12 +62,9 @@ namespace
 	{
 	  d = ctx.current_drive;
 	}
-      if (!storage.select_drive(d, &drive))
-	return false;
-
-      FileSystem file_system(drive);
-      const auto ui = file_system.ui_style(ctx);
-      const Catalog& catalog(file_system.root());
+      std::unique_ptr<FileSystem> file_system = storage.mount(d);
+      const Catalog& catalog(file_system->root());
+      const auto ui = file_system->ui_style(ctx);
       cout << catalog.title();
       std::optional<int> cycle_count = catalog.sequence_number();
       if (cycle_count)

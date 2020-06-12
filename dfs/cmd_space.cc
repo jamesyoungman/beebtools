@@ -41,37 +41,32 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
-    DFS::AbstractDrive *drive;
-    unsigned int drive_num;
+    DFS::drive_number drive_num;
     if (args.size() > 2)
       {
 	std::cerr << "Please specify at most one argument, the drive number\n";
 	return false;
       }
-    else if (args.size() == 2)
+    if (args.size() < 2)
       {
-	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
-	  return false;
-	if (!storage.select_drive(drive_num, &drive))
-	  return false;
+	drive_num = ctx.current_drive;
       }
     else
       {
-	if (!storage.select_drive(ctx.current_drive, &drive))
+	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
 	  return false;
-	drive_num = ctx.current_drive;
       }
-    DFS::FileSystem file_system(drive);
-    const auto& root(file_system.root());
+    auto file_system(storage.mount(drive_num));
+    auto root(file_system->root());
 
     std::cerr << "Disc total sectors = "
        << std::setw(3) << std::hex << std::uppercase
-       << file_system.disc_sector_count() << "\n";
+       << file_system->disc_sector_count() << "\n";
     std::cerr << "Disc sectors occupied by catalog = "
 	      << std::setw(3) << std::hex << std::uppercase
 	      << root.catalog_sectors() << "\n";
     std::cerr << "Total file storage space in sectors = "
-	      << (file_system.disc_sector_count()
+	      << (file_system->disc_sector_count()
 		  - root.catalog_sectors()) << "\n";
 
     // Files occur on the disk in a kind of reverse order.  The last

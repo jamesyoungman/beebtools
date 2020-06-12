@@ -72,13 +72,8 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   ParsedFileName name;
   if (!parse_filename(ctx, args[1], &name))
     return false;
-
-  DFS::AbstractDrive *drive;
-  if (!storage.select_drive(name.drive, &drive))
-    return false;
-  assert(drive != 0);
-  const DFS::FileSystem file_system(drive);
-  const auto& root(file_system.root());
+  std::unique_ptr<DFS::FileSystem> file_system(storage.mount(name.drive));
+  const auto& root(file_system->root());
   const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(name);
   if (!entry)
     {

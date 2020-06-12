@@ -92,16 +92,16 @@ public:
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
 
-    DFS::AbstractDrive *drive;
-    if (!storage.select_drive(ctx.current_drive, &drive))
+
+    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive);
+    if (!file_system)
       {
 	cerr << "failed to select current drive " << ctx.current_drive << "\n";
 	return false;
       }
-    const DFS::FileSystem file_system(drive);
-    auto catalog = file_system.root();
-    std::vector<DFS::byte> file_body;
+    const DFS::Catalog& catalog(file_system->root());
 
+    std::vector<DFS::byte> file_body;
     for (const auto& entry : catalog.entries())
       {
 	file_body.clear();

@@ -30,11 +30,8 @@ class CommandShowTitles : public DFS::CommandInterface
   bool show_title(const DFS::StorageConfiguration& storage,
 		  DFS::drive_number d)
   {
-    DFS::AbstractDrive *drive;
-    if (!storage.select_drive(d, &drive))
-      return false;
-    DFS::FileSystem file_system(drive);
-    std::cout << d << ":" << file_system.root().title() << "\n";
+    auto file_system(storage.mount(d));
+    std::cout << d << ":" << file_system->root().title() << "\n";
     return std::cout.good();
   }
 

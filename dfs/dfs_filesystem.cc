@@ -32,9 +32,10 @@ namespace
 namespace DFS
 {
 
-  FileSystem::FileSystem(AbstractDrive *drive)
-    : format_(identify_format(drive)),
-      media_(drive),
+  FileSystem::FileSystem(AbstractDrive *drive,
+			 DFS::Format fmt,
+			 DFS::sector_count_type /* total sectors */)
+    : format_(fmt), media_(drive),
       root_(std::make_unique<Catalog>(format_, drive))
   {
     const DFS::byte byte106 = get_byte(1, 0x06);

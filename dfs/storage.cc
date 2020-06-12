@@ -282,4 +282,14 @@ namespace DFS
       } while (i++ < loop_limit);
   }
 
+
+  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(drive_number drive) const
+  {
+    AbstractDrive *p;
+    if (!select_drive(drive, &p))
+      return 0;
+    std::pair<Format, sector_count_type> probe_result = DFS::identify_drive_format(p);
+    return std::make_unique<FileSystem>(p, probe_result.first, probe_result.second);
+  }
+
 }  // namespace DFS

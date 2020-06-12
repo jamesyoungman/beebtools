@@ -1,22 +1,47 @@
 #include "dfs_format.h"
 #include "exceptions.h"
 
+namespace
+{
+  typedef std::function<void(DFS::sector_count_type,
+			     DFS::SectorBuffer*,
+			     bool&)> sector_reader;
+
+  DFS::sector_count_type get_hdfs_sector_count(const DFS::SectorBuffer& sec1)
+  {
+    auto sectors_per_side = sec1[0x07] // bits 0-7
+      | (sec1[0x06] & 3) << 8;     // bits 8-9
+    auto side_shift = 1 + (sec1[0x06] & 4) ? 1 : 0;
+    return DFS::sector_count_type(sectors_per_side << side_shift);
+  }
+
+  DFS::sector_count_type get_dfs_sector_count(const DFS::SectorBuffer& sec1)
+  {
+    return DFS::sector_count_type(sec1[0x07] // bits 0-7
+				  | (sec1[0x06] & 7) << 8); // bits 8-10
+  }
+
+}  // namespae
+
+
 namespace DFS
 {
-  Format identify_format(AbstractDrive* drive)
+  std::pair<Format, DFS::sector_count_type>
+  identify_drive_format(AbstractDrive* drive)
   {
-    return identify_format([drive](DFS::sector_count_type sector_num,
-				   DFS::SectorBuffer* buf,
-				   bool& beyond_eof)
+    return identify_image_format([drive](DFS::sector_count_type sector_num,
+					 DFS::SectorBuffer* buf,
+					 bool& beyond_eof)
 			   {
 			     drive->read_sector(sector_num, buf, beyond_eof);
 			   });
   }
 
 
-  Format identify_format(std::function<void(DFS::sector_count_type,
-					    DFS::SectorBuffer*,
-					    bool&)> sector_reader)
+  std::pair<Format, DFS::sector_count_type>
+  identify_image_format(std::function<void(DFS::sector_count_type,
+					   DFS::SectorBuffer*,
+					   bool&)> sector_reader)
   {
     DFS::SectorBuffer buf;
     bool beyond_eof = false;
@@ -25,7 +50,9 @@ namespace DFS
       throw DFS::eof_in_catalog();
 
     if (buf[0x06] & 8)
-      return Format::HDFS;
+      return std::make_pair(Format::HDFS, get_hdfs_sector_count(buf));
+
+    const auto sectors = get_dfs_sector_count(buf);
 
     // DFS provides 31 file slots, and Watford DFS 62.  Watford DFS does
     // this by doubling the size of the catalog into sectors 2 and 3 (as
@@ -43,7 +70,7 @@ namespace DFS
 	if (start_sector == 2)
 	  {
 	    /* Sector 2 is used by a file, so not Watford DFS. */
-	    return Format::DFS;
+	    return std::make_pair(Format::DFS, sectors);
 	  }
       }
 
@@ -55,14 +82,14 @@ namespace DFS
 	if (std::all_of(buf.cbegin(), buf.cbegin()+0x08,
 			[](byte b) { return b == 0xAA; }))
 	  {
-	    return Format::WDFS;
+	    return std::make_pair(Format::WDFS, sectors);
 	  }
       }
     // Either the recognition bytes were not there (meaning it's not a
     // Watford DFS 62 file catalog) or the disk image is too short to
     // contain sector 2 (meaning that the recognition bytes cannot be
     // there beyond the end of the "media").
-    return Format::DFS;
+    return std::make_pair(Format::DFS, sectors);
   }
 
 }  // namespace DFS
