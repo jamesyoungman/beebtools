@@ -190,12 +190,14 @@ namespace DFS
       }
   }
 
-  bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp) const
+  bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp, std::string& error) const
   {
     auto it = caches_.find(drive);
     if (it == caches_.end())
       {
-	std::cerr << "There is no disc in drive " << drive << "\n";
+	std::ostringstream ss;
+	ss << "there is no disc in drive " << drive << "\n";
+	error = ss.str();
 	return false;
       }
     assert(it->second);
@@ -283,10 +285,10 @@ namespace DFS
   }
 
 
-  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(drive_number drive) const
+  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(drive_number drive, std::string& error) const
   {
     AbstractDrive *p;
-    if (!select_drive(drive, &p))
+    if (!select_drive(drive, &p, error))
       return 0;
     std::pair<Format, sector_count_type> probe_result = DFS::identify_drive_format(p);
     return std::make_unique<FileSystem>(p, probe_result.first, probe_result.second);

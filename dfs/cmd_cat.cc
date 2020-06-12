@@ -62,7 +62,13 @@ namespace
 	{
 	  d = ctx.current_drive;
 	}
-      std::unique_ptr<FileSystem> file_system = storage.mount(d);
+      std::string error;
+      std::unique_ptr<DFS::FileSystem> file_system = storage.mount(d, error);
+      if (!file_system)
+	{
+	  std::cerr << "failed to select drive " << d << ": " << error << "\n";
+	  return false;
+	}
       const Catalog& catalog(file_system->root());
       const auto ui = file_system->ui_style(ctx);
       cout << catalog.title();

@@ -71,17 +71,19 @@ public:
       dest_dir.push_back('/');
 
     DFS::AbstractDrive *drive = 0;
-    if (!storage.select_drive(ctx.current_drive, &drive))
-      return false;
-    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive);
+    std::string error;
+    auto fail = [&error, &ctx]()  -> bool
+		{
+		  std::cerr << "failed to select drive " << ctx.current_drive
+			    << ": " << error << "\n";
+		  return false;
+		};
+    if (!storage.select_drive(ctx.current_drive, &drive, error))
+      return fail();
+    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive, error);
     if (!file_system)
-      {
-	std::cerr << "failed to select current drive " << ctx.current_drive << "\n";
-	return false;
-      }
+      return fail();
     const DFS::Catalog& root(file_system->root());
-
-
 
     // We're going to loop over the unoccupied areas of the disc,
     // extracting each.  We add a sentinel value to ensure that we

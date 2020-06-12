@@ -92,11 +92,11 @@ public:
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
 
-
-    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive);
+    std::string error;
+    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive, error);
     if (!file_system)
       {
-	cerr << "failed to select current drive " << ctx.current_drive << "\n";
+	cerr << "failed to select drive " << ctx.current_drive << ": " << error << "\n";
 	return false;
       }
     const DFS::Catalog& catalog(file_system->root());

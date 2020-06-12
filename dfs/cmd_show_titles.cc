@@ -28,9 +28,11 @@ class CommandShowTitles : public DFS::CommandInterface
   }
 
   bool show_title(const DFS::StorageConfiguration& storage,
-		  DFS::drive_number d)
+		  DFS::drive_number d, std::string& error)
   {
-    auto file_system(storage.mount(d));
+    auto file_system(storage.mount(d, error));
+    if (!file_system)
+      return false;
     std::cout << d << ":" << file_system->root().title() << "\n";
     return std::cout.good();
   }
@@ -60,10 +62,15 @@ class CommandShowTitles : public DFS::CommandInterface
       {
 	todo = storage.get_all_occupied_drive_numbers();
       }
+
+    std::string error;
     for (DFS::drive_number drive_num : todo)
       {
-	if (!show_title(storage, drive_num))
-	  return false;
+	if (!show_title(storage, drive_num, error))
+	  {
+	    std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
+	    return false;
+	  }
       }
     return true;
   }

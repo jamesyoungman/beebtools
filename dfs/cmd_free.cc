@@ -61,7 +61,13 @@ public:
 	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num))
 	  return false;
       }
-    auto file_system(storage.mount(drive_num));
+    std::string error;
+    auto file_system(storage.mount(drive_num, error));
+    if (!file_system)
+      {
+	std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
+	return false;
+      }
     auto catalog(file_system->root());
 
     int sectors_used = 2;

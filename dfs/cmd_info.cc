@@ -79,7 +79,13 @@ public:
       }
 
     const DFS::drive_number drive_num = matcher->get_drive_number();
-    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(drive_num));
+    std::string error;
+    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(drive_num, error));
+    if (!file_system)
+      {
+	std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
+	return false;
+      }
     const auto& catalog(file_system->root());
 
     cout << std::hex;
