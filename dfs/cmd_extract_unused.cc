@@ -90,7 +90,7 @@ public:
     // also extract the final free span, if any (this avoids
     // duplication of code).
     const std::string end_of_disc_sentinel = ":::end";
-    const DFS::SpaceMap occupied_by(file_system->device(), root, end_of_disc_sentinel);
+    const DFS::SpaceMap occupied_by(root, end_of_disc_sentinel);
     const sector_count_type last_sec = root.total_sectors();
     int begin = -1;
     unsigned short count = 0;
@@ -139,7 +139,8 @@ private:
 	auto got = drive->read_block(sec);
 	if (!got)
 	  {
-	    std::cerr << "warning: media (" << drive->get_total_sectors() << " sectors) is shorter "
+	    std::cerr << "warning: media ("
+		      << drive->geometry().total_sectors() << " sectors) is shorter "
 		      << "than file system (" << end_sector << " sectors)\n";
 	    break;
 	  }

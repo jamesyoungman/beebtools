@@ -102,7 +102,7 @@ public:
     const DFS::Catalog& catalog(file_system->root());
 
     std::vector<DFS::byte> file_body;
-    for (const auto& entry : catalog.entries(file_system->device()))
+    for (const auto& entry : catalog.entries())
       {
 	file_body.clear();
 	DFS::CRC crc;

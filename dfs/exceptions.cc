@@ -11,6 +11,17 @@ namespace
 
 namespace DFS {
 
+FailedToGuessFormat::FailedToGuessFormat(const std::string& msg)
+  : error_message_(msg)
+{
+}
+
+const char *
+FailedToGuessFormat::what() const noexcept
+{
+  return error_message_.c_str();
+}
+
 BadFileSystem::BadFileSystem(const std::string& msg)
   : error_message_(std::string("bad disk image: ") + msg)
 {

@@ -1,10 +1,13 @@
 #include "dfs_catalog.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include "abstractio.h"
+#include "dfs.h"
 #include "stringutil.h"
 
 namespace
@@ -44,27 +47,15 @@ namespace
 
 namespace DFS
 {
-  CatalogEntry::CatalogEntry(const DataAccess& media,
-			     unsigned short catalog_instance,
-			     unsigned short position)
+  sector_count_type catalog_sectors_for_format(const Format& f)
   {
-    if (position > 31*8 || position < 8)
-      {
-	throw std::range_error("request for impossible catalog slot");
-      }
-    const sector_count_type name_sec = sector_count(catalog_instance * 2u);
-    const sector_count_type md_sec = sector_count(name_sec + 1u);
-    auto got = media.read_block(name_sec);
-    if (!got)
-      throw eof_in_catalog();
-    DFS::SectorBuffer& buf(*got);
-    std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
-	      raw_name_.begin());
-    got = media.read_block(md_sec);
-    if (!got)
-      throw eof_in_catalog();
-    std::copy(got->cbegin() + position, got->cbegin() + position + 8,
-	      raw_metadata_.begin());
+    return f == Format::WDFS ? 4 : 2;
+  }
+
+  CatalogEntry::CatalogEntry(const DFS::byte* name, const DFS::byte* metadata)
+  {
+    std::copy(name, name+8, raw_name_.begin());
+    std::copy(metadata, metadata+8, raw_metadata_.begin());
   }
 
   std::string CatalogEntry::name() const
@@ -113,15 +104,19 @@ namespace DFS
 
   sector_count_type CatalogEntry::last_sector() const
   {
-    ldiv_t division = ldiv(file_length(), DFS::SECTOR_BYTES);
+    const auto start = start_sector();
+    const auto len = file_length();
+    if (0 == len)
+      return start;
+    ldiv_t division = ldiv(len, DFS::SECTOR_BYTES);
     assert(division.quot < std::numeric_limits<int>::max());
     const int sectors_for_this_file = static_cast<int>(division.quot)
       + (division.rem ? 1 : 0);
-    return sector_count(start_sector() + sectors_for_this_file - 1);
+    return sector_count(start + sectors_for_this_file - 1);
   }
 
   bool CatalogEntry::visit_file_body_piecewise
-  (const DataAccess& media,
+  (DataAccess& media,
    std::function<bool(const byte* begin, const byte* end)> visitor) const
   {
     const sector_count_type start = start_sector(), end=last_sector();
@@ -142,50 +137,15 @@ namespace DFS
 
 
 
-  std::string CatalogFragment::read_title(const DataAccess& media, DFS::sector_count_type location)
-{
-  DFS::AbstractDrive::SectorBuffer s0, s1;
-  auto buf = media.read_block(location);
-  if (!buf)
-    throw eof_in_catalog();
-  s0 = *buf;
-  ++location;
-  buf = media.read_block(location);
-  if (!buf)
-    throw eof_in_catalog();
-  s1 = *buf;
-  return convert_title(s0, s1);
-}
-
-  CatalogFragment::CatalogFragment(DFS::Format format, const DataAccess& media,
-				   DFS::sector_count_type location)
-    : disc_format_(format), location_(location),
-      title_(read_title(media, location))
+CatalogFragment::CatalogFragment(DFS::Format format,
+				 const DFS::SectorBuffer& names,
+				 const DFS::SectorBuffer& metadata)
+    : disc_format_(format), title_(convert_title(names, metadata))
   {
-    AbstractDrive::SectorBuffer s;
-    bool beyond_eof = false;
-    read_sector(media, 0, &s, beyond_eof);
-    if (beyond_eof)
-      throw eof_in_catalog();
-
-    const DFS::byte title_initial(s[0]);
-    read_sector(media, 1, &s, beyond_eof);
-    if (location > 1)		// TODO: this check won't be right for Opus DDOS.
-      {
-	assert(disc_format_ == Format::WDFS);
-	if (beyond_eof)
-	  {
-	    throw BadFileSystem("to be a valid Watford Electronics DFS file system, there must be at least 4 sectors");
-	  }
-      }
-    else if (beyond_eof)
-      {
-	  throw eof_in_catalog;
-      }
-
-    sequence_number_ = s[4];
-    position_of_last_catalog_entry_ = s[5];
-    switch ((s[6] >> 4) & 0x03)
+    const DFS::byte title_initial(names[0]);
+    sequence_number_ = metadata[4];
+    position_of_last_catalog_entry_ = metadata[5];
+    switch ((metadata[6] >> 4) & 0x03)
       {
       case 0: boot_ = BootSetting::None; break;
       case 1: boot_ = BootSetting::Load; break;
@@ -193,8 +153,8 @@ namespace DFS
       case 3: boot_ = BootSetting::Exec; break;
       }
 
-    total_sectors_ = sector_count(s[7]	// bits 0-7
-				  | ((s[6] & 3) << 8));	// bits 8-9
+    total_sectors_ = sector_count(metadata[7]	// bits 0-7
+				  | ((metadata[6] & 3) << 8));	// bits 8-9
     switch (disc_format_)
       {
       case Format::HDFS:
@@ -209,6 +169,11 @@ namespace DFS
 	// no more bits
 	break;
       }
+    for (int pos = 8; pos <= position_of_last_catalog_entry_; pos += 8)
+      {
+	entries_.push_back(CatalogEntry(names.data() + pos,
+					metadata.data() + pos));
+      }
   }
 
   std::string CatalogFragment::title() const
@@ -216,63 +181,108 @@ namespace DFS
     return title_;
   }
 
-  CatalogEntry CatalogFragment::get_entry_at_offset(const DataAccess& media, unsigned int offset) const
+  CatalogEntry CatalogFragment::get_entry_at_offset(unsigned int offset) const
   {
-    return CatalogEntry(media, location_/2, DFS::sector_count(offset));
+    assert(offset % 8 == 0);
+    assert(offset >= 8);
+    return entries_[offset / 8 - 1];
   }
 
-  std::optional<CatalogEntry> CatalogFragment::find_catalog_entry_for_name(const DataAccess& media,
-									   const ParsedFileName& name) const
+  std::optional<CatalogEntry> CatalogFragment::find_catalog_entry_for_name(const ParsedFileName& name) const
   {
-    for (unsigned offset = 8; offset <= position_of_last_catalog_entry_; offset += 8u)
-      {
-	CatalogEntry entry = get_entry_at_offset(media, static_cast<unsigned short>(offset));
-	if (entry.has_name(name))
-	  return entry;
-      }
-    return std::nullopt;
+    auto it = std::find_if(entries_.cbegin(), entries_.cend(),
+			   [&name](const CatalogEntry& entry) -> bool
+			   {
+			     return entry.has_name(name);
+			   });
+    if (it == entries_.cend())
+      return std::nullopt;
+    else
+      return *it;
   }
 
-  std::vector<CatalogEntry> CatalogFragment::entries(const DataAccess& media) const
+  std::vector<CatalogEntry> CatalogFragment::entries() const
   {
-    std::vector<CatalogEntry> result;
+    return entries_;
+  }
+
+  bool CatalogFragment::valid(std::string& error) const
+  {
+    std::ostringstream os;
     unsigned short last = position_of_last_catalog_entry();
+    if  (last % 8)
+      {
+	os << "position of last catalog entry is " << last
+	   << " but it is supposed to be a multiple of 8";
+	error = os.str();
+	return false;
+      }
+    if (last > 31 * 8)
+      {
+	error = "position of last catalog entry is beyond the end of the catalog";
+	return false;
+      }
+    // An Acorn DFS catalog takes up 2 sectors, so a catalog whose
+    // total sector count is less than 3 is definitely not valid, as
+    // the disc would not be able to contain any files.
+    if (total_sectors_ <= catalog_sectors_for_format(disc_format_))
+      {
+	os << "total sector count for catalog is only " << total_sectors_;
+	error = os.str();;
+	return false;
+      }
+    std::optional<DFS::sector_count_type> last_file_start;
     for (unsigned short pos = 8;
 	 pos <= last;
 	 pos = static_cast<unsigned short>(pos + 8))
       {
-	result.push_back(get_entry_at_offset(media, pos));
+	auto entry = get_entry_at_offset(pos);
+	if (last_file_start)
+	  {
+	    if (entry.last_sector() >= total_sectors())
+	      {
+		os << "catalog entry " << pos
+		   << " indicates a file body ending at sector "
+		   << entry.last_sector()
+		   << " but the device only has " << total_sectors()
+		   << " sectors in total";
+		error = os.str();
+		return false;
+	      }
+	    if (entry.last_sector() >= *last_file_start)
+	      {
+		os << "catalog entries " << pos << " and " << (pos-8)
+		   << " indicate files overlapping at sector "
+		   << *last_file_start;
+		error = os.str();
+		return false;
+	      }
+	  }
+	last_file_start = entry.start_sector();
       }
-    return result;
+    return true;
   }
 
-  void CatalogFragment::read_sector(const DFS::DataAccess& media, sector_count_type i, DFS::SectorBuffer* buf, bool& beyond_eof) const
-  {
-    // TODO: this implementation won't work for the Opus format, where
-    // the sector locations within the media don't have the same
-    // origin for catalogs and files.  For example, in Opus volume C,
-    // the catalog is in track 0, but the the initial sector of a file
-    // is measured from the location of the first track of that volume
-    // (which isn't track 0, because there are no volumes which use
-    // track 0 as it's reserved for catalogs).
-    std::optional<SectorBuffer> got = media.read_block(DFS::sector_count(location_ + i));
-    if (!got)
-      beyond_eof = true;
-    else
-      *buf = *got;
-  }
-
-  Catalog::Catalog(DFS::Format format, const DataAccess& media)
+  Catalog::Catalog(DFS::Format format, DataAccess& media)
     : disc_format_(format), media_(media)
   {
     // All DFS formats have two sectors of catalog data, at sectors
-    // 0 and 1.
-    fragments_.push_back(CatalogFragment(format, media, 0));
-    if (disc_format_ == Format::WDFS)
+    // 0 and 1.  WDFS also at 2 and 3.
+    const int frag_count = disc_format_ == Format::WDFS ? 2 : 1;
+    fragments_.reserve(frag_count);
+    for (DFS::sector_count_type base = 0 ; base < frag_count*2 ; /* empty */)
       {
-	// Watford DFS has an additional pair of catalog sectors in
-	// sectors 2 and 3, providing an additional 31 entries.
-	fragments_.push_back(CatalogFragment(format, media, 2));
+	std::optional<DFS::SectorBuffer> names = media.read_block(base++);
+	std::optional<DFS::SectorBuffer> metadata = media.read_block(base++);
+	if (!names || !metadata)
+	  {
+	    std::ostringstream os;
+	    os << "to contain a valid " << format_name(disc_format_)
+	       << " catalog, the file system must contain at least "
+	       << (frag_count * 2) << " sectors";
+	    throw new BadFileSystem(os.str());
+	  }
+	fragments_.push_back(CatalogFragment(format, *names, *metadata));
       }
   }
 
@@ -311,24 +321,23 @@ namespace DFS
     return disc_format() == Format::WDFS ? 62 : 31;
   }
 
-  std::optional<CatalogEntry> Catalog::find_catalog_entry_for_name(const DataAccess& media,
-								   const ParsedFileName& name) const
+  std::optional<CatalogEntry> Catalog::find_catalog_entry_for_name(const ParsedFileName& name) const
   {
     for (const auto& frag : fragments_)
       {
-	auto result = frag.find_catalog_entry_for_name(media, name);
+	auto result = frag.find_catalog_entry_for_name(name);
 	if (result)
 	  return result;
       }
     return std::nullopt;
   }
 
-  std::vector<CatalogEntry> Catalog::entries(const DataAccess& media) const
+  std::vector<CatalogEntry> Catalog::entries() const
   {
     std::vector<CatalogEntry> result;
     for (const auto& frag : fragments_)
       {
-	std::vector<CatalogEntry> frag_entries = frag.entries(media);
+	std::vector<CatalogEntry> frag_entries = frag.entries();
 	std::copy(frag_entries.begin(), frag_entries.end(),
 		  std::back_inserter(result));
       }
@@ -336,7 +345,7 @@ namespace DFS
   }
 
   std::vector<std::vector<CatalogEntry>>
-  Catalog::get_catalog_in_disc_order(const DataAccess& media) const
+  Catalog::get_catalog_in_disc_order() const
   {
     std::vector<std::vector<CatalogEntry>> result;
     result.reserve(fragments_.size());
@@ -348,7 +357,7 @@ namespace DFS
 	     pos <= last;
 	     pos = static_cast<unsigned short>(pos + 8))
 	  {
-	    result.back().push_back(frag.get_entry_at_offset(media, pos));
+	    result.back().push_back(frag.get_entry_at_offset(pos));
 	  }
       }
     return result;
@@ -363,3 +372,40 @@ namespace DFS
   }
 
 }  // namespace DFS
+
+
+namespace std
+{
+  ostream& operator<<(ostream& os, const DFS::CatalogFragment& f)
+  {
+    auto entries = f.entries();
+    os << "Title " << f.title() << "\n"
+       << "Boot setting " << f.boot_setting() << "\n"
+       << "Total sectors " << f.total_sectors() << "\n"
+       << entries.size() << " entries"
+       << (entries.size() ? ":" : "") << "\n";
+    for (const DFS::CatalogEntry& entry : entries)
+      {
+	os << entry << "\n";
+      }
+    return os;
+  }
+
+  ostream& operator<<(ostream& os, const DFS::CatalogEntry& entry)
+  {
+    unsigned long load_addr, exec_addr;
+    load_addr = DFS::sign_extend(entry.load_address());
+    exec_addr = DFS::sign_extend(entry.exec_address());
+    return os << entry.directory() << "."
+	      << left
+	      << setw(8) << setfill(' ')
+	      << entry.name() << " "
+	      << setw(3)
+	      << (entry.is_locked() ? "L" : "")
+	      << std::right
+	      << setw(6) << setfill('0') << load_addr << " "
+	      << setw(6) << setfill('0') << exec_addr << " "
+	      << setw(6) << setfill('0') << entry.file_length() << " "
+	      << setw(3) << setfill('0') << entry.start_sector();
+  }
+}

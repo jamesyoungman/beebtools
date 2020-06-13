@@ -7,7 +7,7 @@
 namespace
 {
   void read_file_body(const DFS::CatalogEntry& entry,
-		      const DFS::DataAccess& media,
+		      DFS::DataAccess& media,
 		      std::vector<DFS::byte>* body)
   {
     entry.visit_file_body_piecewise(media,
@@ -85,8 +85,7 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       return false;
     }
   const auto& root(file_system->root());
-  const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(file_system->device(),
-									     name);
+  const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(name);
   if (!entry)
     {
       std::cerr << args[1] << ": not found\n";

@@ -12,7 +12,7 @@ namespace DFS
   class SpaceMap
   {
   public:
-    explicit SpaceMap(const DFS::DataAccess&, const Catalog&, std::optional<std::string> sentinel);
+    explicit SpaceMap(const Catalog&, std::optional<std::string> sentinel);
     std::optional<std::string> at(DFS::sector_count_type sec) const;
 
   private:

@@ -7,6 +7,11 @@ using std::string;
 namespace DFS
 {
 
+ParsedFileName::ParsedFileName()
+  : drive(0), dir('\0')
+{
+}
+
 bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileName* p, std::string& error)
 {
   std::string name(fsp);

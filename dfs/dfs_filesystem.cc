@@ -32,10 +32,10 @@ namespace
 namespace DFS
 {
 
-  FileSystem::FileSystem(const DataAccess& media,
+  FileSystem::FileSystem(DataAccess& media,
 			 DFS::Format fmt,
-			 DFS::sector_count_type /* total sectors */)
-    : format_(fmt), media_(media),
+			 DFS::Geometry geom)
+    : format_(fmt), geometry_(geom), media_(media),
       root_(std::make_unique<Catalog>(format_, media))
   {
     const DFS::byte byte106 = get_byte(1, 0x06);
@@ -115,7 +115,7 @@ namespace DFS
     return (*got)[offset];
   }
 
-  const DataAccess& FileSystem::device() const
+  DataAccess& FileSystem::device() const
   {
     return media_;
   }
@@ -152,6 +152,16 @@ std::string format_name(Format f)
     case Format::Solidisk: return "Solidisk DFS";
     }
   abort();
+}
+
+// Returns true if the format is double-sided.  that is to say, the
+// "total sectors" field of the catalog includes the sectors on both
+// sides.
+bool single_sided_filesystem(Format)
+{
+  // No double-sided formats are supported yet.  HDFS can, apparently,
+  // be double-sided.
+  return true;
 }
 
 std::string description(const BootSetting& opt)

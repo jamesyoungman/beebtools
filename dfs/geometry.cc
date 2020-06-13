@@ -10,24 +10,14 @@
 
 namespace
 {
-  std::string encoding_to_str(const DFS::Encoding& e)
-  {
-    switch (e)
-      {
-      case DFS::Encoding::FM: return "FM";
-      case DFS::Encoding::MFM: return "MFM";
-      }
-    assert(!"unhandled case in encoding_to_str");
-  }
-
-  std::optional<int> guess_spt(unsigned long int total)
+  std::optional<DFS::sector_count_type> guess_spt(unsigned long int total)
   {
     // We guess 18 sectors per track first, as 720 (e.g. chs=40,1,18)
     // is divisible by both 18 and 10.
     if (total % 18 == 0)
-      return 18;
+      return DFS::sector_count(18);
     if (total % 10 == 0)
-      return 10;
+      return DFS::sector_count(10);
     return std::nullopt;
   }
 
@@ -51,13 +41,18 @@ namespace
 
 namespace DFS
 {
+  DFS::sector_count_type Geometry::total_sectors() const
+  {
+    return DFS::sector_count(cylinders * heads * sectors);
+  }
+
   std::optional<Geometry> guess_geometry_from_total_bytes
   (unsigned long total_bytes, std::optional<int> heads)
   {
     if (total_bytes % DFS::SECTOR_BYTES)
       return std::nullopt;
     const auto tot_sectors = total_bytes / DFS::SECTOR_BYTES;
-    const std::optional<int> sectors_per_track = guess_spt(tot_sectors);
+    const std::optional<DFS::sector_count_type> sectors_per_track = guess_spt(tot_sectors);
     if (!sectors_per_track)
       return std::nullopt;
     Geometry g;
@@ -80,7 +75,7 @@ namespace DFS
     return g;
   }
 
-  Geometry::Geometry(int c, int h, int s, std::optional<Encoding> enc)
+  Geometry::Geometry(int c, int h, DFS::sector_count_type s, std::optional<Encoding> enc)
     : cylinders(c), heads(h), sectors(s), encoding(enc)
   {
   }
@@ -104,6 +99,24 @@ namespace DFS
       return true;
   }
 
+  std::string encoding_to_str(const DFS::Encoding& e)
+  {
+    switch (e)
+      {
+      case DFS::Encoding::FM: return "FM";
+      case DFS::Encoding::MFM: return "MFM";
+      }
+    assert(!"unhandled case in encoding_to_str");
+  }
+
+  std::string encoding_description(const DFS::Encoding& e)
+  {
+    if (DFS::Encoding::MFM == e)
+      return "double density";
+    else
+      return "single density";
+  }
+
   std::string Geometry::to_str() const
   {
     std::ostringstream os;
@@ -117,6 +130,20 @@ namespace DFS
 	os << ", encoding unknown";
       }
     os << "}";
+    return os.str();
+  }
+
+  std::string Geometry::description() const
+  {
+    std::ostringstream os;
+    if (encoding)
+      {
+	os << encoding_description(*encoding) << ", ";
+
+      }
+    os << heads << " " << (heads == 1 ? "side" : "sides") << ", "
+       << cylinders << " " << (cylinders == 1 ? "track" : "tracks") << ", "
+       << sectors << " " << (sectors == 1 ? "sector" : "sectors") << " per track";
     return os.str();
   }
 

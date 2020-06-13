@@ -92,7 +92,7 @@ public:
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
-    const std::vector<DFS::CatalogEntry> entries(catalog.entries(file_system->device()));
+    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
     for (const auto& entry : entries)
       {
 #if VERBOSE_FOR_TESTS
@@ -101,21 +101,7 @@ public:
 #endif
 	if (!matcher->matches(drive_num, entry.directory(), entry.name()))
 	  continue;
-	unsigned long load_addr, exec_addr;
-	load_addr = DFS::sign_extend(entry.load_address());
-	exec_addr = DFS::sign_extend(entry.exec_address());
-	cout << entry.directory() << "."
-	     << std::left
-	     << std::setw(8) << std::setfill(' ')
-	     << entry.name() << " "
-	     << setw(3)
-	     << (entry.is_locked() ? "L" : "")
-	     << std::right
-	     << setw(6) << setfill('0') << load_addr << " "
-	     << setw(6) << setfill('0') << exec_addr << " "
-	     << setw(6) << setfill('0') << entry.file_length() << " "
-	     << setw(3) << setfill('0') << entry.start_sector()
-	     << "\n";
+	cout << entry << "\n";
       }
     return true;
   }

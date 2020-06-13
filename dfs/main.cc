@@ -58,6 +58,7 @@ namespace
      OPT_ALLOCATE_PHYSICAL,
      OPT_ALLOCATE_FIRST,
      OPT_UI_STYLE,
+     OPT_VERBOSE,
      OPT_HELP,
     };
 
@@ -82,6 +83,7 @@ namespace
      { "show-config", 0, NULL, OPT_SHOW_CONFIG },
      { "help", 0, NULL, OPT_HELP },
      { "ui", 1, NULL, OPT_UI_STYLE },
+     { "verbose", 0, NULL, OPT_VERBOSE },
      { 0, 0, 0, 0 },
     };
 
@@ -167,7 +169,8 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
        {"show-config", "show the storage configuraiton before "
 	"performing the operation"},
        {"ui", "follow the user-interface of this type of DFS ROM"},
-       {"help", "print a brief explanation of how to use the program"}
+       {"help", "print a brief explanation of how to use the program"},
+       {"verbose", "print (on stderr) messages about the operation of the program"}
       });
   return std::make_unique<std::map<std::string, std::string>>(m);
 }
@@ -270,6 +273,10 @@ int main (int argc, char *argv[])
 				  *ui_opt);
 	    break;
 	  }
+
+	case OPT_VERBOSE:
+	  DFS::verbose = true;
+	  break;
 
 	case OPT_HELP:
 	  {

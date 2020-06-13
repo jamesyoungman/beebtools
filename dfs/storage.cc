@@ -27,12 +27,12 @@ namespace
       cache_.resize(initial_sectors);
     }
 
-    bool has(DFS::sector_count_type sec) const
+    bool has(unsigned long sec) const
     {
       return sec < cache_.size() && cache_[sec].get() != 0;
     }
 
-    bool get(DFS::sector_count_type sec, DFS::AbstractDrive::SectorBuffer *buf) const
+    bool get(unsigned long sec, DFS::AbstractDrive::SectorBuffer *buf) const
     {
       if (!has(sec))
 	return false;
@@ -40,7 +40,7 @@ namespace
       return true;
     }
 
-    void put(DFS::sector_count_type sec, const DFS::AbstractDrive::SectorBuffer *buf)
+    void put(unsigned long sec, const DFS::AbstractDrive::SectorBuffer *buf)
     {
       if (sec >= cache_.size())
 	return;
@@ -66,8 +66,7 @@ namespace
     {
     }
 
-    virtual std::optional<DFS::SectorBuffer> read_block(DFS::sector_count_type sector)
-			     const override
+    virtual std::optional<DFS::SectorBuffer> read_block(unsigned long sector) override
     {
       DFS::SectorBuffer buf;
       if (cache_.get(sector, &buf))
@@ -82,14 +81,14 @@ namespace
       return b;
     }
 
-    DFS::sector_count_type get_total_sectors() const override
-    {
-      return underlying_->get_total_sectors();
-    }
-
     std::string description() const override
     {
       return underlying_->description();
+    }
+
+    DFS::Geometry geometry() const override
+    {
+      return underlying_->geometry();
     }
 
   private:
@@ -102,6 +101,21 @@ namespace
 
 namespace DFS
 {
+  DriveConfig::DriveConfig(DFS::Format fmt, AbstractDrive* p)
+    : fmt_(fmt), drive_(p)
+  {
+  }
+
+  Format DriveConfig::format() const
+  {
+    return fmt_;
+  }
+
+  AbstractDrive* DriveConfig::drive() const
+  {
+    return drive_;
+  }
+
   DFS::AbstractDrive::~AbstractDrive()
   {
   }
@@ -147,15 +161,15 @@ namespace DFS
     return done == to_do;
   }
 
-  void StorageConfiguration::connect_internal(drive_number n, AbstractDrive* d)
+  void StorageConfiguration::connect_internal(drive_number n, const DriveConfig& cfg)
   {
     const sector_count_type cached_sectors = 4;
     assert(!is_drive_connected(n));
-    drives_[n] = d;
-    caches_[n] = std::make_unique<CachedDevice>(d, cached_sectors);
+    drives_.emplace(n, cfg);
+    caches_[n] = std::make_unique<CachedDevice>(cfg.drive(), cached_sectors);
   }
 
-  bool StorageConfiguration::connect_drives(const std::vector<AbstractDrive*>& drives,
+  bool StorageConfiguration::connect_drives(const std::vector<DriveConfig>& drives,
 					    DriveAllocation how)
   {
     const auto limit = std::numeric_limits<drive_number>::max();
@@ -197,7 +211,22 @@ namespace DFS
       }
   }
 
-  bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp, std::string& error) const
+  std::optional<Format> StorageConfiguration::drive_format(drive_number drive,
+							   std::string& error) const
+  {
+    auto it = drives_.find(drive);
+    if (it == drives_.end())
+      {
+	std::ostringstream ss;
+	ss << "there is no disc in drive " << drive << "\n";
+	error = ss.str();
+	return std::nullopt;
+      }
+    return it->second.format();
+  }
+
+  bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp,
+					  std::string& error) const
   {
     auto it = caches_.find(drive);
     if (it == caches_.end())
@@ -291,7 +320,8 @@ namespace DFS
 		  if (it != drives_.end())
 		    {
 		      assert(is_drive_connected(d));
-		      os << ", " << it->second->description();
+		      os << ", " << it->second.drive()->description();
+		      // TODO: consider printing the format description too, here.
 		    }
 		  os << "\n";
 		};
@@ -320,8 +350,10 @@ namespace DFS
     AbstractDrive *p;
     if (!select_drive(drive, &p, error))
       return 0;
-    std::pair<Format, sector_count_type> probe_result = DFS::identify_image_format(*p);
-    return std::make_unique<FileSystem>(*p, probe_result.first, probe_result.second);
+    std::optional<Format> fmt = drive_format(drive, error);
+    if (!fmt)
+      return 0;
+    return std::make_unique<FileSystem>(*p, *fmt, p->geometry());
   }
 
 }  // namespace DFS

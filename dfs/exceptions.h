@@ -7,6 +7,16 @@
 
 namespace DFS {
 
+class FailedToGuessFormat : public std::exception
+{
+ public:
+  FailedToGuessFormat(const std::string& msg);
+  const char *what() const noexcept override;
+
+ private:
+  std::string error_message_;
+};
+
 class BadFileSystem : public std::exception
 {
  public:

@@ -77,7 +77,7 @@ then
 fi
 
 if ! check_config actual.txt \
-	     '^Drive 0: occupied, compressed image file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
+	     '^Drive 0: occupied, compressed SSD file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
 	     '^Drive 3: empty'

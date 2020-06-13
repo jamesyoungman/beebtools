@@ -13,9 +13,190 @@ using std::vector;
 using DFS::stringutil::rtrim;
 using DFS::stringutil::case_insensitive_less;
 using DFS::stringutil::case_insensitive_equal;
+using DFS::stringutil::split;
+
+
+namespace std
+{
+  bool same(const deque<string>& left,
+	    const vector<string>& right)
+  {
+    if (left.size() != right.size())
+      return false;
+    auto diff = std::mismatch(left.cbegin(), left.cend(),
+			      right.cbegin());
+    return diff.first == left.cend();
+  }
+
+  template <class It> void print(ostream& os, It begin, It end)
+  {
+    bool first = true;
+    os << '{';
+    while (begin != end)
+      {
+	if (first)
+	  first = false;
+	else
+	  os << ',';
+	os << '"' << *begin++ << '"';
+      }
+    os << '}';
+  }
+}
 
 namespace
 {
+  bool one_split_test(const std::string& input,
+		      char delim,
+		      const std::vector<std::string>& expected)
+  {
+    const std::deque<std::string> actual = split(input, delim);
+    if (same(actual, expected))
+      return true;
+    std::cerr << "split_test: split(\"" << input << "\",'" << delim << "') -> ";
+    print(std::cerr, actual.begin(), actual.end());
+    std::cerr << " but expected ";
+    print(std::cerr, expected.begin(), expected.end());
+    std::cerr << "\n";
+    return false;
+  }
+
+  bool test_split()
+  {
+    struct test_case
+    {
+      test_case(int n, const std::string& s,
+		char del,
+		const std::vector<std::string>& want)
+	: id(n), input(s), delim(del), expected(want)
+      {
+      }
+      const int id;
+      const std::string input;
+      const char delim;
+      const std::vector<std::string> expected;
+    };
+    const vector<test_case> cases =
+      {
+       test_case(10, "aa", '.', {"aa"}),
+       test_case(20, "aa.bb", '.', {"aa", "bb"}),
+       test_case(30, "aa.bb", 's', {"aa.bb"}),
+       test_case(40, ".aa", '.', {"", "aa"}),
+       test_case(50, "", '.', {""}),
+       test_case(60, "aa.", '.', {"aa", ""}),
+       test_case(70, ".", '.', {"", ""}),
+       test_case(80, "foo.ssd", '.', {"foo", "ssd"}),
+       test_case(90, "foo.ssd.gz", '.', {"foo", "ssd", "gz"}),
+       test_case(95, "foo", '.', {"foo"}),
+      };
+
+    bool ok = true;
+    for (const auto& testcase : cases)
+      {
+	if (!one_split_test(testcase.input, testcase.delim, testcase.expected))
+	  {
+	    std::cerr << "one_split_test: case " << testcase.id << " failed\n";
+	    ok = false;
+	  }
+      }
+    return ok;
+  }
+
+  bool remove_suffix_test(const std::string& input,
+			  const std::string& suffix,
+			  bool expected_return,
+			  const std::string& expected_yield)
+  {
+    std::string work = input;
+    bool removed = DFS::stringutil::remove_suffix(&work, suffix);
+    if (removed != expected_return)
+      {
+	std::cerr << std::boolalpha
+		  << "expected remove_suffix(\"" << input << "\",\""
+		  << suffix << "\") to return " << expected_return
+		  << " but it returned " << removed;
+	return false;
+      }
+
+    if (work != expected_yield)
+      {
+	std::cerr << "expected remove_suffix(\"" << input << "\",\""
+		  << suffix << "\") to yield " << expected_yield
+		  << " but it yielded " << work;
+	return false;
+      }
+    return true;
+  }
+
+  bool test_remove_suffix()
+  {
+    struct test_case
+    {
+      std::string input;
+      std::string suffix;
+      bool expected_return;
+      std::string expected_yield;
+    };
+    const vector<test_case> cases =
+      {
+       {"x", "x", true, "" },
+       {"a", "", true, "a" },
+       {"", "b", false, "" },
+       {"foo.ssd", ".ssh", false, "foo.ssd"},
+       {"foo.ssd.gz", ".ssh", false, "foo.ssd.gz"},
+       {"foo.ssd.gz", ".gz", true, "foo.ssd"},
+       {"foo.ssd.gz", ".ss.gz", false, "foo.ssd.gz"},
+      };
+    for (const auto& testcase : cases)
+      {
+	if (!remove_suffix_test(testcase.input, testcase.suffix,
+				testcase.expected_return, testcase.expected_yield))
+	  return false;
+      }
+    return true;
+  }
+
+  bool endswith_test(const std::string& s,
+		     const std::string& suffix,
+		     bool expected)
+  {
+    const bool actual = DFS::stringutil::ends_with(s, suffix);
+    if (actual != expected)
+      {
+	std::cerr << std::boolalpha
+		  << "expected ends_with(\"" << s << "\",\""
+		  << suffix << "\") to return " << expected
+		  << " but it returned " << actual;
+      }
+    return actual == expected;
+  }
+
+  bool test_endswith()
+  {
+    struct test_case
+    {
+      std::string input;
+      std::string suffix;
+      bool expected;
+    };
+    const vector<test_case> cases =
+      {
+       {"x", "x", true },
+       {"a", "", true },
+       {"", "b", false },
+       {"foo.ssd", ".ssh", false},
+       {"foo.ssd.gz", ".ssh", false},
+       {"foo.ssd.gz", ".gz", true},
+       {"foo.ssd.gz", ".ssd.gz", true},
+       {"foo.ssd.gz", ".ss.gz", false},
+      };
+    for (const auto& testcase : cases)
+      {
+	if (!endswith_test(testcase.input, testcase.suffix, testcase.expected))
+	  return false;
+      }
+    return true;
+  }
 
   bool test_rtrim()
   {
@@ -148,6 +329,9 @@ namespace
 int main()
 {
   int rv = 0;
+  if (!test_split()) rv = 1;
+  if (!test_endswith()) rv = 1;
+  if (!test_remove_suffix()) rv = 1;
   if (!test_rtrim()) rv = 1;
   if (!test_case_insensitive_less()) rv = 1;
   if (!test_case_insensitive_equal()) rv = 1;

@@ -12,9 +12,33 @@ target_sources(dfsbase
   PRIVATE
   exceptions.cc
   stringutil.cc
+  verbose.cc
   exceptions.h
-  stringutil.h)
+  stringutil.h
+  dfs.h
+  )
 target_compile_options(dfsbase PRIVATE ${EXTRA_WARNING_OPTIONS})
+
+add_library(dfslib OBJECT)
+target_sources(dfslib
+  PRIVATE
+  # I/O machinery
+  media.cc
+  storage.cc
+  geometry.cc
+  fileio.cc
+  # File System implementation
+  identify.cc
+  crc.cc
+  dfs_catalog.cc
+  dfs_filesystem.cc
+  fsp.cc
+  afsp.cc
+  )
+if ( ZLIB_FOUND )
+  target_sources(dfslib PRIVATE gzmedia.cc)
+endif (ZLIB_FOUND)
+target_compile_options(dfslib PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 add_executable(dfs)
 install(TARGETS dfs
@@ -36,6 +60,7 @@ set(HEADERS
   dfs_unused.h
   dfstypes.h
   exceptions.h
+  fileio.h
   fsp.h
   geometry.h
   media.h
@@ -46,7 +71,10 @@ set(HEADERS
 
 target_sources(dfs
   PRIVATE
-  crc.cc
+  # command infrastructure
+  dfs_unused.cc
+  commands.cc
+  # commands
   cmd_cat.cc
   cmd_dump.cc
   cmd_extract_files.cc
@@ -59,24 +87,14 @@ target_sources(dfs
   cmd_sector_map.cc
   cmd_show_titles.cc
   cmd_space.cc
-  commands.cc
-  dfs_catalog.cc
-  dfs_filesystem.cc
-  dfs_unused.cc
-  identify.cc
+  # main function
   main.cc
-  media.cc
-  storage.cc
-  fsp.cc
-  geometry.cc
-  afsp.cc
   ${HEADERS}
   )
 if ( ZLIB_FOUND )
-  target_sources(dfs PRIVATE gzmedia.cc)
   target_link_libraries(dfs ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
-target_link_libraries(dfs dfsbase)
+target_link_libraries(dfs dfslib dfsbase)
 if ( ZLIB_FOUND )
 endif( ZLIB_FOUND )
 
@@ -133,6 +151,23 @@ target_compile_options(test_stringutil
 target_link_libraries(test_stringutil dfsbase)
 add_test(NAME dfs_test_stringutil_passes COMMAND test_stringutil)
 set_property(TEST dfs_test_stringutil_passes PROPERTY LABELS dfs unit_test)
+
+
+add_executable(test_fileio)
+target_sources(test_fileio
+  PRIVATE
+  tests/test_fileio.cc
+  ${HEADERS})
+target_compile_options(test_fileio
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_fileio dfslib dfsbase)
+if ( ZLIB_FOUND )
+  target_link_libraries(test_fileio ${ZLIB_LIBRARIES})
+endif (ZLIB_FOUND)
+add_test(NAME dfs_test_fileio_passes COMMAND test_fileio)
+set_property(TEST dfs_test_fileio_passes PROPERTY LABELS dfs unit_test)
+
 
 ######################################## Regression Tests
 

@@ -5,10 +5,12 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "abstractio.h"
+#include "dfs_format.h"
 #include "dfstypes.h"
 #include "geometry.h"
 
@@ -36,15 +38,32 @@ namespace DFS
   public:
     virtual ~AbstractDrive();
     using SectorBuffer = DFS::SectorBuffer; // TODO: get rid of this.
-    virtual sector_count_type get_total_sectors() const = 0;
+    virtual Geometry geometry() const = 0;
     virtual std::string description() const = 0;
+  };
+
+  class DriveConfig
+  {
+  public:
+    //DriveConfig(const DriveConfig&) = default;
+    Format format() const;
+    DriveConfig(Format fmt, AbstractDrive* p);
+    ~DriveConfig() {}
+    AbstractDrive* drive() const;
+
+    DriveConfig& operator=(const DriveConfig&) = default;
+    bool operator==(const DriveConfig&);
+
+  private:
+    Format fmt_;
+    AbstractDrive* drive_;	// not owned
   };
 
   class StorageConfiguration
   {
   public:
     StorageConfiguration();
-    bool connect_drives(const std::vector<DFS::AbstractDrive*>& sides,
+    bool connect_drives(const std::vector<DriveConfig>& sides,
 			DriveAllocation how);
 
     bool is_drive_connected(drive_number drive) const
@@ -52,7 +71,7 @@ namespace DFS
       auto it = drives_.find(drive);
       if (it == drives_.end())
 	return false;
-      assert(it->second != 0);
+      assert(it->second.drive() != 0);
       return true;
     }
 
@@ -62,12 +81,13 @@ namespace DFS
 				    std::string& error);
     std::vector<drive_number> get_all_occupied_drive_numbers() const;
     void show_drive_configuration(std::ostream& os) const;
-    void connect_internal(drive_number d, AbstractDrive* p);
+    void connect_internal(drive_number d, const DriveConfig& drive);
+    std::optional<Format> drive_format(drive_number drive, std::string& error) const;
     bool select_drive(drive_number drive, AbstractDrive **pp, std::string& error) const;
     std::unique_ptr<DFS::FileSystem> mount(drive_number drive, std::string& error) const;
 
   private:
-    std::map<drive_number, AbstractDrive*> drives_;
+    std::map<drive_number, DriveConfig> drives_;
     std::map<drive_number, std::unique_ptr<AbstractDrive>> caches_;
   };
 }

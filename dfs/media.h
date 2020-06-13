@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <memory>
+#include <stdio.h>
 #include <string>
 
 #include <string.h>
@@ -22,7 +23,17 @@ namespace DFS
 
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name);
 #if USE_ZLIB
-  std::unique_ptr<AbstractImageFile> compressed_image_file(const std::string& name);
+  class DecompressedFile : public DataAccess
+  {
+  public:
+    explicit DecompressedFile(const std::string& name);
+    virtual ~DecompressedFile();
+    std::optional<SectorBuffer> read_block(unsigned long lba) override;
+
+  private:
+    FILE *f_;
+    std::string name_;
+  };
 #endif
 }  // namespace DFS
 #endif

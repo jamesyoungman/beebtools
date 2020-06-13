@@ -106,7 +106,7 @@ public:
     // normal usage for DFS catalogs, because the 0-entry for the disc
     // title is not included.
     const std::vector<std::vector<DFS::CatalogEntry>> catalogs =
-      root.get_catalog_in_disc_order(file_system->device());
+      root.get_catalog_in_disc_order();
     assert(catalogs.size() <= std::numeric_limits<int>::max());
     auto start_sec_of_next = [&catalogs, &root]
       (unsigned int catalog, unsigned int entry) -> DFS::sector_count_type
@@ -123,7 +123,8 @@ public:
     auto maybe_gap = [&gaps](DFS::sector_count_type last,
 			     DFS::sector_count_type next)
 		     {
-		       assert(last < next);
+		       if (last >= next)
+			 throw DFS::BadFileSystem("catalog entries are out of order");
 		       unsigned int gap = next - (last + 1);
 		       if (gap)
 			 {

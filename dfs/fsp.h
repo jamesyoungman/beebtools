@@ -10,6 +10,8 @@ namespace DFS
 {
   struct ParsedFileName
   {
+    ParsedFileName();
+
     int drive;
     char dir;
     std::string name;

@@ -12,6 +12,7 @@
 
 namespace DFS
 {
+  sector_count_type catalog_sectors_for_format(const Format&);
 
 class CatalogEntry
 {
@@ -33,9 +34,7 @@ public:
   // This example file system has a total of 12 entries, but this
   // constructor is invalid:
   // CatalogEntry(m, 0, 12) // invalid
-  CatalogEntry(const DataAccess& media,
-	       unsigned short catalog_instance,
-	       unsigned short position);
+  CatalogEntry(const DFS::byte* name, const DFS::byte* metadata);
   CatalogEntry(const CatalogEntry& other) = default;
   bool has_name(const ParsedFileName&) const;
 
@@ -94,7 +93,7 @@ public:
   sector_count_type last_sector() const;
 
   std::pair<const byte*, const byte*> file_body(int slot) const;
-  bool visit_file_body_piecewise(const DataAccess& media,
+  bool visit_file_body_piecewise(DataAccess& media,
 				 std::function<bool(const byte* begin,
 						    const byte *end)> visitor) const;
 
@@ -117,9 +116,11 @@ int value(const BootSetting& opt);
 class CatalogFragment
 {
 public:
-  explicit CatalogFragment(DFS::Format format, const DataAccess& media,
-			   DFS::sector_count_type location);
+  explicit CatalogFragment(DFS::Format format,
+			   const DFS::SectorBuffer& names,
+			   const DFS::SectorBuffer& metadata);
 
+  bool valid(std::string& error) const;
   std::string title() const;
 
   std::optional<byte> sequence_number() const
@@ -127,19 +128,17 @@ public:
     return sequence_number_;
   }
 
-  std::vector<CatalogEntry> entries(const DataAccess&) const;
+  std::vector<CatalogEntry> entries() const;
 
-  std::optional<CatalogEntry> find_catalog_entry_for_name(const DataAccess&,
-							  const ParsedFileName& name) const;
+  std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
   BootSetting boot_setting() const { return boot_; }
   sector_count_type total_sectors() const { return total_sectors_; };
-  void read_sector(const DataAccess&, sector_count_type n,
+  void read_sector(DataAccess&, sector_count_type n,
 		   DFS::SectorBuffer* buf, bool& beyond_eof) const;
 
  private:
   friend class Catalog;
-  static std::string read_title(const DataAccess&, sector_count_type location);
-  CatalogEntry get_entry_at_offset(const DataAccess&, unsigned) const;
+  CatalogEntry get_entry_at_offset(unsigned) const;
   unsigned short position_of_last_catalog_entry() const
   {
     return position_of_last_catalog_entry_;
@@ -153,19 +152,21 @@ public:
   unsigned short position_of_last_catalog_entry_; // s1[5]
   BootSetting boot_;		// (s1[6] >> 3) & 3
   sector_count_type total_sectors_; // s1[7] | (s1[6] & 3) << 8
+  std::vector<CatalogEntry> entries_;
 };
 
 
 class Catalog
 {
  public:
-  explicit Catalog(DFS::Format format, const DataAccess&);
+  explicit Catalog(DFS::Format format, DataAccess&);
 
   const CatalogFragment& primary() const
   {
     return fragments_.front();
   }
 
+  bool valid(std::string& error) const;
   std::string title() const;
   std::optional<byte> sequence_number() const;
   BootSetting boot_setting() const;
@@ -173,13 +174,12 @@ class Catalog
   Format disc_format() const;
   int max_file_count() const;
 
-  std::optional<CatalogEntry> find_catalog_entry_for_name(const DataAccess&,
-							  const ParsedFileName& name) const;
+  std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
 
   // Return all the catalog entries.  This is normally the best way to
   // iterate over entries.  The entries are returned in the same order
   // as "*INFO".
-  std::vector<CatalogEntry> entries(const DataAccess&) const;
+  std::vector<CatalogEntry> entries() const;
 
   // Return catalog entries in on-disc order.  The outermost vector is
   // the order in which the datalog is stored.  In the case of a
@@ -189,11 +189,11 @@ class Catalog
   //
   // The innermost vector simply stores the catalog entries in the
   // order they occur in the relevant sector.
-  std::vector<std::vector<CatalogEntry>> get_catalog_in_disc_order(const DataAccess&) const;
+  std::vector<std::vector<CatalogEntry>> get_catalog_in_disc_order() const;
 
   sector_count_type catalog_sectors() const
   {
-    return disc_format() == Format::WDFS ? 4 : 2;
+    return catalog_sectors_for_format(disc_format());
   }
 
   std::vector<sector_count_type> get_sectors_occupied_by_catalog() const;
@@ -201,7 +201,7 @@ class Catalog
 private:
   DFS::Format disc_format_;
   // class invariant: drive_ is non-null.
-  const DataAccess& media_;
+  DataAccess& media_;
   // class invariant: fragments_ is non-empty.
   // class invariant: for all items f in fragments_, f.drive_ == drive.
   std::vector<CatalogFragment> fragments_;
@@ -211,7 +211,9 @@ private:
 
 namespace std
 {
-  std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt);
+  std::ostream& operator<<(std::ostream& os, const DFS::BootSetting&);
+  std::ostream& operator<<(std::ostream& os, const DFS::CatalogFragment&);
+  std::ostream& operator<<(std::ostream& os, const DFS::CatalogEntry&);
 }  // namespace std
 
 #endif

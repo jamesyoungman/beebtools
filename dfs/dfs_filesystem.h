@@ -29,7 +29,7 @@ namespace DFS
 class FileSystem
 {
 public:
-  explicit FileSystem(const DataAccess&, DFS::Format fmt, DFS::sector_count_type sectors);
+  explicit FileSystem(DataAccess&, DFS::Format fmt, DFS::Geometry geom);
   const Catalog& root() const;
 
   // Determine what UI styling to use for the current file system.
@@ -40,14 +40,15 @@ public:
     return format_;
   }
 
-  sector_count_type disc_sector_count() const;
-  const DataAccess& device() const;
+  DFS::sector_count_type disc_sector_count() const;
+  DataAccess& device() const;
 
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;
 
   Format format_;
-  const DataAccess& media_;
+  Geometry geometry_;
+  DataAccess& media_;
   std::unique_ptr<Catalog> root_;
 };
 

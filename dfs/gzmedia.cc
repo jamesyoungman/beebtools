@@ -114,7 +114,7 @@ namespace
       }
   }
 
-  std::vector<DFS::byte> decompress_image_file(const std::string& name)
+  void write_decompressed_data(const std::string& name, FILE* fout)
   {
     errno = 0;
     // We use both a local buffer for zlib and a stdio buffer here.
@@ -147,7 +147,6 @@ namespace
 		   });
     setbuffer(f, readbuf.data(), readbuf.size());
 
-    std::vector<DFS::byte> result;
     z_stream stream;
     gz_header header;
     memset(&stream, 0, sizeof(stream));
@@ -219,69 +218,58 @@ namespace
 	    zerr = inflate(&stream, Z_NO_FLUSH);
 	    if (zerr != Z_STREAM_END)
 	      check_zlib_error_code(zerr);
-	    auto end = output_buffer + (output_buf_size - stream.avail_out);
-	    std::copy(output_buffer, end, std::back_inserter(result));
+	    const size_t bytes_to_write = output_buf_size - stream.avail_out;
+	    errno = 0;
+	    const size_t bytes_written = fwrite(output_buffer, 1, bytes_to_write, fout);
+	    if (bytes_written != bytes_to_write)
+	      throw DFS::FileIOError(name, errno);
 	  }
 	while (stream.avail_out == 0);
       }
-    return result;
   }
 
-  class CompressedImageFile : public DFS::AbstractImageFile, public DFS::AbstractDrive
+  FILE* open_temporary_file()
   {
-  public:
-    ~CompressedImageFile() override
-    {
-    }
+    errno = 0;
+    return tmpfile();
+  }
 
-    explicit CompressedImageFile(const std::string& name)
-      : name_(name)
-    {
-      std::vector<DFS::byte> data = decompress_image_file(name);
-      std::swap(data, data_);
-    }
+}  // namespace
 
-    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
-    {
-      return storage->connect_drives(std::vector<DFS::AbstractDrive*>({this}),
-				     how);
-    }
-
-    virtual std::optional<SectorBuffer> read_block(DFS::sector_count_type sector) const override
-    {
-      if ((data_.size() / DFS::SECTOR_BYTES) < sector)
-	{
-	  return std::nullopt;
-	}
-      auto start_pos = sector * DFS::SECTOR_BYTES;
-      auto end_pos = start_pos + DFS::SECTOR_BYTES;
-      SectorBuffer buf;
-      std::copy(data_.begin() + start_pos, data_.begin() + end_pos, buf.begin());
-      return buf;
-    }
-
-    DFS::sector_count_type get_total_sectors() const override
-    {
-      ldiv_t division = ldiv(data_.size(), DFS::SECTOR_BYTES);
-      assert(division.quot < std::numeric_limits<DFS::sector_count_type>::max());
-      return DFS::sector_count(division.quot + (division.rem ? 1 : 0));
-    }
-
-    std::string description() const override
-    {
-      return std::string("compressed image file ") + name_;
-    }
-
-  private:
-    std::string name_;
-    std::vector<DFS::byte> data_;
-  };
-}
 
 namespace DFS
 {
-  std::unique_ptr<AbstractImageFile> compressed_image_file(const std::string& name)
+  DecompressedFile::DecompressedFile(const std::string& name)
+    : f_(open_temporary_file()),
+      name_(std::string("decompressed version of " + name))
   {
-    return std::make_unique<CompressedImageFile>(name);
+    if (0 == f_)
+      throw new NonFileOsError(errno);
+    write_decompressed_data(name, f_);
   }
-}
+
+  DecompressedFile::~DecompressedFile()
+  {
+  }
+
+  std::optional<SectorBuffer> DecompressedFile::read_block(unsigned long lba)
+  {
+    auto fail = [this]() -> std::optional<SectorBuffer>
+      {
+       if (errno)
+	 throw FileIOError(name_, errno);
+       else
+	 return std::nullopt;
+      };
+    long offset = lba * DFS::SECTOR_BYTES;
+    errno = 0;
+    if (0 != fseek(f_, offset, SEEK_SET))
+      return fail();
+    DFS::SectorBuffer buf;
+    const size_t bytes_read = fread(buf.data(), 1, sizeof(DFS::SectorBuffer), f_);
+    if (bytes_read != sizeof(DFS::SectorBuffer))
+      return fail();
+    return buf;
+  }
+
+}  // namespace DFS

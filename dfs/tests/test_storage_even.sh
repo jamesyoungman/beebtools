@@ -29,19 +29,21 @@ get_config() {
 }
 
 check_config_substring() {
-    # all arguments are literal strings
+    label="$1"; shift
+    # all remaining arguments are literal strings
     #
     # Returned value is zero if the command succeeded and all strings matched.
     for substring
     do
 	if ! grep -F -e "${substring}" < "${actual}" >/dev/null
 	then
-	    echo "Output did not contain literal string ${substring}" >&2
+	    echo "${label}: output did not contain literal string ${substring}" >&2
 	    echo "Output was:" >&2
 	    cat "${actual}" >&2
 	    return 1
 	fi
     done
+    echo "${label}: PASS"
     return 0
 }
 
@@ -54,11 +56,11 @@ then
     echo "Cannot use all 4 drives for single-sided images" >&2
     exit 1
 fi
-check_config_substring \
-     "Drive 0: occupied, compressed image file ${image}" \
-     "Drive 1: occupied, compressed image file ${image}" \
-     "Drive 2: occupied, compressed image file ${image}" \
-     "Drive 3: occupied, compressed image file ${image}" || exit 1
+check_config_substring T010 \
+     "Drive 0: occupied, compressed SSD file ${image}" \
+     "Drive 1: occupied, compressed SSD file ${image}" \
+     "Drive 2: occupied, compressed SSD file ${image}" \
+     "Drive 3: occupied, compressed SSD file ${image}" || exit 1
 
 # Test the --drive-physical option.
 if ! get_config --drive-physical --show-config \
@@ -77,13 +79,13 @@ fi
 # Drives 6 and 7 are the side 1 drives for those, so the next
 # free drive is 8.
 #
-check_config_substring \
-     "Drive 0: occupied, compressed image file ${image}" \
-     "Drive 1: occupied, compressed image file ${image}" \
+check_config_substring T020 \
+     "Drive 0: occupied, compressed SSD file ${image}" \
+     "Drive 1: occupied, compressed SSD file ${image}" \
      "Drive 2: empty" \
      "Drive 3: empty" \
-     "Drive 4: occupied, compressed image file ${image}" \
-     "Drive 5: occupied, compressed image file ${image}" \
+     "Drive 4: occupied, compressed SSD file ${image}" \
+     "Drive 5: occupied, compressed SSD file ${image}" \
      "Drive 6: empty" \
      "Drive 7: empty" \
-     "Drive 8: occupied, compressed image file ${image}" || exit 1
+     "Drive 8: occupied, compressed SSD file ${image}" || exit 1

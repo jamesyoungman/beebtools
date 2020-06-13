@@ -55,6 +55,41 @@ std::string rtrim(const std::string& input)
   return "";
 }
 
+bool ends_with(const std::string & s, const std::string& suffix)
+{
+  if (suffix.size() > s.size())
+    return false;
+  return std::equal(suffix.rbegin(), suffix.rend(), s.rbegin());
+}
+
+bool remove_suffix(std::string* s, const std::string& suffix)
+{
+  if (suffix.size() <= s->size() &&
+      std::equal(suffix.rbegin(), suffix.rend(), s->rbegin()))
+    {
+      s->erase(s->size()-suffix.size(), suffix.size());
+      return true;
+    }
+  return false;
+}
+
+std::deque<string> split(const std::string& s, char delim)
+{
+  std::deque<std::string> result;
+  auto here = s.begin();
+  while (here != s.end())
+    {
+      auto next = std::find(here, s.end(), delim);
+      if (next == s.end())
+	break;
+      result.emplace_back(here, next);
+      ++next;
+      here = next;
+    }
+  result.emplace_back(here, s.end());
+  return result;
+}
+
 }  // namespace stringutil
 
 }  // namespace DFS
