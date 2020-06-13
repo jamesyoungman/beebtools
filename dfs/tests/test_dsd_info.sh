@@ -67,5 +67,5 @@ check_info() {
 }
 
 options=
-check_info ':0.*.*' '[$][.]THISIS0     000800 008023 000029 002'
-check_info ':2.*.*' '[$][.]THISIS2     000800 008023 000028 002'
+check_info ':0.*.*' '[$][.]THISIS0     000800 008023 000029 002' || exit 1
+check_info ':2.*.*' '[$][.]THISIS2     000800 008023 000028 002' || exit 1

@@ -54,7 +54,7 @@ fi
 
     # Verify that we diagnose a problem for a nonexistent command.
     nope="this-command-does-not-exist"
-    if "${DFS}" help "${nope}"
+    if ! fails "${DFS}" help "${nope}"
     then
 	echo "Failed to diagnose problem with help ${nope}" >&2
 	rv=1

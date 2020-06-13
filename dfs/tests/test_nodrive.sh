@@ -25,9 +25,9 @@ expect_got() {
 }
 
 (
-    expect_got drive0    "$(printf 'FIFTY\n')" "$(dfs type ':0.$.FILE50')"
+    expect_got drive0    "$(printf 'FIFTY\n')" "$(dfs type ':0.$.FILE50' || echo __FAILED__)"
 
-    if dfs type ':1.$.FILE50'
+    if ! fails dfs type ':1.$.FILE50'
     then
 	echo 'expected non-zero return value for ":1.$.FILE50", got zero' >&2
 	exit 1

@@ -27,13 +27,18 @@ check_sector_map() {
     input="${TEST_DATA_DIR}/watford-sd-62-with-holes.ssd.gz"
     golden="${TEST_DATA_DIR}/watford-sd-62-with-holes.ssd.sectors"
     (
-	"${DFS}" --file "${input}"  sector-map "$@" >"${actual}"
-	if diff -b "${golden}" "${actual}"
+	if fails "${DFS}" --file "${input}"  sector-map "$@" >"${actual}"
 	then
-	    return
-	else
-	    echo "FAIL sector map output for $@ differs from golden file ${golden}" >&2
+	    echo "sector-map exited with wrong status" >&2
 	    exit 1
+	else
+	    if diff -b "${golden}" "${actual}"
+	    then
+		return
+	    else
+		echo "FAIL sector map output for $@ differs from golden file ${golden}" >&2
+		exit 1
+	    fi
 	fi
     )
     rv=$?
@@ -43,7 +48,7 @@ check_sector_map() {
 
 check_sector_map && check_sector_map 0 || exit 1
 
-if "${DFS}" --file does-not-exist.ssd  sector-map
+if ! fails "${DFS}" --file does-not-exist.ssd  sector-map
 then
 	echo "sector-map succeeded on nonexistent disc image file" >&2
 	exit 1

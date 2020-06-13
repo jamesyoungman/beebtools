@@ -15,7 +15,7 @@ check_invalid_drive() {
 	"${DFS}" --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" --drive "${drivenum}" "$@" >&2
     }
 
-    if dfs cat 0
+    if ! fails dfs cat 0
     then
 	echo "${DFS} accepted an invalid drive number '${drivenum}'" >&2
 	exit 1

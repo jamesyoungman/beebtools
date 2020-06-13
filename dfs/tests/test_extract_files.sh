@@ -146,27 +146,27 @@ check_extract() {
 	fi
 
 	# Now test a small number of usage errors.
-	if dfs extract-files # no output directory
+	if ! fails dfs extract-files # no output directory
 	then
 	    echo "FAILED: extract-files succeeds even without an output directory" >&2
 	    exit 1
 	fi
-	if dfs extract-files # no output directory
+	if ! fails dfs extract-files # no output directory
 	then
 	    echo "FAILED: extract-files succeeds even without an output directory" >&2
 	    exit 1
 	fi
-	if dfs extract-files "${extract_dfs}" extra-arg # too many arguments
+	if ! fails dfs extract-files "${extract_dfs}" extra-arg # too many arguments
 	then
 	    echo "FAILED: extract-files succeeds with spurious extra arguments" >&2
 	    exit 1
 	fi
-	if dfs extract-files --drive=1   # no media in that drive
+	if ! fails dfs extract-files --drive=1   # no media in that drive
 	then
 	    echo "FAILED: extract-files --drive=1 succeeds even with no media in drive 1" >&2
 	    exit 1
 	fi
-	if "${DFS}" extract-files "${extract_dfs}" # no media at all
+	if ! fails "${DFS}" extract-files "${extract_dfs}" # no media at all
 	then
 	    echo "FAILED: extract-files succeeds even with no media" >&2
 	    exit 1

@@ -28,12 +28,12 @@ expect_got() {
 }
 
 (
-    expect_got type_50   "$(printf 'FIFTY\n')" "$(dfs type          'FILE50')"
-    expect_got type_50b  "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50')"
-    expect_got type_50bb "$(printf 'FIFTY\r')" "$(dfs type --binary --binary 'FILE50')"
-    expect_got dir       "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50')"
-    expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50')"
-    expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50')"
+    expect_got type_50   "$(printf 'FIFTY\n')" "$(dfs type          'FILE50'           || echo __FAILED__)"
+    expect_got type_50b  "$(printf 'FIFTY\r')" "$(dfs type --binary 'FILE50'           || echo __FAILED__)"
+    expect_got type_50bb "$(printf 'FIFTY\r')" "$(dfs type --binary --binary 'FILE50'  || echo __FAILED__)"
+    expect_got dir       "$(printf 'FIFTY\n')" "$(dfs type          '$.FILE50'         || echo __FAILED__)"
+    expect_got dirdash   "$(printf 'FIFTY\n')" "$(dfs type   --     '$.FILE50'         || echo __FAILED__)"
+    expect_got drive     "$(printf 'FIFTY\n')" "$(dfs type          ':0.$.FILE50'      || echo __FAILED__)"
 
     # Use type on an uncompressed image file so that we exercise a call to
     # ImageFile::get_total_sectors().
@@ -53,7 +53,7 @@ expect_got() {
 	exit 1
     fi
     if ! (expect_got type_50   "$(printf 'FIFTY\n')" \
-       "$(${DFS} --file ${temp_image} type 'FILE50')" )
+       "$(${DFS} --file ${temp_image} type 'FILE50' || echo __FAILED__ )" )
     then
 	cleanup
 	exit 1
@@ -65,14 +65,14 @@ expect_got() {
 
     # Some usage errors and similar.
     echo "Bad-option test:"
-    if dfs type  --not-an-option 'FILE50'
+    if ! fails dfs type  --not-an-option 'FILE50'
     then
 	echo "FAIL: type command does not reject non-options" >&2
 	exit 1
     fi
 
     echo "Empty argument test:"
-    if dfs type ''
+    if ! fails dfs type ''
     then
 	echo "FAIL: type command does not reject empty arguments" >&2
 	exit 1

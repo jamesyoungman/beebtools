@@ -29,6 +29,7 @@ check_cat() {
     }
 
     (
+	set -x
 	cd "${workdir}"
 	rv=0
 	dfs cat > actual.txt
@@ -37,8 +38,8 @@ check_cat() {
 	then
 	    echo "Specifying drive 0 produces the same output, good."
 	else
-	    echo "FAIL Specifying drive 0 produces different output."
-	    rv=1
+	    echo "FAIL Specifying drive 0 produces different output." >&2
+	    exit 1
 	fi
 	if dfs cat :0ignored > actual00.txt
 	then
@@ -46,27 +47,27 @@ check_cat() {
 	    then
 		echo "Specifying drive 0 as :0ignored produces the same output, good."
 	    else
-		echo "FAIL Specifying drive 0 as :0ignored produces different output."
-		rv=1
+		echo "FAIL Specifying drive 0 as :0ignored produces different output." >&2
+		exit 1
 	    fi
 	else
 	    echo "FAIL specifying drive 0 as :0ignored fails, which it should not." >&2
-	    rv=1
+	    exit 1
 	fi
 
-	if dfs cat 1 2>/dev/null
+	if ! fails dfs cat 1 2>/dev/null
 	then
 	    echo "FAIL Specifying drive 1 (which should be empty) doesn't fail." >&2
-	    rv=1
+	    exit 1
 	fi
 
-	if dfs cat 0 0 2>/dev/null
+	if ! fails dfs cat 0 0 2>/dev/null
 	then
 	    # NOTE: Watford DFS at least allows this.  For example
 	    #   *CAT 0 0
 	    # produces a catalogue of disc 0, just once.
 	    echo "FAIL Specifying more than one drive argument doesn't fail." >&2
-	    rv=1
+	    exit 1
 	fi
 
 	for expected
@@ -76,14 +77,14 @@ check_cat() {
 		echo "Output matches extended regular expression ${expected}, good"
 	    else
 		echo "FAIL Output did not match extended regular expression ${expected}" >&2
-		rv=1
+		exit 1
 	    fi
 	done
-	exit $rv
+	exit 0
     )
     rv=$?
+    echo "test_cat: check_cat subshell exited with status $rv" >&2
     cleanup
-    ls -l "${workdir}"
     rmdir "${workdir}"
     ( exit $rv )
 }

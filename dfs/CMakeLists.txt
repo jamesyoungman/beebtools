@@ -152,7 +152,7 @@ foreach(SH_TEST_SCRIPT ${SH_TEST_SCRIPTS})
   add_test(
     NAME ${shortname}
     COMMAND ${BOURNE_SHELL} ${CMAKE_CURRENT_SOURCE_DIR}/test_runner.sh
-    ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/testdata
+    ${BOURNE_SHELL} ${SH_TEST_SCRIPT} $<TARGET_FILE:dfs> ${CMAKE_CURRENT_SOURCE_DIR}/test_lib.sh ${CMAKE_CURRENT_SOURCE_DIR}/testdata
     WORKING_DIRECTORY ${SH_TEST_CWD})
   get_test_tags("${SH_TEST_SCRIPT}" tags)
   set_property(TEST ${shortname} PROPERTY LABELS dfs regression_test ${tags} )

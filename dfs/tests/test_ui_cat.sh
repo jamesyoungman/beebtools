@@ -38,7 +38,10 @@ check_cat() {
     }
 
     printf "%s" "${expected_text}" > "${fexpected}" || exit 1
-    dfs cat > "${actual}" || exit 1
+    if ! dfs cat > "${actual}"
+    then
+	exit 1
+    fi
     if ! diff -u "${fexpected}" "${actual}"
     then
 	echo "cat output for file "${input}" with ui ${ui} is incorrect" >&2

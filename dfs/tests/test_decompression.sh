@@ -41,7 +41,7 @@ then
     exit 1
 fi
 
-if "${DFS}" --file "${incomplete_image}" cat
+if ! fails "${DFS}" --file "${incomplete_image}" cat
 then
     echo "FAILURE: didn't reject an incomplete compressed file." >&2
     exit 1
