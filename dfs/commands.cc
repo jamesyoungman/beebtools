@@ -7,9 +7,11 @@
 namespace
 {
   void read_file_body(const DFS::CatalogEntry& entry,
+		      const DFS::DataAccess& media,
 		      std::vector<DFS::byte>* body)
   {
-    entry.visit_file_body_piecewise([body]
+    entry.visit_file_body_piecewise(media,
+				    [body]
 				    (const DFS::byte* begin, const DFS::byte* end)
 				    {
 				      std::copy(begin, end,
@@ -83,14 +85,15 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       return false;
     }
   const auto& root(file_system->root());
-  const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(name);
+  const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(file_system->device(),
+									     name);
   if (!entry)
     {
       std::cerr << args[1] << ": not found\n";
       return false;
     }
   std::vector<DFS::byte> body;
-  read_file_body(*entry, &body);
+  read_file_body(*entry, file_system->device(), &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(body.data(), body.data() + body.size(), tail);
 }

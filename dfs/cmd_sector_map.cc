@@ -76,7 +76,7 @@ public:
       return faild(drive_num);
     auto catalog(file_system->root());
 
-    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
+    const std::vector<DFS::CatalogEntry> entries(catalog.entries(file_system->device()));
     typedef std::vector<DFS::CatalogEntry>::size_type catalog_entry_index;
     std::vector<std::optional<std::vector<DFS::CatalogEntry>::size_type>> occupied_by;
     occupied_by.resize(file_system->disc_sector_count());

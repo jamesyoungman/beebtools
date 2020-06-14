@@ -1,12 +1,15 @@
 #include "dfs_unused.h"
 
+#include "abstractio.h"
+
 namespace
 {
-  std::map<int, std::string> make_space_map(const DFS::Catalog& catalog,
+  std::map<int, std::string> make_space_map(const DFS::DataAccess& media,
+					    const DFS::Catalog& catalog,
 					    std::optional<std::string> sentinel)
   {
     std::map<int, std::string> result;
-    for (const DFS::CatalogEntry& entry : catalog.entries())
+    for (const DFS::CatalogEntry& entry : catalog.entries(media))
       {
 	auto here = result.begin();
 	for (int i = entry.start_sector(); i < entry.last_sector(); ++i)
@@ -31,8 +34,8 @@ namespace
 
 namespace DFS
 {
-  SpaceMap::SpaceMap(const Catalog& catalog, std::optional<std::string> sentinel)
-    : used_by_(make_space_map(catalog, sentinel))
+  SpaceMap::SpaceMap(const DataAccess& media, const Catalog& catalog, std::optional<std::string> sentinel)
+    : used_by_(make_space_map(media, catalog, sentinel))
   {
   }
 

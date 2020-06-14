@@ -102,7 +102,7 @@ public:
     const DFS::Catalog& catalog(file_system->root());
 
     std::vector<DFS::byte> file_body;
-    for (const auto& entry : catalog.entries())
+    for (const auto& entry : catalog.entries(file_system->device()))
       {
 	file_body.clear();
 	DFS::CRC crc;
@@ -121,7 +121,8 @@ public:
 	std::ofstream outfile(output_body_file, std::ofstream::out);
 
 	auto ok = entry.visit_file_body_piecewise
-	  ([&crc, &outfile, &output_body_file]
+	  (file_system->device(),
+	   [&crc, &outfile, &output_body_file]
 	   (const DFS::byte* begin,
 	    const DFS::byte* end)
 	   {

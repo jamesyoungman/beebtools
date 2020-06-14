@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "abstractio.h"
 #include "stringutil.h"
 
 namespace
@@ -43,10 +44,9 @@ namespace
 
 namespace DFS
 {
-  CatalogEntry::CatalogEntry(AbstractDrive* media,
+  CatalogEntry::CatalogEntry(const DataAccess& media,
 			     unsigned short catalog_instance,
 			     unsigned short position)
-    : drive_(media)
   {
     if (position > 31*8 || position < 8)
       {
@@ -54,13 +54,13 @@ namespace DFS
       }
     const sector_count_type name_sec = sector_count(catalog_instance * 2u);
     const sector_count_type md_sec = sector_count(name_sec + 1u);
-    auto got = media->read_block(name_sec);
+    auto got = media.read_block(name_sec);
     if (!got)
       throw eof_in_catalog();
     DFS::SectorBuffer& buf(*got);
     std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	      raw_name_.begin());
-    got = media->read_block(md_sec);
+    got = media.read_block(md_sec);
     if (!got)
       throw eof_in_catalog();
     std::copy(got->cbegin() + position, got->cbegin() + position + 8,
@@ -121,19 +121,15 @@ namespace DFS
   }
 
   bool CatalogEntry::visit_file_body_piecewise
-  (std::function<bool(const byte* begin, const byte* end)> visitor) const
+  (const DataAccess& media,
+   std::function<bool(const byte* begin, const byte* end)> visitor) const
   {
-    const sector_count_type total_sectors = drive_->get_total_sectors();
     const sector_count_type start = start_sector(), end=last_sector();
-    if (start >= total_sectors)
-      throw BadFileSystem("file begins beyond the end of the media");
-    if (end >= total_sectors)
-      throw BadFileSystem("file ends beyond the end of the media");
     unsigned long len = file_length();
     for (sector_count_type sec = start; sec <= end; ++sec)
       {
 	assert(sec <= end);
-	auto buf = drive_->read_block(sec);
+	auto buf = media.read_block(sec);
 	if (!buf)
 	  throw BadFileSystem("end of media during body of file");
 	unsigned long visit_len = len > SECTOR_BYTES ? SECTOR_BYTES : len;
@@ -146,34 +142,34 @@ namespace DFS
 
 
 
-  std::string CatalogFragment::read_title(AbstractDrive *drive, DFS::sector_count_type location)
+  std::string CatalogFragment::read_title(const DataAccess& media, DFS::sector_count_type location)
 {
   DFS::AbstractDrive::SectorBuffer s0, s1;
-  auto buf = drive->read_block(location);
+  auto buf = media.read_block(location);
   if (!buf)
     throw eof_in_catalog();
   s0 = *buf;
   ++location;
-  buf = drive->read_block(location);
+  buf = media.read_block(location);
   if (!buf)
     throw eof_in_catalog();
   s1 = *buf;
   return convert_title(s0, s1);
 }
 
-  CatalogFragment::CatalogFragment(DFS::Format format, AbstractDrive *drive,
+  CatalogFragment::CatalogFragment(DFS::Format format, const DataAccess& media,
 				   DFS::sector_count_type location)
-    : disc_format_(format), drive_(drive), location_(location),
-      title_(read_title(drive, location))
+    : disc_format_(format), location_(location),
+      title_(read_title(media, location))
   {
     AbstractDrive::SectorBuffer s;
     bool beyond_eof = false;
-    read_sector(0, &s, beyond_eof);
+    read_sector(media, 0, &s, beyond_eof);
     if (beyond_eof)
       throw eof_in_catalog();
 
     const DFS::byte title_initial(s[0]);
-    read_sector(1, &s, beyond_eof);
+    read_sector(media, 1, &s, beyond_eof);
     if (location > 1)		// TODO: this check won't be right for Opus DDOS.
       {
 	assert(disc_format_ == Format::WDFS);
@@ -220,23 +216,24 @@ namespace DFS
     return title_;
   }
 
-  CatalogEntry CatalogFragment::get_entry_at_offset(unsigned int offset) const
+  CatalogEntry CatalogFragment::get_entry_at_offset(const DataAccess& media, unsigned int offset) const
   {
-    return CatalogEntry(drive_, location_/2, DFS::sector_count(offset));
+    return CatalogEntry(media, location_/2, DFS::sector_count(offset));
   }
 
-  std::optional<CatalogEntry> CatalogFragment::find_catalog_entry_for_name(const ParsedFileName& name) const
+  std::optional<CatalogEntry> CatalogFragment::find_catalog_entry_for_name(const DataAccess& media,
+									   const ParsedFileName& name) const
   {
     for (unsigned offset = 8; offset <= position_of_last_catalog_entry_; offset += 8u)
       {
-	CatalogEntry entry = get_entry_at_offset(static_cast<unsigned short>(offset));
+	CatalogEntry entry = get_entry_at_offset(media, static_cast<unsigned short>(offset));
 	if (entry.has_name(name))
 	  return entry;
       }
     return std::nullopt;
   }
 
-  std::vector<CatalogEntry> CatalogFragment::entries() const
+  std::vector<CatalogEntry> CatalogFragment::entries(const DataAccess& media) const
   {
     std::vector<CatalogEntry> result;
     unsigned short last = position_of_last_catalog_entry();
@@ -244,12 +241,12 @@ namespace DFS
 	 pos <= last;
 	 pos = static_cast<unsigned short>(pos + 8))
       {
-	result.push_back(get_entry_at_offset(pos));
+	result.push_back(get_entry_at_offset(media, pos));
       }
     return result;
   }
 
-  void CatalogFragment::read_sector(sector_count_type i, DFS::AbstractDrive::SectorBuffer* buf, bool& beyond_eof) const
+  void CatalogFragment::read_sector(const DFS::DataAccess& media, sector_count_type i, DFS::SectorBuffer* buf, bool& beyond_eof) const
   {
     // TODO: this implementation won't work for the Opus format, where
     // the sector locations within the media don't have the same
@@ -258,26 +255,24 @@ namespace DFS
     // is measured from the location of the first track of that volume
     // (which isn't track 0, because there are no volumes which use
     // track 0 as it's reserved for catalogs).
-    std::optional<SectorBuffer> got = drive_->read_block(DFS::sector_count(location_ + i));
+    std::optional<SectorBuffer> got = media.read_block(DFS::sector_count(location_ + i));
     if (!got)
       beyond_eof = true;
     else
       *buf = *got;
   }
 
-  Catalog::Catalog(DFS::Format format, AbstractDrive* drive)
-    : disc_format_(format), drive_(drive)
+  Catalog::Catalog(DFS::Format format, const DataAccess& media)
+    : disc_format_(format), media_(media)
   {
-    assert(drive_ != 0);
-
     // All DFS formats have two sectors of catalog data, at sectors
     // 0 and 1.
-    fragments_.push_back(CatalogFragment(format, drive, 0));
+    fragments_.push_back(CatalogFragment(format, media, 0));
     if (disc_format_ == Format::WDFS)
       {
 	// Watford DFS has an additional pair of catalog sectors in
 	// sectors 2 and 3, providing an additional 31 entries.
-	fragments_.push_back(CatalogFragment(format, drive, 2));
+	fragments_.push_back(CatalogFragment(format, media, 2));
       }
   }
 
@@ -316,23 +311,24 @@ namespace DFS
     return disc_format() == Format::WDFS ? 62 : 31;
   }
 
-  std::optional<CatalogEntry> Catalog::find_catalog_entry_for_name(const ParsedFileName& name) const
+  std::optional<CatalogEntry> Catalog::find_catalog_entry_for_name(const DataAccess& media,
+								   const ParsedFileName& name) const
   {
     for (const auto& frag : fragments_)
       {
-	auto result = frag.find_catalog_entry_for_name(name);
+	auto result = frag.find_catalog_entry_for_name(media, name);
 	if (result)
 	  return result;
       }
     return std::nullopt;
   }
 
-  std::vector<CatalogEntry> Catalog::entries() const
+  std::vector<CatalogEntry> Catalog::entries(const DataAccess& media) const
   {
     std::vector<CatalogEntry> result;
     for (const auto& frag : fragments_)
       {
-	std::vector<CatalogEntry> frag_entries = frag.entries();
+	std::vector<CatalogEntry> frag_entries = frag.entries(media);
 	std::copy(frag_entries.begin(), frag_entries.end(),
 		  std::back_inserter(result));
       }
@@ -340,7 +336,7 @@ namespace DFS
   }
 
   std::vector<std::vector<CatalogEntry>>
-  Catalog::get_catalog_in_disc_order() const
+  Catalog::get_catalog_in_disc_order(const DataAccess& media) const
   {
     std::vector<std::vector<CatalogEntry>> result;
     result.reserve(fragments_.size());
@@ -352,7 +348,7 @@ namespace DFS
 	     pos <= last;
 	     pos = static_cast<unsigned short>(pos + 8))
 	  {
-	    result.back().push_back(frag.get_entry_at_offset(pos));
+	    result.back().push_back(frag.get_entry_at_offset(media, pos));
 	  }
       }
     return result;

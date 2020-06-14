@@ -92,7 +92,7 @@ public:
     cout << std::uppercase;
     using std::setw;
     using std::setfill;
-    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
+    const std::vector<DFS::CatalogEntry> entries(catalog.entries(file_system->device()));
     for (const auto& entry : entries)
       {
 #if VERBOSE_FOR_TESTS

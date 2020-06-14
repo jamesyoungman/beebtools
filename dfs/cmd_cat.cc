@@ -119,7 +119,7 @@ namespace
 	}
       cout << "\n";
 
-      auto entries = catalog.entries();
+      auto entries = catalog.entries(file_system->device());
       auto compare_entries =
 	[&catalog, &ctx](const CatalogEntry& l, const CatalogEntry& r) -> bool
 	{

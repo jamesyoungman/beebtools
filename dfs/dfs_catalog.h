@@ -3,6 +3,7 @@
 
 #include <functional>
 
+#include "abstractio.h"
 #include "dfstypes.h"
 #include "dfs_format.h"
 #include "exceptions.h"
@@ -32,7 +33,7 @@ public:
   // This example file system has a total of 12 entries, but this
   // constructor is invalid:
   // CatalogEntry(m, 0, 12) // invalid
-  CatalogEntry(AbstractDrive* media,
+  CatalogEntry(const DataAccess& media,
 	       unsigned short catalog_instance,
 	       unsigned short position);
   CatalogEntry(const CatalogEntry& other) = default;
@@ -93,10 +94,11 @@ public:
   sector_count_type last_sector() const;
 
   std::pair<const byte*, const byte*> file_body(int slot) const;
-  bool visit_file_body_piecewise(std::function<bool(const byte* begin, const byte *end)> visitor) const;
+  bool visit_file_body_piecewise(const DataAccess& media,
+				 std::function<bool(const byte* begin,
+						    const byte *end)> visitor) const;
 
 private:
-  AbstractDrive* drive_;
   std::array<byte, 8> raw_name_;
   std::array<byte, 8> raw_metadata_;
 };
@@ -115,7 +117,7 @@ int value(const BootSetting& opt);
 class CatalogFragment
 {
 public:
-  explicit CatalogFragment(DFS::Format format, AbstractDrive *drive,
+  explicit CatalogFragment(DFS::Format format, const DataAccess& media,
 			   DFS::sector_count_type location);
 
   std::string title() const;
@@ -125,17 +127,19 @@ public:
     return sequence_number_;
   }
 
-  std::vector<CatalogEntry> entries() const;
+  std::vector<CatalogEntry> entries(const DataAccess&) const;
 
-  std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
+  std::optional<CatalogEntry> find_catalog_entry_for_name(const DataAccess&,
+							  const ParsedFileName& name) const;
   BootSetting boot_setting() const { return boot_; }
   sector_count_type total_sectors() const { return total_sectors_; };
-  void read_sector(sector_count_type n, DFS::AbstractDrive::SectorBuffer* buf, bool& beyond_eof) const;
+  void read_sector(const DataAccess&, sector_count_type n,
+		   DFS::SectorBuffer* buf, bool& beyond_eof) const;
 
  private:
   friend class Catalog;
-  static std::string read_title(AbstractDrive*, sector_count_type location);
-  CatalogEntry get_entry_at_offset(unsigned) const;
+  static std::string read_title(const DataAccess&, sector_count_type location);
+  CatalogEntry get_entry_at_offset(const DataAccess&, unsigned) const;
   unsigned short position_of_last_catalog_entry() const
   {
     return position_of_last_catalog_entry_;
@@ -143,7 +147,6 @@ public:
 
   DFS::Format disc_format_;
   // class invariant: drive_ != 0
-  AbstractDrive* drive_;	// not owned
   sector_count_type location_;
   std::string title_;		// s0 0-7 + s1 0-3 incl.
   std::optional<byte> sequence_number_;	// s1[4]
@@ -156,7 +159,7 @@ public:
 class Catalog
 {
  public:
-  explicit Catalog(DFS::Format format, AbstractDrive* drive);
+  explicit Catalog(DFS::Format format, const DataAccess&);
 
   const CatalogFragment& primary() const
   {
@@ -170,12 +173,13 @@ class Catalog
   Format disc_format() const;
   int max_file_count() const;
 
-  std::optional<CatalogEntry> find_catalog_entry_for_name(const ParsedFileName& name) const;
+  std::optional<CatalogEntry> find_catalog_entry_for_name(const DataAccess&,
+							  const ParsedFileName& name) const;
 
   // Return all the catalog entries.  This is normally the best way to
   // iterate over entries.  The entries are returned in the same order
   // as "*INFO".
-  std::vector<CatalogEntry> entries() const;
+  std::vector<CatalogEntry> entries(const DataAccess&) const;
 
   // Return catalog entries in on-disc order.  The outermost vector is
   // the order in which the datalog is stored.  In the case of a
@@ -185,7 +189,7 @@ class Catalog
   //
   // The innermost vector simply stores the catalog entries in the
   // order they occur in the relevant sector.
-  std::vector<std::vector<CatalogEntry>> get_catalog_in_disc_order() const;
+  std::vector<std::vector<CatalogEntry>> get_catalog_in_disc_order(const DataAccess&) const;
 
   sector_count_type catalog_sectors() const
   {
@@ -197,7 +201,7 @@ class Catalog
 private:
   DFS::Format disc_format_;
   // class invariant: drive_ is non-null.
-  AbstractDrive* drive_;
+  const DataAccess& media_;
   // class invariant: fragments_ is non-empty.
   // class invariant: for all items f in fragments_, f.drive_ == drive.
   std::vector<CatalogFragment> fragments_;

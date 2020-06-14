@@ -305,7 +305,7 @@ namespace DFS
     if (!select_drive(drive, &p, error))
       return 0;
     std::pair<Format, sector_count_type> probe_result = DFS::identify_image_format(*p);
-    return std::make_unique<FileSystem>(p, probe_result.first, probe_result.second);
+    return std::make_unique<FileSystem>(*p, probe_result.first, probe_result.second);
   }
 
 }  // namespace DFS

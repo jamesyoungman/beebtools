@@ -105,7 +105,8 @@ public:
     // Note that indexing within catalogs[][] is 0-based, unlike the
     // normal usage for DFS catalogs, because the 0-entry for the disc
     // title is not included.
-    const std::vector<std::vector<DFS::CatalogEntry>> catalogs = root.get_catalog_in_disc_order();
+    const std::vector<std::vector<DFS::CatalogEntry>> catalogs =
+      root.get_catalog_in_disc_order(file_system->device());
     assert(catalogs.size() <= std::numeric_limits<int>::max());
     auto start_sec_of_next = [&catalogs, &root]
       (unsigned int catalog, unsigned int entry) -> DFS::sector_count_type

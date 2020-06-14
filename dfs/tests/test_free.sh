@@ -68,26 +68,28 @@ check_free watford-sd-62-with-62-files.ssd \
 62 Files 042 Sectors  16,896 Bytes Used
 "
 
-# Negative test: too many arguments.
+echo Negative test: too many arguments.
 if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" free 0 0 0
 then
 	echo "${DFS} failed to diagnose spurious extra arguments" >&2
 	exit 1
 fi
 
-# Negative test: invalid drive number
+echo Negative test: invalid drive number
 if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" free A
 then
 	echo "${DFS} failed to diagnose an invalid drive number" >&2
 	exit 1
 fi
 
-# Negative test: no media in specified drive
+echo Negative test: no media in specified drive
 if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" free 1
 then
 	echo "${DFS} failed to diagnose missing media" >&2
 	exit 1
 fi
+
+echo Negative test: missing media
 if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" --drive 1 free
 then
 	echo "${DFS} failed to diagnose missing media" >&2

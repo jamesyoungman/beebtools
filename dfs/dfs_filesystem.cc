@@ -32,11 +32,11 @@ namespace
 namespace DFS
 {
 
-  FileSystem::FileSystem(AbstractDrive *drive,
+  FileSystem::FileSystem(const DataAccess& media,
 			 DFS::Format fmt,
 			 DFS::sector_count_type /* total sectors */)
-    : format_(fmt), media_(drive),
-      root_(std::make_unique<Catalog>(format_, drive))
+    : format_(fmt), media_(media),
+      root_(std::make_unique<Catalog>(format_, media))
   {
     const DFS::byte byte106 = get_byte(1, 0x06);
 
@@ -109,10 +109,15 @@ namespace DFS
   byte FileSystem::get_byte(sector_count_type sector, unsigned offset) const
   {
     assert(offset < DFS::SECTOR_BYTES);
-    auto got = media_->read_block(sector);
+    auto got = media_.read_block(sector);
     if (!got)
       throw eof_in_catalog();
     return (*got)[offset];
+  }
+
+  const DataAccess& FileSystem::device() const
+  {
+    return media_;
   }
 
   sector_count_type FileSystem::disc_sector_count() const

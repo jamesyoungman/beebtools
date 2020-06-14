@@ -82,7 +82,7 @@ public:
     auto catalog(file_system->root());
 
     int sectors_used = 2;
-    const std::vector<DFS::CatalogEntry> entries = catalog.entries();
+    const std::vector<DFS::CatalogEntry> entries = catalog.entries(file_system->device());
     for (const auto& entry : entries)
       {
 	assert(entry.file_length() < std::numeric_limits<int>::max());

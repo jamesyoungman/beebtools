@@ -83,6 +83,7 @@ then
     exit 1
 fi
 # No media at all.
+echo "test: no media"
 if ! fails "${DFS}" space
 then
     echo "FAIL: spurious success status when no media is present" >&2
@@ -90,6 +91,7 @@ then
 fi
 
 # Default drive has no media.
+echo "test: no media in default drive"
 if ! fails "${DFS}" --file "${input}" --drive 1 space
 then
     echo "FAIL: spurious success status when default drive has no media" >&2
@@ -97,6 +99,7 @@ then
 fi
 
 # Explicitly specified drive has no media.
+echo "test: no media in specified drive"
 if ! fails "${DFS}" --file "${input}" space 1
 then
     echo "FAIL: spurious success status when specified drive has no media" >&2
@@ -104,12 +107,14 @@ then
 fi
 
 # Explicitly specified drive is not a valid drive number
+echo "test: specified drive is not a valid drive number"
 if ! fails "${DFS}" --file "${input}" space X
 then
     echo "FAIL: spurious success status when specified drive is not a number" >&2
     exit 1
 fi
 
+echo "test: specified drive is an out-of-range drive number"
 if ! fails "${DFS}" --file "${input}" space 4
 then
     echo "FAIL: spurious success status when specified drive is not a valid drive number" >&2
@@ -117,6 +122,7 @@ then
 fi
 
 # Spurious argument
+echo "test: spurious extra arg"
 if ! fails "${DFS}" --file "${input}" space 0 0
 then
     echo "FAIL: spurious success status with extra argument" >&2

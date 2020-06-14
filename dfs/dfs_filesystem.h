@@ -11,6 +11,7 @@
 #include <string>
 #include <utility>
 
+#include "abstractio.h"
 #include "dfs_catalog.h"
 #include "dfscontext.h"
 #include "dfstypes.h"
@@ -28,7 +29,7 @@ namespace DFS
 class FileSystem
 {
 public:
-  explicit FileSystem(AbstractDrive* drive, DFS::Format fmt, DFS::sector_count_type sectors);
+  explicit FileSystem(const DataAccess&, DFS::Format fmt, DFS::sector_count_type sectors);
   const Catalog& root() const;
 
   // Determine what UI styling to use for the current file system.
@@ -40,12 +41,13 @@ public:
   }
 
   sector_count_type disc_sector_count() const;
+  const DataAccess& device() const;
 
 private:
   byte get_byte(sector_count_type sector, unsigned offset) const;
 
   Format format_;
-  AbstractDrive* media_;
+  const DataAccess& media_;
   std::unique_ptr<Catalog> root_;
 };
 
