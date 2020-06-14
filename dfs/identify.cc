@@ -1,12 +1,12 @@
 #include "dfs_format.h"
+
+#include <algorithm>
+
+#include "abstractio.h"
 #include "exceptions.h"
 
 namespace
 {
-  typedef std::function<void(DFS::sector_count_type,
-			     DFS::SectorBuffer*,
-			     bool&)> sector_reader;
-
   DFS::sector_count_type get_hdfs_sector_count(const DFS::SectorBuffer& sec1)
   {
     auto sectors_per_side = sec1[0x07] // bits 0-7
@@ -27,27 +27,12 @@ namespace
 namespace DFS
 {
   std::pair<Format, DFS::sector_count_type>
-  identify_drive_format(AbstractDrive* drive)
+  identify_image_format(const DataAccess& io)
   {
-    return identify_image_format([drive](DFS::sector_count_type sector_num,
-					 DFS::SectorBuffer* buf,
-					 bool& beyond_eof)
-			   {
-			     drive->read_sector(sector_num, buf, beyond_eof);
-			   });
-  }
-
-
-  std::pair<Format, DFS::sector_count_type>
-  identify_image_format(std::function<void(DFS::sector_count_type,
-					   DFS::SectorBuffer*,
-					   bool&)> sector_reader)
-  {
-    DFS::SectorBuffer buf;
-    bool beyond_eof = false;
-    sector_reader(1, &buf, beyond_eof);
-    if (beyond_eof)
+    std::optional<SectorBuffer> sec = io.read_block(1);
+    if (!sec)
       throw DFS::eof_in_catalog();
+    SectorBuffer buf(*sec);
 
     if (buf[0x06] & 8)
       return std::make_pair(Format::HDFS, get_hdfs_sector_count(buf));
@@ -76,9 +61,10 @@ namespace DFS
 
     // Look for the Watford DFS recognition string
     // in the initial entry in its extended catalog.
-    sector_reader(2, &buf, beyond_eof);
-    if (!beyond_eof)
+    sec = io.read_block(2);
+    if (sec)
       {
+	buf = *sec;
 	if (std::all_of(buf.cbegin(), buf.cbegin()+0x08,
 			[](byte b) { return b == 0xAA; }))
 	  {

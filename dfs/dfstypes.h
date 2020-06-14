@@ -9,13 +9,10 @@
 
 namespace DFS
 {
-  constexpr unsigned int SECTOR_BYTES = 256;
-
   typedef unsigned char byte;
   typedef std::vector<byte>::size_type offset;
   typedef unsigned short sector_count_type; // needs 10 bits
   typedef unsigned int drive_number;
-  typedef std::array<byte, DFS::SECTOR_BYTES> SectorBuffer;
 
   inline sector_count_type sector_count(long int x)
   {

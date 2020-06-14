@@ -66,13 +66,20 @@ namespace
     {
     }
 
-    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
-			     bool& beyond_eof) override
+    virtual std::optional<DFS::SectorBuffer> read_block(DFS::sector_count_type sector)
+			     const override
     {
-      if (cache_.get(sector, buf))
-	return;
-      underlying_->read_sector(sector, buf, beyond_eof);
-      cache_.put(sector, buf);
+      DFS::SectorBuffer buf;
+      if (cache_.get(sector, &buf))
+	{
+	  return buf;
+	}
+      std::optional<SectorBuffer> b = underlying_->read_block(sector);
+      if (b)
+	{
+	  cache_.put(sector, &*b);
+	}
+      return b;
     }
 
     DFS::sector_count_type get_total_sectors() const override
@@ -87,7 +94,7 @@ namespace
 
   private:
     DFS::AbstractDrive* underlying_;
-    SectorCache cache_;
+    mutable SectorCache cache_;
   };
 
 }  // namespace
@@ -297,7 +304,7 @@ namespace DFS
     AbstractDrive *p;
     if (!select_drive(drive, &p, error))
       return 0;
-    std::pair<Format, sector_count_type> probe_result = DFS::identify_drive_format(p);
+    std::pair<Format, sector_count_type> probe_result = DFS::identify_image_format(*p);
     return std::make_unique<FileSystem>(p, probe_result.first, probe_result.second);
   }
 

@@ -134,19 +134,17 @@ private:
 	return false;
       }
 
-    DFS::AbstractDrive::SectorBuffer buf;
     for (sector_count_type sec = start_sector; sec < end_sector; ++sec)
       {
-	bool beyond_eof = false;
-	drive->read_sector(sec, &buf, beyond_eof);
-	if (beyond_eof)
+	auto got = drive->read_block(sec);
+	if (!got)
 	  {
 	    std::cerr << "warning: media (" << drive->get_total_sectors() << " sectors) is shorter "
 		      << "than file system (" << end_sector << " sectors)\n";
 	    break;
 	  }
 	errno = 0;
-	output.write(reinterpret_cast<char*>(buf.data()), buf.size());
+	output.write(reinterpret_cast<char*>(got->data()), got->size());
 	if (!output)
 	  break;
       }

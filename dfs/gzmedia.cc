@@ -247,18 +247,17 @@ namespace
 				     how);
     }
 
-    virtual void read_sector(DFS::sector_count_type sector, DFS::AbstractDrive::SectorBuffer* buf,
-			     bool& beyond_eof) override
+    virtual std::optional<SectorBuffer> read_block(DFS::sector_count_type sector) const override
     {
       if ((data_.size() / DFS::SECTOR_BYTES) < sector)
 	{
-	  beyond_eof = true;
-	  return;
+	  return std::nullopt;
 	}
-      beyond_eof = false;
       auto start_pos = sector * DFS::SECTOR_BYTES;
       auto end_pos = start_pos + DFS::SECTOR_BYTES;
-      std::copy(data_.begin() + start_pos, data_.begin() + end_pos, buf->begin());
+      SectorBuffer buf;
+      std::copy(data_.begin() + start_pos, data_.begin() + end_pos, buf.begin());
+      return buf;
     }
 
     DFS::sector_count_type get_total_sectors() const override

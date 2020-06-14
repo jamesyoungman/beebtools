@@ -23,6 +23,7 @@ install(TARGETS dfs
 target_compile_options(dfs PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 set(HEADERS
+  abstractio.h
   afsp.h
   cleanup.h
   commands.h

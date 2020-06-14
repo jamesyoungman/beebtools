@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+#include "abstractio.h"
+
 #include <cassert>
 #include <cassert>
 #include <exception>

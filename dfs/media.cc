@@ -41,7 +41,7 @@ namespace
   }
 
   class FileView : public DFS::AbstractDrive
-  {
+ {
   public:
     // See the comment in read_sector for an explanation of the
     // constructor parameters.
@@ -75,15 +75,12 @@ namespace
       return description_;
     }
 
-    void read_sector(sector_count_type sector, SectorBuffer *buf,
-		     bool& beyond_eof) override
+    std::optional<DFS::SectorBuffer> read_block(sector_count_type sector) const override
     {
       if (sector >= total_)
 	{
-	  beyond_eof = true;
-	  return;
+	  return std::nullopt;
 	}
-      beyond_eof = false;
 
       // Device view:
       //
@@ -139,7 +136,8 @@ namespace
 	  assert(errno != 0);
 	  throw DFS::FileIOError(file_name_, errno);
 	}
-      if (!f_->read(reinterpret_cast<char*>(buf->data()), DFS::SECTOR_BYTES).good())
+      DFS::SectorBuffer buf;
+      if (!f_->read(reinterpret_cast<char*>(buf.data()), DFS::SECTOR_BYTES).good())
 	{
 	  // POSIX permits a seek beyond end-of-file, so if pos was
 	  // larger than the file size, we come to here rather than
@@ -149,8 +147,9 @@ namespace
 	  if (errno)
 	    throw DFS::FileIOError(file_name_, errno); // a real error
 	  else
-	    beyond_eof = true;
+	    return std::nullopt;
 	}
+      return buf;
     }
 
   private:
@@ -343,6 +342,10 @@ namespace DFS
   DFS::AbstractImageFile::~AbstractImageFile()
     {
     }
+
+  DataAccess::~DataAccess()
+  {
+  }
 
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& name)
   {

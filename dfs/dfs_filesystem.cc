@@ -109,12 +109,10 @@ namespace DFS
   byte FileSystem::get_byte(sector_count_type sector, unsigned offset) const
   {
     assert(offset < DFS::SECTOR_BYTES);
-    AbstractDrive::SectorBuffer buf;
-    bool beyond_eof = false;
-    media_->read_sector(sector, &buf, beyond_eof);
-    if (beyond_eof)
+    auto got = media_->read_block(sector);
+    if (!got)
       throw eof_in_catalog();
-    return buf[offset];
+    return (*got)[offset];
   }
 
   sector_count_type FileSystem::disc_sector_count() const

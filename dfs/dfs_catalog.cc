@@ -54,17 +54,16 @@ namespace DFS
       }
     const sector_count_type name_sec = sector_count(catalog_instance * 2u);
     const sector_count_type md_sec = sector_count(name_sec + 1u);
-    DFS::AbstractDrive::SectorBuffer buf;
-    bool beyond_eof = false;
-    media->read_sector(name_sec, &buf, beyond_eof);
-    if (beyond_eof)
+    auto got = media->read_block(name_sec);
+    if (!got)
       throw eof_in_catalog();
+    DFS::SectorBuffer& buf(*got);
     std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
 	      raw_name_.begin());
-    media->read_sector(md_sec, &buf, beyond_eof);
-    if (beyond_eof)
+    got = media->read_block(md_sec);
+    if (!got)
       throw eof_in_catalog();
-    std::copy(buf.cbegin() + position, buf.cbegin() + position + 8,
+    std::copy(got->cbegin() + position, got->cbegin() + position + 8,
 	      raw_metadata_.begin());
   }
 
@@ -131,16 +130,14 @@ namespace DFS
     if (end >= total_sectors)
       throw BadFileSystem("file ends beyond the end of the media");
     unsigned long len = file_length();
-    DFS::AbstractDrive::SectorBuffer buf;
     for (sector_count_type sec = start; sec <= end; ++sec)
       {
 	assert(sec <= end);
-	bool beyond_eof = false;
-	drive_->read_sector(sec, &buf, beyond_eof);
-	if (beyond_eof)
+	auto buf = drive_->read_block(sec);
+	if (!buf)
 	  throw BadFileSystem("end of media during body of file");
 	unsigned long visit_len = len > SECTOR_BYTES ? SECTOR_BYTES : len;
-	if (!visitor(buf.begin(), buf.begin() + visit_len))
+	if (!visitor(buf->begin(), buf->begin() + visit_len))
 	  return false;
 	len -= visit_len;
       }
@@ -152,14 +149,15 @@ namespace DFS
   std::string CatalogFragment::read_title(AbstractDrive *drive, DFS::sector_count_type location)
 {
   DFS::AbstractDrive::SectorBuffer s0, s1;
-  bool beyond_eof = false;
-  drive->read_sector(location, &s0, beyond_eof);
-  if (beyond_eof)
+  auto buf = drive->read_block(location);
+  if (!buf)
     throw eof_in_catalog();
+  s0 = *buf;
   ++location;
-  drive->read_sector(location, &s1, beyond_eof);
-  if (beyond_eof)
+  buf = drive->read_block(location);
+  if (!buf)
     throw eof_in_catalog();
+  s1 = *buf;
   return convert_title(s0, s1);
 }
 
@@ -260,7 +258,11 @@ namespace DFS
     // is measured from the location of the first track of that volume
     // (which isn't track 0, because there are no volumes which use
     // track 0 as it's reserved for catalogs).
-    return drive_->read_sector(DFS::sector_count(location_ + i), buf, beyond_eof);
+    std::optional<SectorBuffer> got = drive_->read_block(DFS::sector_count(location_ + i));
+    if (!got)
+      beyond_eof = true;
+    else
+      *buf = *got;
   }
 
   Catalog::Catalog(DFS::Format format, AbstractDrive* drive)
