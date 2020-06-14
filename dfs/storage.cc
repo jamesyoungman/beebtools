@@ -224,8 +224,24 @@ namespace DFS
       {
 	s.assign(drive_arg);
       }
+    if (s.empty())
+      {
+	error = "empty drive numbers are not valid";
+	return false;
+      }
     size_t end;
-    unsigned long int d = std::stoul(s, &end, 10);
+    unsigned long int d;
+    try
+      {
+	d = std::stoul(s, &end, 10);
+      }
+    catch (std::exception&)
+      {
+	std::ostringstream ss;
+	ss << drive_arg << " is not a valid drive number";
+	error = ss.str();
+	return false;
+      }
     if (end != s.size())
       {
 	std::ostringstream ss;

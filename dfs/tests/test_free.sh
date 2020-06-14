@@ -82,6 +82,13 @@ then
 	exit 1
 fi
 
+echo Negative test: empty drive number
+if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" free ""
+then
+	echo "${DFS} failed to diagnose an empty drive number" >&2
+	exit 1
+fi
+
 echo Negative test: no media in specified drive
 if ! fails ${DFS} --file "${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz" free 1
 then
