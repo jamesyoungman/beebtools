@@ -17,6 +17,8 @@ cleanup() {
 }
 
 check_config() {
+    label="$1"
+    shift
     capture="$1"
     shift
     (
@@ -24,7 +26,7 @@ check_config() {
 	do
 	    if ! egrep -q -e "${regex}" < "${capture}"
 	    then
-		echo "FAILED: expected output to match ${regex}, but it did not." >&2
+		echo "FAILED: test ${label}: expected output to match ${regex}, but it did not." >&2
 		echo "Actual output was:" >&2
 		cat actual.txt >&2
 		exit 1
@@ -59,8 +61,8 @@ then
 fi
 
 rm -f "${imagefile}"
-if ! check_config actual.txt \
-	     '^Drive 0: occupied, SSD file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
+if ! check_config 010 actual.txt \
+	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, SSD file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
 	     '^Drive 3: empty'
@@ -76,8 +78,8 @@ then
     exit 1
 fi
 
-if ! check_config actual.txt \
-	     '^Drive 0: occupied, compressed SSD file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
+if ! check_config 020 actual.txt \
+	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
 	     '^Drive 3: empty'

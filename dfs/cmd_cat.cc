@@ -21,6 +21,35 @@ namespace
   using DFS::FileSystem;
   using DFS::Format;
 
+  std::string title_and_cycle(const std::string& title,
+			      std::optional<int> cycle)
+  {
+    std::ostringstream os;
+    int title_width = 0;
+    os << std::left << std::setw(title_width) << std::setfill(' ')
+       << title;
+    if (cycle)
+      {
+	os << std::setbase(16);
+	os << " (" << std::setfill('0') << std::right << std::setw(2)
+	   << (*cycle) << ")";
+      }
+    return os.str();
+  }
+
+  std::string density_desc(std::optional<DFS::Geometry> geom,
+			   DFS::UiStyle ui)
+  {
+    const bool double_density = geom && (geom->encoding == DFS::Encoding::MFM);
+    switch (ui)
+      {
+      case DFS::UiStyle::Watford:
+	return double_density ? "Double density" : "Single density";
+      default:
+	return double_density ? "MFM" : "FM";
+      }
+  }
+
   class CommandCat : public DFS::CommandInterface
   {
   public:
@@ -81,29 +110,19 @@ namespace
 	return faild(d);
       const Catalog& catalog(file_system->root());
       const auto ui = file_system->ui_style(ctx);
-      cout << catalog.title();
-      std::optional<int> cycle_count = catalog.sequence_number();
-      if (cycle_count)
-	{
-	  // HDFS uses this field of the root catalog as a checksum
-	  // instead.
-	  cout << " ("  << std::setbase(16) << cycle_count.value() << ")";
-	}
-      cout << std::setbase(10);
-      // TODO: determine whether then image is FM or MFM, print the
-      // right indicator (and spell it appropriately for the UI).
 
-      if (DFS::UiStyle::Watford == ui)
-	{
-	  cout << "   Single density\n";
-	}
-      else
-	{
-	  cout << " FM\n";
-	}
-      const auto opt = catalog.boot_setting();
-      cout << "Drive "<< ctx.current_drive
-	   << "             Option " << opt << "\n";
+      DFS::Geometry geom = file_system->geometry();
+      cout << std::setw(DFS::UiStyle::Watford == ui ? 20 : 0)
+          << std::setfill(' ')
+          << std::left
+          << title_and_cycle(catalog.title(), catalog.sequence_number());
+      cout << (DFS::UiStyle::Watford == ui ? "" : " ")
+	   << density_desc(geom, ui) << std::setbase(10) << "\n";
+
+      const int left_col_width = 20;
+      cout << "Drive "<< std::setw(left_col_width-6) << ctx.current_drive
+	   << "Option " << catalog.boot_setting() << "\n";
+
       if (DFS::UiStyle::Watford == ui)
 	{
 	  cout << "Directory :" << ctx.current_drive << "." << ctx.current_directory
@@ -184,11 +203,9 @@ namespace
       if (DFS::UiStyle::Watford == ui)
 	{
 	  cout << "\n";
-	  // TODO: Watford DFS states the number of tracks too.
 	  cout << std::setw(2) << std::setfill('0') << std::right << entries.size()
 	       << " files of " << catalog.max_file_count()
-	       << " on 80 tracks\n";
-	  // TODO: plumb in the real geometry.
+	       << " on " << geom.cylinders << " tracks\n";
 	}
       return true;
     }

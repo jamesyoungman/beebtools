@@ -115,6 +115,11 @@ namespace DFS
     return (*got)[offset];
   }
 
+  Geometry FileSystem::geometry() const
+  {
+    return geometry_;
+  }
+
   DataAccess& FileSystem::device() const
   {
     return media_;

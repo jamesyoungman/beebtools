@@ -41,6 +41,7 @@ public:
   }
 
   DFS::sector_count_type disc_sector_count() const;
+  Geometry geometry() const;
   DataAccess& device() const;
 
 private:

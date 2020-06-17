@@ -320,8 +320,10 @@ namespace DFS
 		  if (it != drives_.end())
 		    {
 		      assert(is_drive_connected(d));
-		      os << ", " << it->second.drive()->description();
+
+		      os << ", " << it->second.drive()->geometry().description();
 		      // TODO: consider printing the format description too, here.
+		      os << ", " << it->second.drive()->description();
 		    }
 		  os << "\n";
 		};
