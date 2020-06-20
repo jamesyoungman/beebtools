@@ -122,6 +122,69 @@ namespace
       }
   }
 
+  bool smells_like_opus_ddos(DFS::DataAccess& media, DFS::sector_count_type* sectors)
+  {
+    // If this is an Opus single-density disk, it is identical in
+    // format to an Acorn DFS disk.  If it's an Opus DDOS
+    // double-density disk, it may have additional volumes B-H listed
+    // in track 0.
+    std::optional<DFS::SectorBuffer> got = media.read_block(16);
+    if (!got)
+       {
+        eliminated_format(DFS::Format::OpusDDOS,
+                          "the disc is too short to contain an Opus DDOS volume disc catalogue");
+        return false;
+       }
+    const DFS::SectorBuffer& sector16(*got);
+    int total_disk_sectors = (sector16[1] << 8) | sector16[2];
+    switch (total_disk_sectors)
+      {
+      case 720: // 40 tracks, 18 sectors per track
+      case 1440: // 80 tracks, 18 sectors per track
+        break;
+      default:
+        {
+          std::ostringstream ss;
+          ss << "total sectors field of sector 16 is " << total_disk_sectors
+             << " but we assume only 720 (40 tracks) or 1440 (80 tracks)"
+             << " is actually possible for the Opus DDOS format\n";
+          eliminated_format(DFS::Format::OpusDDOS, ss.str().c_str());
+          return false;
+        }
+      }
+
+    // This is perhaps over-cautious.  But, reject an image file which
+    // is physically shorter than the metadata says it should be.
+    // Sometimes emulators produce these (and consuming programs
+    // generally assume the data "off the end" of the disk image is
+    // all-zero).
+    auto last = media.read_block(DFS::sector_count(total_disk_sectors - 1u));
+    if (!last)
+      {
+        std::ostringstream ss;
+        ss << "total sectors field of sector 16 is " << total_disk_sectors
+           << " but the disc image itself has fewer sectors.\n";
+        eliminated_format(DFS::Format::OpusDDOS, ss.str().c_str());
+        return false;
+      }
+    if (sector16[3] != 18)      // must be 18 sectors-per-track
+      {
+        std::ostringstream ss;
+        ss << "the sectors-per-track field of sector 16 is " << int(sector16[3])
+           << " but for Opus DDOS we expect 18\n";
+        return false;
+      }
+    // &04 is apparently the number of tracks in the disc, but I see
+    // disc images with 0 there.
+
+    // TODO: check that all the file positions in the A-H catalogs (if
+    // present) are within the bounds of the relevant volume.  We
+    // already know that the catalog for volume A is consistent being
+    // Opus (i.e. is not HDFS or Watford).
+    *sectors = DFS::sector_count(total_disk_sectors);
+    return true;
+  }
+
   bool has_valid_dfs_catalog(DFS::DataAccess& media,
 			     unsigned long location,
 			     std::string& error)
@@ -280,14 +343,18 @@ namespace
 	return std::make_pair(DFS::Format::HDFS, get_hdfs_sector_count(buf1));
       }
 
-    const auto sectors = get_dfs_sector_count(buf1);
-
     if (smells_like_watford(access, buf1))
       {
-	return std::make_pair(DFS::Format::WDFS, sectors);
+       return std::make_pair(DFS::Format::WDFS, get_dfs_sector_count(buf1));
       }
 
-    return std::make_pair(DFS::Format::DFS, sectors);
+    DFS::sector_count_type opus_sectors;
+    if (smells_like_opus_ddos(access, &opus_sectors))
+      {
+	return std::make_pair(DFS::Format::OpusDDOS, opus_sectors);
+      }
+
+    return std::make_pair(DFS::Format::DFS, get_dfs_sector_count(buf1));
   }
 
   std::pair<DFS::Format, DFS::ImageFileFormat>

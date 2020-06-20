@@ -13,7 +13,7 @@ enum class Format
    DFS,
    WDFS,
    Solidisk,
-   // I have no documentation for Opus's format.
+   OpusDDOS,
   };
   std::string format_name(Format f);
   bool single_sided_filesystem(Format f);

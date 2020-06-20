@@ -24,7 +24,8 @@ namespace DFS
      // for example we show the disc encoding after the title in the
      // "cat" command.
      Acorn,
-     Watford
+     Watford,
+     Opus
     };
 
 class FileSystem;

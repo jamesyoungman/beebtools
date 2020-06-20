@@ -72,13 +72,15 @@ namespace DFS
 	assert(disc_format() != Format::HDFS);
 	if (byte106 & 4)
 	  {
-	    // Watford large disk
+	    // Watford large disk; TODO: decide whether the Format
+	    // enum should distinguish those.
 	    assert(disc_format() == Format::WDFS);
 	  }
 	else
 	  {
-	    // Either Acorn or Watford DFS.
-	    assert(disc_format() == Format::WDFS || disc_format() == Format::DFS);
+	    assert(disc_format() == Format::WDFS ||
+		   disc_format() == Format::DFS ||
+		   disc_format() == Format::OpusDDOS);
 	  }
       }
   }
@@ -101,6 +103,8 @@ namespace DFS
       case Format::Solidisk:
 	// TODO: are there UI differences?
 	return DFS::UiStyle::Acorn;
+      case Format::OpusDDOS:
+	return DFS::UiStyle::Opus;
       }
     // TODO: find out if there are differences for Opus, too.
     return DFS::UiStyle::Acorn;
@@ -155,6 +159,7 @@ std::string format_name(Format f)
     case Format::DFS: return "Acorn DFS";
     case Format::WDFS: return "Watford DFS";
     case Format::Solidisk: return "Solidisk DFS";
+    case Format::OpusDDOS: return "Opus DDOS";
     }
   abort();
 }
