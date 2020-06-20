@@ -72,9 +72,55 @@ namespace
 
   bool smells_like_hdfs(const DFS::SectorBuffer& sec1)
   {
+    // The cycle count byte of the root catalog is, apparently, a
+    // checksum.  TODO: check the checksum.
     return sec1[0x06] & 8;
   }
 
+  bool smells_like_watford(DFS::DataAccess& access,
+			   const DFS::SectorBuffer& buf1) // sector 1
+  {
+
+    // DFS provides 31 file slots, and Watford DFS 62.  Watford DFS
+    // does this by doubling the size of the catalog into sectors 2
+    // and 3 (as well as DFS's 0 and 1).  It puts recognition bytes in
+    // sector 2.  However, it's possible for a DFS-format file to
+    // contain the recognition bytes in its body.  We don't want to be
+    // fooled if that happens.  To avoid it, we check whether the body
+    // of any file (of the standard DFS 31 files) starts in sector 2.
+    // If so, this cannot be a Watford DFS format disc.
+    const DFS::byte last_catalog_entry_pos = buf1[0x05];
+    unsigned pos = 8;
+    for (pos = 8; pos <= last_catalog_entry_pos; pos += 8)
+      {
+	auto start_sector = buf1[pos + 7];
+	if (start_sector == 2)
+	  {
+	    /* Sector 2 is used by a file, so not Watford DFS. */
+	    eliminated_format(DFS::Format::WDFS, "sector 2 is in use by a file");
+	    return false;
+	  }
+      }
+
+    // Look for the Watford DFS recognition string
+    // in the initial entry in its extended catalog.
+    auto got = access.read_block(2);
+    if (!got)
+      {
+	eliminated_format(DFS::Format::WDFS, "media is not long enough for a 62-file catalog");
+	return false;
+      }
+    else
+      {
+	if (std::all_of(got->cbegin(), got->cbegin()+0x08,
+			[](DFS::byte b) { return b == 0xAA; }))
+	  {
+	    return true;
+	  }
+	eliminated_format(DFS::Format::WDFS, "Watford marker bytes are not present");
+	return false;
+      }
+  }
 
   bool has_valid_dfs_catalog(DFS::DataAccess& media,
 			     unsigned long location,
@@ -236,46 +282,11 @@ namespace
 
     const auto sectors = get_dfs_sector_count(buf1);
 
-    // DFS provides 31 file slots, and Watford DFS 62.  Watford DFS does
-    // this by doubling the size of the catalog into sectors 2 and 3 (as
-    // well as DFS's 0 and 1).  It puts recognition bytes in sector 2.
-    // However, it's possible for a DFS-format file to contain the
-    // recognition bytes in its body.  We don't want to be fooled if
-    // that happens.  To avoid it, we check whether the body of any file
-    // (of the standard DFS 31 files) starts in sector 2.  If so, this
-    // cannot be a Watford DFS format disc.
-    const DFS::byte last_catalog_entry_pos = buf1[0x05];
-    unsigned pos = 8;
-    for (pos = 8; pos <= last_catalog_entry_pos; pos += 8)
+    if (smells_like_watford(access, buf1))
       {
-	auto start_sector = buf1[pos + 7];
-	if (start_sector == 2)
-	  {
-	    /* Sector 2 is used by a file, so not Watford DFS. */
-	    return std::make_pair(DFS::Format::DFS, sectors);
-	  }
+	return std::make_pair(DFS::Format::WDFS, sectors);
       }
 
-    // Look for the Watford DFS recognition string
-    // in the initial entry in its extended catalog.
-    got = access.read_block(2);
-    if (!got)
-      {
-	eliminated_format(DFS::Format::WDFS, "media is not long enough for a 62-file catalog");
-      }
-    else
-      {
-	if (std::all_of(got->cbegin(), got->cbegin()+0x08,
-			[](DFS::byte b) { return b == 0xAA; }))
-	  {
-	    return std::make_pair(DFS::Format::WDFS, sectors);
-	  }
-	eliminated_format(DFS::Format::WDFS, "Watford marker bytes are not present");
-      }
-    // Either the recognition bytes were not there (meaning it's not a
-    // Watford DFS 62 file catalog) or the disk image is too short to
-    // contain sector 2 (meaning that the recognition bytes cannot be
-    // there beyond the end of the "media").
     return std::make_pair(DFS::Format::DFS, sectors);
   }
 
