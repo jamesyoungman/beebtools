@@ -92,12 +92,39 @@ namespace DFS
   };
 
 typedef SurfaceSelector drive_number;
+
+ // A VolumeSelector identifies a specific volume on a drive.
+ class VolumeSelector
+ {
+ public:
+   explicit VolumeSelector(const DFS::SurfaceSelector& n); /* with default (unnamed) volume */
+   explicit VolumeSelector(unsigned n); /* with default (unnamed) volume */
+   explicit VolumeSelector(const SurfaceSelector& surface, char subvol);
+   static std::optional<VolumeSelector> parse(const std::string&, size_t*end, std::string& error);
+   std::string to_string() const;
+   void ostream_insert(std::ostream&) const;
+   VolumeSelector& operator=(const VolumeSelector&);
+   bool operator==(const VolumeSelector&) const;
+   bool operator<(const VolumeSelector&) const;
+   SurfaceSelector surface() const
+   {
+     return surface_;
+   }
+   char effective_subvolume() const;
+   std::optional<char> subvolume() const;
+
+ private:
+   SurfaceSelector surface_;
+   std::optional<char> subvolume_;
+ };
+
 }  // namespace DFS
 
 
 namespace std
 {
   ostream& operator<<(ostream& os, const DFS::SurfaceSelector& sel);
+  ostream& operator<<(ostream& os, const DFS::VolumeSelector& vol);
   string to_string(const DFS::SurfaceSelector&);
 
   template<> class numeric_limits<DFS::SurfaceSelector>

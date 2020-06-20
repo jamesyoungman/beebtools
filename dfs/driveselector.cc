@@ -126,6 +126,99 @@ namespace DFS
     return SurfaceSelector(3);
   }
 
+  VolumeSelector::VolumeSelector(unsigned int n)
+    : surface_(n)
+  {
+  }
+
+  VolumeSelector& VolumeSelector::operator=(const VolumeSelector& v)
+  {
+    surface_ = v.surface_;
+    subvolume_ = v.subvolume_;
+    return *this;
+  }
+
+  std::string VolumeSelector::to_string() const
+  {
+    std::string result = surface_.to_string();
+    if (subvolume_)
+      result.push_back(*subvolume_);
+    return result;
+  }
+
+  VolumeSelector::VolumeSelector(const SurfaceSelector& ss, char volume_label)
+    : surface_(ss), subvolume_(volume_label)
+  {
+  }
+
+  VolumeSelector::VolumeSelector(const SurfaceSelector& ss)
+    : surface_(ss)
+  {
+  }
+
+  std::optional<VolumeSelector> VolumeSelector::parse(const std::string& s, size_t*end, std::string& error)
+  {
+    std::optional<SurfaceSelector> ss = SurfaceSelector::parse(s, end, error);
+    if (ss)
+      {
+	const char volume_label = s[*end];
+	switch (volume_label)
+	  {
+	  case 'A':
+	  case 'B':
+	  case 'C':
+	  case 'D':
+	  case 'E':
+	  case 'F':
+	  case 'G':
+	  case 'H':
+	    ++*end;
+	    return VolumeSelector(*ss, volume_label);
+
+	  default:
+	    return VolumeSelector(*ss);
+	  }
+      }
+    return std::nullopt;
+  }
+
+  std::optional<char> VolumeSelector::subvolume() const
+  {
+    return subvolume_;
+  }
+
+  char VolumeSelector::effective_subvolume() const
+  {
+    if (subvolume_)
+      return *subvolume_;
+    return 'A';
+  }
+
+  bool VolumeSelector::operator<(const VolumeSelector& other) const
+  {
+    if (surface_ < other.surface_)
+      return true;
+    if (other.surface_ < surface_)
+      return false;
+    return effective_subvolume() < other.effective_subvolume();
+  }
+
+  bool VolumeSelector::operator==(const VolumeSelector& other) const
+  {
+    if (*this < other)
+      return false;
+    if (other < *this)
+      return false;
+    return true;
+  }
+
+  void VolumeSelector::ostream_insert(std::ostream& os) const
+  {
+    os << surface_;
+    if (subvolume_)
+      os << *subvolume_;
+  }
+
 }  // namespace DFS
 
 namespace std
@@ -133,6 +226,12 @@ namespace std
   ostream& operator<<(ostream& os, const DFS::SurfaceSelector& sel)
   {
     sel.ostream_insert(os);
+    return os;
+  }
+
+  ostream& operator<<(ostream& os, const DFS::VolumeSelector& vol)
+  {
+    vol.ostream_insert(os);
     return os;
   }
 

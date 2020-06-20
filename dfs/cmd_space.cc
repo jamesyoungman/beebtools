@@ -43,9 +43,9 @@ public:
 		  const std::vector<std::string>& args) override
   {
     std::string error;
-    auto faild = [&error](DFS::drive_number d)
+    auto faild = [&error](const DFS::VolumeSelector& vol)
 		 {
-		   std::cerr << "failed to select drive " << d << ": " << error << "\n";
+		   std::cerr << "failed to select drive " << vol << ": " << error << "\n";
 		   return false;
 		 };
     auto fail = [&error]()
@@ -53,7 +53,8 @@ public:
 		   std::cerr << error << "\n";
 		   return false;
 		 };
-    DFS::drive_number drive_num(0);
+    // TODO: provide a way to find all space on an Opus DDOS disc.
+    DFS::VolumeSelector vol(0);
     if (args.size() > 2)
       {
 	std::cerr << "Please specify at most one argument, the drive number\n";
@@ -61,19 +62,19 @@ public:
       }
     if (args.size() < 2)
       {
-	drive_num = ctx.current_drive;
+	vol = ctx.current_drive;
       }
     else
       {
 	error.clear();
-	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num, error))
+	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &vol, error))
 	  return fail();
 	if (!error.empty())
 	  std::cerr << "warning: " << error << "\n";
       }
-    auto file_system(storage.mount(drive_num, error));
+    auto file_system(storage.mount(vol, error));
     if (!file_system)
-      return faild(drive_num);
+      return faild(vol);
     auto root(file_system->root());
 
     std::cerr << "Disc total sectors = "
@@ -158,7 +159,7 @@ public:
 	  }
       }
 
-    std::cout << "Gap sizes on disc " << drive_num << ":\n";
+    std::cout << "Gap sizes on disc " << vol << ":\n";
     bool first = true;
     for (const auto& gap : gaps)
       {

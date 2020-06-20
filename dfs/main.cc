@@ -120,14 +120,14 @@ namespace
     return ok;
   }
 
-  std::pair<bool, DFS::drive_number> get_drive_number(const char *s)
+  std::pair<bool, DFS::VolumeSelector> get_drive_number(const char *s)
   {
-    DFS::drive_number v(0);
+    DFS::VolumeSelector v(0);
     bool ok = [s, &v]() {
 		size_t end;
 		std::string specifier(s);
 		std::string err;
-		std::optional<DFS::SurfaceSelector> got = DFS::SurfaceSelector::parse(specifier, &end, err);
+		std::optional<DFS::VolumeSelector> got = DFS::VolumeSelector::parse(specifier, &end, err);
 		if (!got)
 		  {
 		    std::cerr << err << "\n";
@@ -184,7 +184,7 @@ int main (int argc, char *argv[])
 {
   if (!check_consistency())
     return 2;
-  DFS::DFSContext ctx('$', DFS::drive_number(0));
+  DFS::DFSContext ctx('$', DFS::VolumeSelector(0));
   int longindex;
   std::vector<std::string> extra_args;
   // files is just a way to manage the lifetime of the image file objects such

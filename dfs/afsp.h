@@ -16,13 +16,14 @@ class AFSPMatcher
   static std::unique_ptr<AFSPMatcher>
   make_unique(const DFSContext& ctx, const std::string& pattern, std::string* error);
 
-  bool matches(DFS::drive_number, char directory, const std::string& name);
+  bool matches(DFS::VolumeSelector vol, char directory, const std::string& name);
 
   // Acorn DFS wildcards can include a drive number, but the drive
   // number field itself cannot be a wildcard.  That is, :*.$.!BOOT is
   // not a valid wildcard.  Hence an AFSP (wildcard) has zero or one
-  // associated drive numbers.
-  DFS::drive_number get_drive_number() const;
+  // associated drive numbers.  We extend the idea to cover Opus DDOS
+  // volumes.
+  DFS::VolumeSelector get_volume() const;
   static bool self_test();
 
   // The point of FactoryKey is to ensure that only MakeUnique() can
@@ -40,18 +41,19 @@ class AFSPMatcher
   }
 
   bool valid_;
-  // TODO: move the drive number out of the AFSPMatcher's regex.  It
-  // knows which drive it is going to match on, and so there is no
-  // point offering it file names from other drives.
-  DFS::drive_number drive_num_;
+  // TODO: move the volume selector out of the AFSPMatcher's regex.
+  // It knows which volume it is going to match on (because we can ask
+  // for the value of vol_), and so there is no point offering it file
+  // names from other drives.
+  DFS::VolumeSelector vol_;
   void *implementation_;
 };
 
   namespace internal
   {
-    bool extend_wildcard(DFS::drive_number drive_num, char dir, const std::string& wild,
+    bool extend_wildcard(DFS::VolumeSelector vol, char dir, const std::string& wild,
 			 std::string* out, std::string* error_message);
-    bool qualify(DFS::drive_number, char dir, const std::string& filename,
+    bool qualify(DFS::VolumeSelector, char dir, const std::string& filename,
 		 std::string* out, std::string* error_message);
   }  // namespace DFS::internal
 

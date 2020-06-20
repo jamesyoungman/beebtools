@@ -13,7 +13,7 @@ namespace DFS
   {
     ParsedFileName();
 
-    DFS::drive_number drive;
+    DFS::VolumeSelector vol;
     char dir;
     std::string name;
   };

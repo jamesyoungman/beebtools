@@ -14,8 +14,6 @@ using std::vector;
 
 using DFS::DFSContext;
 
-#undef LARGE_DRIVE_NUMBERS
-
 namespace
 {
   class BadTestInput : public std::exception
@@ -37,22 +35,22 @@ namespace
 
   struct MatchInput
   {
-    DFS::drive_number drive_num;
+    DFS::VolumeSelector vol;
     char directory;
     std::string name;
 
     MatchInput(unsigned int d, char dir, const std::string& n)
-      : drive_num(d), directory(dir), name(n)
+      : vol(d), directory(dir), name(n)
     {
     }
 
-    MatchInput(DFS::drive_number d, char dir, const char* n)
-      : drive_num(d), directory(dir), name(n)
+    MatchInput(unsigned int d, char dir, const char* n)
+      : vol(d), directory(dir), name(n)
     {
     }
 
     MatchInput(const std::string& s)
-      : drive_num(9),
+      : vol(9),
 	directory('\0'),
 	name("__unset__")
     {
@@ -71,11 +69,11 @@ namespace
       assert(i != s.size());
       size_t end;
       std::string err;
-      auto parsed = DFS::SurfaceSelector::parse(s.substr(1), &end, err);
+      auto parsed = DFS::VolumeSelector::parse(s.substr(1), &end, err);
       if (!parsed)
 	throw BadTestInput(err);
       ++end; // account for substr(1).
-      drive_num = *parsed;
+      vol = *parsed;
       assert(s[end] == '.');	// drive number should be followed by "."
       ++end;
       assert(s.size() > end);
@@ -88,13 +86,13 @@ namespace
     }
 
     MatchInput(const MatchInput& m)
-      : drive_num(m.drive_num), directory(m.directory), name(m.name)
+      : vol(m.vol), directory(m.directory), name(m.name)
     {
     }
 
     bool operator<(const MatchInput& other) const
     {
-      if (drive_num < other.drive_num)
+      if (vol < other.vol)
 	return true;
       if (directory < other.directory)
 	return true;
@@ -115,7 +113,7 @@ namespace
     std::string str() const
     {
       std::ostringstream ss;
-      ss << ":" << drive_num << "." << directory << "." << name;
+      ss << ":" << vol << "." << directory << "." << name;
       return ss.str();
     }
 
@@ -133,20 +131,20 @@ namespace std
 
 namespace
 {
-  bool one_xfrm_test(DFS::drive_number drive, char dir,
+  bool one_xfrm_test(DFS::VolumeSelector vol, char dir,
 		     const string& transform_name,
-		     std::function<bool(DFS::drive_number, char, const string&, string*, string*)> transformer,
+		     std::function<bool(DFS::VolumeSelector, char, const string&, string*, string*)> transformer,
 		     const string& input,
 		     bool expected_return,
 		     const string& expected_output,
 		     const string& expected_error)
   {
     string actual_output, actual_error;
-    bool actual_return = transformer(drive, dir, input, &actual_output, &actual_error);
+    bool actual_return = transformer(vol, dir, input, &actual_output, &actual_error);
     auto describe_call = [&]() -> string
 			 {
 			   std::ostringstream ss;
-			   ss << transform_name << "(" << drive << ", '" << dir << "', "
+			   ss << transform_name << "(" << vol << ", '" << dir << "', "
 			      <<  '"' << input << "\", &actual_output, &actual_error)";
 			   return ss.str();
 		};
@@ -231,7 +229,7 @@ namespace
     std::set<MatchInput> actual_accepts;
     for (const MatchInput& input : inputs)
       {
-	if (m->matches(input.drive_num, input.directory, input.name))
+	if (m->matches(input.vol, input.directory, input.name))
 	  {
 	    std::cerr << "match_test: " << pattern << " matches " << input << "\n";
 	    actual_accepts.insert(input);
@@ -275,13 +273,14 @@ namespace
 
   bool self_test_matcher()
   {
+    const DFS::VolumeSelector vol0(DFS::SurfaceSelector(0));
     MatchInput m1(0, '$', "TEST");
-    assert(m1.drive_num.surface() == 0);
+    assert(m1.vol == vol0);
     assert(m1.directory == '$');
     assert(m1.name == "TEST");
 
     MatchInput m2(":0.$.TEST");
-    assert(m2.drive_num.surface() == 0);
+    assert(m2.vol == vol0);
     assert(m2.directory == '$');
     assert(m2.name == "TEST");
 

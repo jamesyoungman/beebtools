@@ -147,7 +147,7 @@ namespace DFS
     return done == to_do;
   }
 
-  void StorageConfiguration::connect_internal(drive_number n, const DriveConfig& cfg)
+  void StorageConfiguration::connect_internal(const DFS::SurfaceSelector& n, const DriveConfig& cfg)
   {
     const sector_count_type cached_sectors = 4;
     assert(!is_drive_connected(n));
@@ -213,7 +213,7 @@ namespace DFS
     return it->second.format();
   }
 
-  bool StorageConfiguration::select_drive(drive_number drive, AbstractDrive **pp,
+  bool StorageConfiguration::select_drive(const DFS::SurfaceSelector& drive, AbstractDrive **pp,
 					  std::string& error) const
   {
     auto it = caches_.find(drive);
@@ -229,25 +229,12 @@ namespace DFS
     return true;
   }
 
-  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, drive_number* num,
+  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, DFS::VolumeSelector* num,
 						 std::string& error)
   {
-    std::string s;
-    if (drive_arg.size() > 0 && drive_arg[0] == ':')
-      {
-	s.assign(drive_arg.substr(1));
-      }
-    else
-      {
-	s.assign(drive_arg);
-      }
-    if (s.empty())
-      {
-	error = "empty drive numbers are not valid";
-	return false;
-      }
+    error.clear();
     size_t end;
-    auto got = DFS::SurfaceSelector::parse(s, &end, error);
+    auto got = DFS::VolumeSelector::parse(drive_arg, &end, error);
     if (!got)
       return false;
     *num = *got;
@@ -301,9 +288,15 @@ namespace DFS
   }
 
 
-  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(drive_number drive, std::string& error) const
+  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(const DFS::VolumeSelector& vol, std::string& error) const
   {
     AbstractDrive *p;
+    if (vol.effective_subvolume() != 'A')
+      {
+	error = "Opus DDOS volumes are not yet supported";
+	return 0;
+      }
+    auto drive = vol.surface();
     if (!select_drive(drive, &p, error))
       return 0;
     std::optional<Format> fmt = drive_format(drive, error);

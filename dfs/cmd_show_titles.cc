@@ -29,12 +29,20 @@ class CommandShowTitles : public DFS::CommandInterface
   }
 
   bool show_title(const DFS::StorageConfiguration& storage,
-		  DFS::drive_number d, std::string& error)
+		  const DFS::SurfaceSelector& d, std::string& error)
   {
-    auto file_system(storage.mount(d, error));
+    DFS::VolumeSelector vol(d);
+    auto file_system(storage.mount(vol, error));
     if (!file_system)
       return false;
     std::cout << d << ":" << file_system->root().title() << "\n";
+    if (file_system->disc_format() == DFS::Format::OpusDDOS)
+      {
+	// TODO: fix this for Opus DDOS.
+	// For Opus DDOS, we should probably iterate over all the
+	// volumes on the drive.
+	std::cerr << "warning: this disc may contain other volumes too.\n";
+      }
     return std::cout.good();
   }
 
@@ -64,13 +72,20 @@ class CommandShowTitles : public DFS::CommandInterface
 		first = false;
 		continue;      // this is the command name, ignore it.
 	      }
-	    DFS::drive_number d(0);
+	    DFS::VolumeSelector vol(0);
 	    error.clear();
-	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &d, error))
+	    // TODO: for Opus DDOS, allow the user to request all
+	    // volumes on a drive.
+	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &vol, error))
 	      return fail();
 	    if (!error.empty())
 	      std::cerr << "warning: " << error << "\n";
-	    todo.push_back(d);
+	    if (vol.subvolume())
+	      {
+		std::cerr << "Opus DDOS volumes are not yet supported.\n";
+		return false;
+	      }
+	    todo.push_back(vol.surface());
 	  }
       }
     else

@@ -54,7 +54,7 @@ public:
 		   std::cerr << error << "\n";
 		   return false;
 		 };
-    DFS::drive_number drive_num(0);
+    DFS::SurfaceSelector drive_num(0);
     if (args.size() > 2)
       {
 	std::cerr << "at most one command-line argument is needed.\n";
@@ -62,19 +62,39 @@ public:
       }
     if (args.size() < 2)
       {
-	drive_num = ctx.current_drive;
+	if (ctx.current_drive.subvolume())
+	  {
+	    std::cerr << "Opus DDOS volumes are not yet supported\n";
+	    return false;
+	  }
       }
     else
       {
 	error.clear();
-	if (!DFS::StorageConfiguration::decode_drive_number(args[1], &drive_num, error))
+	size_t end;
+	auto got = DFS::SurfaceSelector::parse(args[1], &end, error);
+	if (!got)
 	  return fail();
+	drive_num = *got;
 	if (!error.empty())
 	  std::cerr << "warning: " << error << "\n";
+	if (end != args[1].size())
+	  {
+	    std::cerr << "trailing junk after drive number " << args[1] << "\n";
+	    return false;
+	  }
       }
-    auto file_system(storage.mount(drive_num, error));
+    DFS::VolumeSelector vol(drive_num); // TODO: wrong for Opus DDOS, see below.
+    auto file_system(storage.mount(vol, error));
     if (!file_system)
       return faild(drive_num);
+    if (file_system->disc_format() == DFS::Format::OpusDDOS)
+      {
+	// TODO: this is still all wrong, since for an effective sector map
+	// we would need to iterate over all Opus DDOS volumes.
+	std::cerr << "Opus DDOS is not yet supported\n";
+	return false;
+      }
     auto catalog(file_system->root());
 
     const std::vector<DFS::CatalogEntry> entries(catalog.entries());

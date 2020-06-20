@@ -35,13 +35,13 @@ class FileSystem;
 struct DFSContext
 {
 public:
-  DFSContext(char dir, DFS::drive_number drive)
-    : current_directory(dir), current_drive(drive), ui_(UiStyle::Default)
+  DFSContext(char dir, DFS::VolumeSelector vol)
+    : current_directory(dir), current_drive(vol), ui_(UiStyle::Default)
   {
   }
 
-  DFSContext(char dir, DFS::drive_number drive, UiStyle style)
-    : current_directory(dir), current_drive(drive), ui_(style)
+  DFSContext(char dir, DFS::VolumeSelector vol, UiStyle style)
+    : current_directory(dir), current_drive(vol), ui_(style)
   {
   }
 
@@ -51,7 +51,7 @@ public:
    }
 
   char current_directory;
-  DFS::SurfaceSelector current_drive;
+  DFS::VolumeSelector current_drive; // TODO: rename?
 
 private:
   friend class FileSystem;

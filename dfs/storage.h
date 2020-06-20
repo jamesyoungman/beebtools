@@ -76,16 +76,14 @@ namespace DFS
       return true;
     }
 
-    // CARE: decode_drive_number returns false when there is an error, but it can
-    // also return true and leave a warning message in |error|.
-    static bool decode_drive_number(const std::string& s, drive_number *result,
+    static bool decode_drive_number(const std::string& s, DFS::VolumeSelector *result,
 				    std::string& error);
     std::vector<drive_number> get_all_occupied_drive_numbers() const;
     void show_drive_configuration(std::ostream& os) const;
-    void connect_internal(drive_number d, const DriveConfig& drive);
+    void connect_internal(const DFS::SurfaceSelector& d, const DriveConfig& drive);
     std::optional<Format> drive_format(drive_number drive, std::string& error) const;
-    bool select_drive(drive_number drive, AbstractDrive **pp, std::string& error) const;
-    std::unique_ptr<DFS::FileSystem> mount(drive_number drive, std::string& error) const;
+    bool select_drive(const DFS::SurfaceSelector&, AbstractDrive **pp, std::string& error) const;
+    std::unique_ptr<DFS::FileSystem> mount(const DFS::VolumeSelector& vol, std::string& error) const;
 
   private:
     std::map<drive_number, DriveConfig> drives_;

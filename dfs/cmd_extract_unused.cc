@@ -78,8 +78,13 @@ public:
 			    << ": " << error << "\n";
 		  return false;
 		};
-    if (!storage.select_drive(ctx.current_drive, &drive, error))
+    if (!storage.select_drive(ctx.current_drive.surface(), &drive, error))
       return fail();
+    if (ctx.current_drive.effective_subvolume() != 'A')
+      {
+	std::cerr << "Opus DDOS volumes are not yet supported";
+	return false;
+      }
     std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive, error);
     if (!file_system)
       return fail();

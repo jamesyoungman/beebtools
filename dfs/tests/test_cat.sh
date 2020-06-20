@@ -41,19 +41,11 @@ check_cat() {
 	    echo "FAIL Specifying drive 0 produces different output." >&2
 	    exit 1
 	fi
-	if dfs cat :0ignored > actual00.txt
-	then
-	    if diff actual0.txt actual00.txt >&2
-	    then
-		echo "Specifying drive 0 as :0ignored produces the same output, good."
-	    else
-		echo "FAIL Specifying drive 0 as :0ignored produces different output." >&2
-		exit 1
-	    fi
-	else
-	    echo "FAIL specifying drive 0 as :0ignored fails, which it should not." >&2
-	    exit 1
-	fi
+
+	# "dfs cat :0ignored" was previously ignored but this is
+	# incompatible with the need to be able to parse Opus DDOS
+	# volume letters (i.e. 'cat 0B' needs to be possible in the
+	# future).
 
 	if ! fails dfs cat 1 2>/dev/null
 	then

@@ -8,7 +8,7 @@ namespace DFS
 {
 
 ParsedFileName::ParsedFileName()
-  : drive(0), dir('\0')
+  : vol(0), dir('\0')
 {
 }
 
@@ -16,13 +16,13 @@ bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileNam
 {
   std::string name(fsp);
   ParsedFileName result;
-  result.drive = ctx.current_drive;
+  result.vol = ctx.current_drive;
   result.dir = ctx.current_directory;
   // If there is a drive specification, parse and remove it.
   if (fsp[0] == ':')
     {
       size_t end;
-      std::optional<DFS::SurfaceSelector> got = DFS::SurfaceSelector::parse(fsp.substr(1), &end, error);
+      std::optional<DFS::VolumeSelector> got = DFS::VolumeSelector::parse(fsp.substr(1), &end, error);
       if (!got)
 	return false;
       ++end;
@@ -33,7 +33,7 @@ bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileNam
 	  error = ss.str();
 	  return false;
 	}
-      result.drive = *got;
+      result.vol = *got;
       ++end;
       name = name.substr(end);
     }

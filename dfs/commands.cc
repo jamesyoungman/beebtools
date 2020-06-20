@@ -78,10 +78,10 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       std::cerr << args[1] << " is not a valid file name: " << error << "\n";
       return false;
     }
-  std::unique_ptr<DFS::FileSystem> file_system(storage.mount(name.drive, error));
+  std::unique_ptr<DFS::FileSystem> file_system(storage.mount(name.vol, error));
   if (!file_system)
     {
-      std::cerr << "failed to select drive " << name.drive << ": " << error << "\n";
+      std::cerr << "failed to select drive " << name.vol << ": " << error << "\n";
       return false;
     }
   const auto& root(file_system->root());

@@ -83,12 +83,12 @@ namespace
 		    std::cerr << error << "\n";
 		    return false;
 		  };
-      auto faild = [&error](DFS::drive_number d)
+      auto faild = [&error](DFS::VolumeSelector vol)
 		  {
-		    std::cerr << "failed to select drive " << d << ": " << error << "\n";
+		    std::cerr << "failed to select drive " << vol << ": " << error << "\n";
 		    return false;
 		  };
-      DFS::drive_number d(0);
+      DFS::VolumeSelector d(0);
       if (args.size() > 2)
 	{
 	  std::cerr << "Please specify at most one argument, the drive number\n";
@@ -97,8 +97,16 @@ namespace
       else if (args.size() == 2)
 	{
 	  error.clear();
-	  if (!DFS::StorageConfiguration::decode_drive_number(args[1], &d, error))
+	  size_t end;
+	  auto got = DFS::VolumeSelector::parse(args[1], &end, error);
+	  if (!got)
 	    return fail();
+	  if (end != args[1].size())
+	    {
+	      std::cerr << "unexpected suffix on drive specifier " << args[1] << "\n";
+	      return false;
+	    }
+	  d = *got;
 	  if (!error.empty())
 	    std::cerr << "warning: " << error << "\n";
 	}

@@ -78,12 +78,12 @@ public:
 	return false;
       }
 
-    const DFS::drive_number drive_num = matcher->get_drive_number();
+    const DFS::VolumeSelector vol = matcher->get_volume();
     std::string error;
-    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(drive_num, error));
+    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(vol, error));
     if (!file_system)
       {
-	std::cerr << "failed to select drive " << drive_num << ": " << error << "\n";
+	std::cerr << "failed to select drive " << vol << ": " << error << "\n";
 	return false;
       }
     const auto& catalog(file_system->root());
@@ -99,7 +99,7 @@ public:
 	std::cerr << "info: directory is '" << entry.directory() << "'\n";
 	std::cerr << "info: item is '" << entry.name() << "'\n";
 #endif
-	if (!matcher->matches(drive_num, entry.directory(), entry.name()))
+	if (!matcher->matches(vol, entry.directory(), entry.name()))
 	  continue;
 	cout << entry << "\n";
       }
