@@ -64,7 +64,7 @@ class CommandShowTitles : public DFS::CommandInterface
 		first = false;
 		continue;      // this is the command name, ignore it.
 	      }
-	    DFS::drive_number d;
+	    DFS::drive_number d(0);
 	    error.clear();
 	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &d, error))
 	      return fail();

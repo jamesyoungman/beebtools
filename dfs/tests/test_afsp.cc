@@ -70,10 +70,12 @@ namespace
 	}
       assert(i != s.size());
       size_t end;
-      unsigned long n = std::stoul(s.substr(1), &end, 10);
+      std::string err;
+      auto parsed = DFS::SurfaceSelector::parse(s.substr(1), &end, err);
+      if (!parsed)
+	throw BadTestInput(err);
       ++end; // account for substr(1).
-      assert(n <= std::numeric_limits<DFS::drive_number>::max());
-      drive_num = static_cast<DFS::drive_number>(n);
+      drive_num = *parsed;
       assert(s[end] == '.');	// drive number should be followed by "."
       ++end;
       assert(s.size() > end);

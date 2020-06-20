@@ -59,7 +59,7 @@ public:
 		   return false;
 		 };
 
-    DFS::drive_number drive_num;
+    DFS::drive_number drive_num(0);
     if (args.size() > 2)
       {
 	std::cerr << "at most one command-line argument is needed.\n";

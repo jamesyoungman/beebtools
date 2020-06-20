@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "driveselector.h"
 #include "dfscontext.h"
 
 namespace DFS
@@ -12,7 +13,7 @@ namespace DFS
   {
     ParsedFileName();
 
-    int drive;
+    DFS::drive_number drive;
     char dir;
     std::string name;
   };

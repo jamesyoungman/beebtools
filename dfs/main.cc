@@ -122,37 +122,27 @@ namespace
 
   std::pair<bool, DFS::drive_number> get_drive_number(const char *s)
   {
-    long v = 0;
+    DFS::drive_number v(0);
     bool ok = [s, &v]() {
-		char *end;
-		errno = 0;
-		v = strtol(s, &end, 10);
-		if ((v == LONG_MIN || v == LONG_MAX) && errno)
+		size_t end;
+		std::string specifier(s);
+		std::string err;
+		std::optional<DFS::SurfaceSelector> got = DFS::SurfaceSelector::parse(specifier, &end, err);
+		if (!got)
 		  {
-		    std::cerr << "Value " << s << " is out of range.\n";
+		    std::cerr << err << "\n";
 		    return false;
 		  }
-		if (v == 0 && end == s)
+		if (end < specifier.size())
 		  {
-		    // No digit at optarg[0].
-		    std::cerr << "Please specify a decimal number as"
-			      << "the argument for --drive\n";
+		    std::cerr << "Unexpected suffix '" << specifier.substr(end)
+			      << "' in argument '" << specifier << "' to --drive\n";
 		    return false;
 		  }
-		if (*end)
-		  {
-		    std::cerr << "Unexpected non-decimal suffix after "
-			      << "argument to --drive: " << end << "\n";
-		    return false;
-		  }
-		if (v < 0)
-		  {
-		    std::cerr << "Drive number must not be negative.\n ";
-		    return false;
-		  }
+		v = *got;
 		return true;
 	      }();
-    return std::make_pair(ok, static_cast<DFS::drive_number>(v));
+    return std::make_pair(ok, v);
   }
 
 std::unique_ptr<std::map<std::string, std::string>> option_help;

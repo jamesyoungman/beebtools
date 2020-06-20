@@ -88,7 +88,7 @@ namespace
 		    std::cerr << "failed to select drive " << d << ": " << error << "\n";
 		    return false;
 		  };
-      unsigned int d;
+      DFS::drive_number d(0);
       if (args.size() > 2)
 	{
 	  std::cerr << "Please specify at most one argument, the drive number\n";

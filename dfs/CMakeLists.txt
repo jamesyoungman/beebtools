@@ -25,6 +25,7 @@ target_sources(dfslib
   # I/O machinery
   media.cc
   storage.cc
+  driveselector.cc
   geometry.cc
   fileio.cc
   # File System implementation
@@ -104,16 +105,14 @@ endif( ZLIB_FOUND )
 enable_testing()
 
 add_executable(test_afsp)
-target_sources(test_afsp
-  PRIVATE
-  tests/test_afsp.cc
-  afsp.cc
-  stringutil.h
-  afsp.h dfscontext.h)
+target_sources(test_afsp PRIVATE tests/test_afsp.cc ${HEADERS})
+if ( ZLIB_FOUND )
+  target_link_libraries(test_afsp ${ZLIB_LIBRARIES})
+endif (ZLIB_FOUND)
 target_compile_options(test_afsp
   PRIVATE ${EXTRA_WARNING_OPTIONS}
   -I ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(test_afsp dfsbase)
+target_link_libraries(test_afsp dfsbase dfslib)
 add_test(NAME dfs_test_afsp_passes COMMAND test_afsp)
 set_property(TEST dfs_test_afsp_passes PROPERTY LABELS dfs unit_test)
 

@@ -53,7 +53,7 @@ public:
 		   std::cerr << error << "\n";
 		   return false;
 		 };
-    DFS::drive_number drive_num;
+    DFS::drive_number drive_num(0);
     if (args.size() > 2)
       {
 	std::cerr << "Please specify at most one argument, the drive number\n";

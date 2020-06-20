@@ -148,26 +148,17 @@ namespace
 	return false;
       }
     size_t end;
-    try
+    // The base matters because we support drive numbers greater
+    // than 3.
+    std::string err;
+    std::optional<DFS::drive_number> got = DFS::SurfaceSelector::parse(full_wildcard.substr(1), &end, err);
+    if (!got)
       {
-	// The base matters because we support drive numbers greater
-	// than 3.
-	unsigned long d = std::stoul(full_wildcard.substr(1), &end, 10);
-	// To allow us to use end as an index into full_wildcard, we
-	// increment it here, to compensate for the substr(1) above.
-	if (end == std::numeric_limits<decltype(end)>::max())
-	  {
-	    error_message->assign("Drive number is too long");
-	    return false;
-	  }
-	*drive_num = static_cast<DFS::drive_number>(d);
-	++end;
-      }
-    catch (std::exception& e)
-      {
-	error_message->assign("Bad drive number in " + full_wildcard + ": " + e.what());
+	error_message->assign(err);
 	return false;
       }
+    *drive_num = *got;
+    ++end;
     if (full_wildcard[end] != '.')
       {
 	error_message->assign("Non-digit after drive number in " + full_wildcard

@@ -4,6 +4,8 @@
 #include <string>
 #include <optional>
 
+#include "driveselector.h"
+
 namespace DFS
 {
 
@@ -33,12 +35,12 @@ class FileSystem;
 struct DFSContext
 {
 public:
-  DFSContext(char dir, int drive)
+  DFSContext(char dir, DFS::drive_number drive)
     : current_directory(dir), current_drive(drive), ui_(UiStyle::Default)
   {
   }
 
-  DFSContext(char dir, int drive, UiStyle style)
+  DFSContext(char dir, DFS::drive_number drive, UiStyle style)
     : current_directory(dir), current_drive(drive), ui_(style)
   {
   }
@@ -49,7 +51,7 @@ public:
    }
 
   char current_directory;
-  int current_drive;
+  DFS::SurfaceSelector current_drive;
 
 private:
   friend class FileSystem;

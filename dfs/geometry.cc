@@ -66,7 +66,7 @@ namespace DFS
     g.heads = *heads;
     auto c = tot_sectors / (g.heads * g.sectors);
     if (c > std::numeric_limits<int>::max())
-      throw std::range_error("infeasibly large device");
+      throw std::out_of_range("infeasibly large device");
     g.cylinders = static_cast<int>(c);
     if (sectors_per_track == 10)
       g.encoding = Encoding::FM;

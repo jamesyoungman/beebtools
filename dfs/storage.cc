@@ -126,38 +126,23 @@ namespace DFS
   }
 
   bool check_sequence_fits(DFS::drive_number i,
-			   const DFS::drive_number to_do,
+			   const std::vector<DriveConfig>::size_type to_do,
 			   std::function<bool(DFS::drive_number)> occupied)
   {
+    typedef const std::vector<DriveConfig> vec;
     if (occupied(i))
       return false;		// Don't use occpied slots.
-    switch (i % 4)
-      {
-      case 0:
-      case 1:
-	if (occupied(i + 2))
-	  {
-	    // this is "side 0" where "side 1" is occupied.
-	    return false;
-	  }
-	break;
-      case 2:
-      case 3:
-	if (occupied(i - 2))
-	  {
-	    // this is "side 1" where "side 0" is occupied.
-	    return false;
-	  }
-	break;
-      }
-    const auto limit = std::numeric_limits<drive_number>::max();
-    DFS::drive_number done = 0;
-    while (i < limit-1 && done < to_do)
+    if (occupied(i.opposite_surface()))
+      return false;		// slot for opposite surface already used
+
+    const auto limit = std::numeric_limits<DFS::drive_number>::max().prev();
+    vec::size_type done = 0;
+    while (i < limit && done < to_do)
       {
 	if (occupied(i))
 	  return false;
 	++done;
-	i += 2;
+	i = DFS::drive_number::corresponding_side_of_next_device(i);
       }
     return done == to_do;
   }
@@ -180,14 +165,16 @@ namespace DFS
 		    {
 		      return is_drive_connected(i);
 		    };
-	for (DFS::drive_number n = 0; n < limit; ++n)
+	for (DFS::drive_number n = DFS::drive_number(0);
+	     n < limit;
+	     n = n.next())
 	  {
-	    if (check_sequence_fits(n, static_cast<DFS::drive_number>(drives.size()), occ))
+	    if (check_sequence_fits(n, drives.size(), occ))
 	      {
 		for (auto d : drives)
 		  {
 		    connect_internal(n, d);
-		    n += 2;
+		    n = n.next().next();
 		  }
 		return true;
 	      }
@@ -199,7 +186,7 @@ namespace DFS
 	DFS::drive_number n = 0;
 	for (auto d : drives)
 	  {
-	    for (; n < limit; ++n)
+	    for (; n < limit; n = n.next())
 	      {
 		if (!is_drive_connected(n))
 		  {
@@ -226,7 +213,7 @@ namespace DFS
     return it->second.format();
   }
 
-  bool StorageConfiguration::select_drive(unsigned int drive, AbstractDrive **pp,
+  bool StorageConfiguration::select_drive(drive_number drive, AbstractDrive **pp,
 					  std::string& error) const
   {
     auto it = caches_.find(drive);
@@ -242,7 +229,7 @@ namespace DFS
     return true;
   }
 
-  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, unsigned* num,
+  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, drive_number* num,
 						 std::string& error)
   {
     std::string s;
@@ -344,7 +331,7 @@ namespace DFS
 	show(i);
 	// We don't use a for loop here because loop_limit+1 may be 0
 	// (since loop_limit is unsigned).
-      } while (i++ < loop_limit);
+      } while (i.postincrement() < loop_limit);
   }
 
 
