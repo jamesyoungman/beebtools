@@ -14,6 +14,7 @@
 #include "fsp.h"
 #include "stringutil.h"
 #include "dfscontext.h"
+#include "driveselector.h"
 #include "regularexpression.h"
 #include "storage.h"
 

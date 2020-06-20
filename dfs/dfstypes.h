@@ -11,7 +11,6 @@ namespace DFS
 {
   typedef unsigned char byte;
   typedef std::vector<byte>::size_type offset;
-  typedef unsigned int drive_number;
 
   // sector counts need 10 bits normally, but there are some
   // double-density file systems needing more.  16 bits though is

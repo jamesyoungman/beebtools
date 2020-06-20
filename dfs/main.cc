@@ -10,6 +10,7 @@
 
 #include "commands.h"
 #include "dfs.h"
+#include "driveselector.h"
 #include "media.h"
 #include "storage.h"
 

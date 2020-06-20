@@ -6,6 +6,7 @@
 #include <string>
 
 #include "dfs_filesystem.h"
+#include "driveselector.h"
 
 namespace
 {

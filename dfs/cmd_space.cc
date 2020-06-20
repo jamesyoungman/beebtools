@@ -12,6 +12,7 @@
 
 #include "afsp.h"
 #include "dfs.h"
+#include "driveselector.h"
 
 using std::cerr;
 using std::cout;

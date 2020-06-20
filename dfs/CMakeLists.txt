@@ -59,6 +59,7 @@ set(HEADERS
   dfs_format.h
   dfs_unused.h
   dfstypes.h
+  driveselector.h
   exceptions.h
   fileio.h
   fsp.h

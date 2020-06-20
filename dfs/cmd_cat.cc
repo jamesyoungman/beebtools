@@ -8,6 +8,7 @@
 
 #include "commands.h"
 #include "dfs_filesystem.h"
+#include "driveselector.h"
 #include "stringutil.h"
 
 using std::string;

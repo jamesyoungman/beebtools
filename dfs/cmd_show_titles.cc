@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include "dfs_filesystem.h"
+#include "driveselector.h"
 
 namespace
 {

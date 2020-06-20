@@ -3,6 +3,7 @@
 
 #include "dfscontext.h"
 #include "dfstypes.h"
+#include "driveselector.h"
 
 namespace DFS
 {

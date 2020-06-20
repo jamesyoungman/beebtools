@@ -12,6 +12,7 @@
 
 #include "dfs_filesystem.h"
 #include "dfstypes.h"
+#include "driveselector.h"
 
 using std::vector;
 

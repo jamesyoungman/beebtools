@@ -12,6 +12,7 @@
 #include "abstractio.h"
 #include "dfs_format.h"
 #include "dfstypes.h"
+#include "driveselector.h"
 #include "geometry.h"
 
 namespace DFS
