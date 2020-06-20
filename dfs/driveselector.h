@@ -34,25 +34,31 @@ namespace DFS
   public:
     using repr_type = unsigned int;
 
-    constexpr SurfaceSelector(repr_type d)
+    constexpr explicit SurfaceSelector(repr_type d)
       : d_(d)
       {
       }
 
-    SurfaceSelector(long int ld)
+    explicit SurfaceSelector(long int ld)
       : d_(coerce(ld))
       {
       }
 
-    SurfaceSelector(int i)
+    explicit SurfaceSelector(int i)
       : d_(coerce(i))
       {
       }
 
+    static SurfaceSelector acorn_default_last_surface();
     static std::optional<SurfaceSelector> parse(const std::string&, size_t*end, std::string& error);
     bool operator<(const SurfaceSelector& other) const
     {
       return d_ < other.d_;
+    }
+
+    repr_type surface() const
+    {
+      return d_;
     }
 
     SurfaceSelector next() const;
@@ -84,7 +90,6 @@ namespace DFS
 
     repr_type d_;
   };
-
 
 typedef SurfaceSelector drive_number;
 }  // namespace DFS

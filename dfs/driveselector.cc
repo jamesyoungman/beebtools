@@ -121,6 +121,11 @@ namespace DFS
     return SurfaceSelector(d);
   }
 
+  SurfaceSelector SurfaceSelector::acorn_default_last_surface()
+  {
+    return SurfaceSelector(3);
+  }
+
 }  // namespace DFS
 
 namespace std

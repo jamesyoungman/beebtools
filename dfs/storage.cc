@@ -183,7 +183,7 @@ namespace DFS
       }
     else
       {
-	DFS::drive_number n = 0;
+	DFS::drive_number n(0);
 	for (auto d : drives)
 	  {
 	    for (; n < limit; n = n.next())
@@ -247,41 +247,11 @@ namespace DFS
 	return false;
       }
     size_t end;
-    unsigned long int d;
-    try
-      {
-	d = std::stoul(s, &end, 10);
-      }
-    catch (std::exception&)
-      {
-	std::ostringstream ss;
-	ss << drive_arg << " is not a valid drive number";
-	error = ss.str();
-	return false;
-      }
-    if (end != s.size())
-      {
-	std::ostringstream ss;
-	ss << "drive number " << drive_arg
-	   << " has a non-digit in it ("
-	   << s.substr(end) << ") which we will ignore";
-	error = ss.str();
-	*num = static_cast<unsigned>(d);
-	return true;
-      }
-    if (d <= std::numeric_limits<unsigned>::max())
-      {
-	*num = static_cast<unsigned>(d);
-	return true;
-      }
-    else
-      {
-	std::ostringstream ss;
-	ss << "drive number " << drive_arg
-	   << " is too large";
-	error = ss.str();
-	return false;
-      }
+    auto got = DFS::SurfaceSelector::parse(s, &end, error);
+    if (!got)
+      return false;
+    *num = *got;
+    return true;
   }
 
   std::vector<drive_number> StorageConfiguration::get_all_occupied_drive_numbers() const
@@ -295,7 +265,7 @@ namespace DFS
 
   void StorageConfiguration::show_drive_configuration(std::ostream& os) const
   {
-    const auto max_drive = drives_.empty() ? 0 : drives_.rbegin()->first;
+    const auto max_drive = drives_.empty() ? DFS::SurfaceSelector(0) : drives_.rbegin()->first;
     std::ostringstream ss;
     ss << max_drive;
     const int max_drive_num_len = static_cast<int>(ss.str().size());
@@ -316,16 +286,12 @@ namespace DFS
 		  os << "\n";
 		};
 
-    // loop_limit is the last drive we visit, which is different to
-    // the usual convention.  We do it this way as there is no
-    // guarantee that drives_.rbegin()->first can be incremented
-    // without a wrap.
-    drive_number loop_limit = 3;
+    drive_number loop_limit = DFS::SurfaceSelector::acorn_default_last_surface();
     if (!drives_.empty())
       {
 	loop_limit = std::max(drives_.rbegin()->first, loop_limit);
       }
-    drive_number i = 0;
+    drive_number i(0);
     do
       {
 	show(i);

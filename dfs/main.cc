@@ -184,7 +184,7 @@ int main (int argc, char *argv[])
 {
   if (!check_consistency())
     return 2;
-  DFS::DFSContext ctx('$', 0);
+  DFS::DFSContext ctx('$', DFS::drive_number(0));
   int longindex;
   std::vector<std::string> extra_args;
   // files is just a way to manage the lifetime of the image file objects such

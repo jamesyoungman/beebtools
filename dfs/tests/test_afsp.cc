@@ -41,7 +41,7 @@ namespace
     char directory;
     std::string name;
 
-    MatchInput(DFS::drive_number d, char dir, const std::string& n)
+    MatchInput(unsigned int d, char dir, const std::string& n)
       : drive_num(d), directory(dir), name(n)
     {
     }
@@ -276,12 +276,12 @@ namespace
   bool self_test_matcher()
   {
     MatchInput m1(0, '$', "TEST");
-    assert(m1.drive_num == 0);
+    assert(m1.drive_num.surface() == 0);
     assert(m1.directory == '$');
     assert(m1.name == "TEST");
 
     MatchInput m2(":0.$.TEST");
-    assert(m2.drive_num == 0);
+    assert(m2.drive_num.surface() == 0);
     assert(m2.directory == '$');
     assert(m2.name == "TEST");
 
