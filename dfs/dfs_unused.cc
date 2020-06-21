@@ -11,7 +11,7 @@ namespace
     for (const DFS::CatalogEntry& entry : catalog.entries())
       {
 	auto here = result.begin();
-	for (int i = entry.start_sector(); i < entry.last_sector(); ++i)
+	for (DFS::sector_count_type i = entry.start_sector(); i < entry.last_sector(); ++i)
 	  {
 	    result.insert(here, std::make_pair(i, entry.name()));
 	  }

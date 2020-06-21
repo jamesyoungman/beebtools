@@ -268,9 +268,9 @@ CatalogFragment::CatalogFragment(DFS::Format format,
   {
     // All DFS formats have two sectors of catalog data, at sectors
     // 0 and 1.  WDFS also at 2 and 3.
-    const int frag_count = disc_format_ == Format::WDFS ? 2 : 1;
+    const unsigned int frag_count = disc_format_ == Format::WDFS ? 2u : 1u;
     fragments_.reserve(frag_count);
-    for (DFS::sector_count_type base = 0 ; base < frag_count*2 ; /* empty */)
+    for (DFS::sector_count_type base = 0 ; base < frag_count*2u ; /* empty */)
       {
 	std::optional<DFS::SectorBuffer> names = media.read_block(base++);
 	std::optional<DFS::SectorBuffer> metadata = media.read_block(base++);
@@ -366,7 +366,7 @@ CatalogFragment::CatalogFragment(DFS::Format format,
   std::vector<sector_count_type> Catalog::get_sectors_occupied_by_catalog() const
   {
     std::vector<sector_count_type> result;
-    for (int i = 0; i < catalog_sectors(); ++i)
+    for (DFS::sector_count_type i = 0; i < catalog_sectors(); ++i)
       result.push_back(DFS::sector_count(i));
     return result;
   }

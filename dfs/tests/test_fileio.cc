@@ -127,7 +127,7 @@ namespace
     return true;
   }
 
-  bool test_fileview(const std::string& name, int maxblocks)
+  bool test_fileview(const std::string& name, DFS::sector_count_type maxblocks)
   {
     DFS::internal::OsFile underlying(name);
     const DFS::Format fmt = DFS::Format::DFS;
