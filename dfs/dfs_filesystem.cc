@@ -112,6 +112,11 @@ namespace DFS
     return DFS::UiStyle::Acorn;
   }
 
+  Format FileSystem::disc_format() const
+  {
+    return format_;
+  }
+
   byte FileSystem::get_byte(sector_count_type sector, unsigned offset) const
   {
     assert(offset < DFS::SECTOR_BYTES);

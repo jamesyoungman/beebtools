@@ -38,11 +38,8 @@ public:
 
   // Determine what UI styling to use for the current file system.
   DFS::UiStyle ui_style(const DFSContext&) const;
+  Format disc_format() const;
 
-  inline Format disc_format() const
-  {
-    return format_;
-  }
 
   DFS::sector_count_type disc_sector_count() const;
   Geometry geometry() const;
