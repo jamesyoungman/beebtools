@@ -21,12 +21,6 @@
 #include "storage.h"
 #include "stringutil.h"
 
-// Temporarily, we include dfs_volume.h so that callers of mount()
-// don't also need themselves to include dfs_volume.h
-#include "dfs_volume.h"
-// TODO: remove this.
-
-
 namespace DFS
 {
   class Volume;

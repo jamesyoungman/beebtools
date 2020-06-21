@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "abstractio.h"
-#include "dfs_filesystem.h"
 #include "dfstypes.h"
 #include "fileio.h"
 #include "identify.h"

@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#include "dfs_volume.h"
+
 namespace
 {
   void read_file_body(const DFS::CatalogEntry& entry,

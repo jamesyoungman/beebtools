@@ -5,7 +5,7 @@
 #include <locale>
 #include <string>
 
-#include "dfs_filesystem.h"
+#include "dfs_volume.h"
 #include "driveselector.h"
 
 namespace

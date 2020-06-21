@@ -1,8 +1,11 @@
 #include "commands.h"
 
 #include <sstream>
+#include <string>
+#include <vector>
 
-#include "dfs_filesystem.h"
+#include "dfscontext.h"
+#include "dfs_volume.h"
 #include "driveselector.h"
 
 namespace

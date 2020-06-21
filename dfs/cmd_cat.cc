@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "commands.h"
-#include "dfs_filesystem.h"
+#include "dfs_volume.h"
 #include "driveselector.h"
 #include "stringutil.h"
 

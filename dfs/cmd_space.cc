@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -12,7 +13,10 @@
 
 #include "afsp.h"
 #include "dfs.h"
+#include "dfscontext.h"
+#include "dfs_volume.h"
 #include "driveselector.h"
+#include "storage.h"
 
 using std::cerr;
 using std::cout;

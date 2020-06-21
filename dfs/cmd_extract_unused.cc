@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "dfscontext.h"
-#include "dfs_filesystem.h"
+#include "dfs_volume.h"
 #include "dfs_unused.h"
 #include "dfstypes.h"
 #include "media.h"

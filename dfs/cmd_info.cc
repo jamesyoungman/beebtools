@@ -8,6 +8,10 @@
 
 #include "afsp.h"
 #include "dfs.h"
+#include "dfscontext.h"
+#include "dfs_catalog.h"
+#include "dfs_volume.h"
+#include "storage.h"
 
 using std::cerr;
 using std::cout;

@@ -11,6 +11,7 @@
 
 #include "afsp.h"
 #include "dfs.h"
+#include "dfs_volume.h"
 #include "driveselector.h"
 
 using std::cerr;
