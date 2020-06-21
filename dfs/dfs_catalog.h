@@ -159,7 +159,7 @@ public:
 class Catalog
 {
  public:
-  explicit Catalog(DFS::Format format, DataAccess&);
+  explicit Catalog(DFS::Format format, DFS::sector_count_type loc, DataAccess&);
 
   const CatalogFragment& primary() const
   {

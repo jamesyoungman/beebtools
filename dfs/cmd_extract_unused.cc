@@ -88,7 +88,7 @@ public:
     auto mounted = storage.mount(ctx.current_drive, error);
     if (!mounted)
       return fail();
-    const DFS::Catalog& root(mounted->file_system()->root());
+    const DFS::Catalog& root(mounted->volume()->root());
 
     // We're going to loop over the unoccupied areas of the disc,
     // extracting each.  We add a sentinel value to ensure that we

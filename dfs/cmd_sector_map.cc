@@ -95,7 +95,7 @@ public:
 	std::cerr << "Opus DDOS is not yet supported\n";
 	return false;
       }
-    auto catalog(mounted->file_system()->root());
+    auto catalog(mounted->volume()->root());
 
     const std::vector<DFS::CatalogEntry> entries(catalog.entries());
     typedef std::vector<DFS::CatalogEntry>::size_type catalog_entry_index;

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "dfs_format.h"
+#include "dfs_volume.h"
 #include "fsp.h"
 #include "stringutil.h"
 
@@ -29,48 +30,15 @@ namespace
     return result;
   }
 
-  std::map<std::optional<char>, std::unique_ptr<DFS::Volume>>
-  init_volumes(DFS::DataAccess& media, DFS::Format fmt, DFS::Geometry)
-  {
-    if (fmt == DFS::Format::OpusDDOS)
-      throw DFS::OpusUnsupported();	// TODO: implement Opus DDOS support
-    std::map<std::optional<char>, std::unique_ptr<DFS::Volume>> result;
-    auto vol = std::make_unique<DFS::Volume>(fmt, media);
-    result.insert(std::make_pair(DFS::FileSystem::DEFAULT_VOLUME, std::move(vol)));
-    return result;
-  }
-
 }  // namespace
 
 namespace DFS
 {
-  Volume::Volume(DFS::Format format, DataAccess& media)
-    : media_(media), root_(std::make_unique<Catalog>(format, media))
-  {
-    if (format == Format::OpusDDOS)
-      {
-	// TODO: implement origin for Opus DDOS.  In Opus DDOS, all
-	// the catalogs are in track 0, and all the files are stored
-	// within track-aligned volumes.  Sector positions in the
-	// catalog are relative to the beginning of the first track of
-	// the volume (which is not where the catalog is).  So to
-	// support Opus DDOS volumes we need to have some way to
-	// indicate the "origin" of the sector numbers in the catalog
-	// entries.
-	throw OpusUnsupported();
-      }
-  }
-
-  const Catalog& Volume::root() const
-  {
-    return *root_;
-  }
-
   FileSystem::FileSystem(DataAccess& media,
 			 DFS::Format fmt,
 			 DFS::Geometry geom)
     : format_(fmt), geometry_(geom), media_(media),
-      volumes_(init_volumes(media, fmt, geom))
+      volumes_(DFS::internal::init_volumes(media, fmt, geom))
   {
     const DFS::byte byte106 = get_byte(1, 0x06);
 
@@ -158,7 +126,7 @@ namespace DFS
     return geometry_;
   }
 
-  DataAccess& FileSystem::device() const
+  DataAccess& FileSystem::whole_device() const
   {
     return media_;
   }
@@ -166,8 +134,15 @@ namespace DFS
   sector_count_type FileSystem::disc_sector_count() const
   {
     if (disc_format() == DFS::Format::OpusDDOS)
-      throw OpusUnsupported();	// TODO: implement Opus DDOS support
-    return root().total_sectors();
+      {
+	return geometry_.total_sectors();
+      }
+    else
+      {
+	for (const auto& vol : volumes_)
+	  return vol.second->root().total_sectors();
+	throw BadFileSystem("no volumes in file system");
+      }
   }
 
 offset calc_cat_offset(int slot, Format fmt)
@@ -182,20 +157,10 @@ offset calc_cat_offset(int slot, Format fmt)
 }
 
 
-const Catalog& FileSystem::root() const
-{
-  if (disc_format() == DFS::Format::OpusDDOS)
-    throw OpusUnsupported();	// TODO: implement Opus DDOS support
-  auto it = volumes_.find('A');
-  assert(it != volumes_.end());
-  return it->second->root();
-}
-
 Volume* FileSystem::mount() const
 {
   return mount(DEFAULT_VOLUME);
 }
-
 
 Volume* FileSystem::mount(char key) const
 {

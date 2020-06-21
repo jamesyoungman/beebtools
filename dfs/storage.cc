@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "dfs_filesystem.h"
+#include "dfs_volume.h"
 #include "dfstypes.h"
 #include "driveselector.h"
 

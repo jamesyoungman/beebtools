@@ -99,8 +99,7 @@ public:
 	cerr << "failed to select drive " << ctx.current_drive << ": " << error << "\n";
 	return false;
       }
-    DFS::FileSystem* file_system = mounted->file_system();
-    const DFS::Catalog& catalog(file_system->root());
+    const DFS::Catalog& catalog(mounted->volume()->root());
 
     std::vector<DFS::byte> file_body;
     for (const auto& entry : catalog.entries())
@@ -122,7 +121,7 @@ public:
 	std::ofstream outfile(output_body_file, std::ofstream::out);
 
 	auto ok = entry.visit_file_body_piecewise
-	  (file_system->device(),
+	  (mounted->volume()->data_region(),
 	   [&crc, &outfile, &output_body_file]
 	   (const DFS::byte* begin,
 	    const DFS::byte* end)

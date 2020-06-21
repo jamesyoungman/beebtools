@@ -33,6 +33,7 @@ target_sources(dfslib
   crc.cc
   dfs_catalog.cc
   dfs_filesystem.cc
+  dfs_volume.cc
   fsp.cc
   afsp.cc
   )
@@ -59,6 +60,7 @@ set(HEADERS
   dfs_filesystem.h
   dfs_format.h
   dfs_unused.h
+  dfs_volume.h
   dfstypes.h
   driveselector.h
   exceptions.h

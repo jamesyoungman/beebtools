@@ -86,7 +86,7 @@ public:
 	std::cerr << "failed to select drive " << vol << ": " << error << "\n";
 	return false;
       }
-    const auto& catalog(mounted->file_system()->root());
+    const auto& catalog(mounted->volume()->root());
 
     cout << std::hex;
     cout << std::uppercase;

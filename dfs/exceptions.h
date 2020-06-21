@@ -7,6 +7,18 @@
 
 namespace DFS {
 
+// OpusDDOS support is incomplete.  We throw this exception when
+// encountering a case where the format makes a difference.
+class OpusUnsupported : public std::exception
+{
+public:
+  OpusUnsupported() {};
+  const char *what() const noexcept override
+  {
+    return "Opus DDOS is not yet supported";
+  }
+};
+
 class FailedToGuessFormat : public std::exception
 {
  public:

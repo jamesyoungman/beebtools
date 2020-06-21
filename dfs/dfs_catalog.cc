@@ -263,7 +263,9 @@ CatalogFragment::CatalogFragment(DFS::Format format,
     return true;
   }
 
-  Catalog::Catalog(DFS::Format format, DataAccess& media)
+  Catalog::Catalog(DFS::Format format,
+		   DFS::sector_count_type catalog_location,
+		   DataAccess& media)
     : disc_format_(format)
   {
     // All DFS formats have two sectors of catalog data, at sectors
@@ -272,8 +274,8 @@ CatalogFragment::CatalogFragment(DFS::Format format,
     fragments_.reserve(frag_count);
     for (DFS::sector_count_type base = 0 ; base < frag_count*2u ; /* empty */)
       {
-	std::optional<DFS::SectorBuffer> names = media.read_block(base++);
-	std::optional<DFS::SectorBuffer> metadata = media.read_block(base++);
+	std::optional<DFS::SectorBuffer> names = media.read_block(catalog_location + base++);
+	std::optional<DFS::SectorBuffer> metadata = media.read_block(catalog_location + base++);
 	if (!names || !metadata)
 	  {
 	    std::ostringstream os;

@@ -80,7 +80,7 @@ public:
     auto mounted = storage.mount(vol, error);
     if (!mounted)
       return faild(vol);
-    auto catalog(mounted->file_system()->root());
+    auto catalog(mounted->volume()->root());
 
     int sectors_used = 2;
     const std::vector<DFS::CatalogEntry> entries = catalog.entries();

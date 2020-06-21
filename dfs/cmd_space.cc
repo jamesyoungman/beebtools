@@ -75,7 +75,7 @@ public:
     auto mounted(storage.mount(vol, error));
     if (!mounted)
       return faild(vol);
-    auto root(mounted->file_system()->root());
+    auto root(mounted->volume()->root());
     // TODO: For Opus DDOS there will be more than one volume per disc.
     // Therre is a case for seeing the free space in a selected volume,
     // or in the whole disc.

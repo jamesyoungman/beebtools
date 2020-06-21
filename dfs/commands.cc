@@ -92,9 +92,8 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       return false;
     }
   std::vector<DFS::byte> body;
-  // TODO: this call to read_file_body may need to take account of
-  // the track offsets for Opus DDOS.
-  read_file_body(*entry, mounted->file_system()->device(), &body);
+  DataAccess& vol_access(mounted->volume()->data_region());
+  read_file_body(*entry, vol_access, &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(body.data(), body.data() + body.size(), tail);
 }

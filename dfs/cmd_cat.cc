@@ -118,7 +118,7 @@ namespace
       if (!mounted)
 	return faild(d);
       DFS::FileSystem* file_system = mounted->file_system();
-      const Catalog& catalog(file_system->root());
+      const Catalog& catalog(mounted->volume()->root());
       const auto ui = file_system->ui_style(ctx);
 
       DFS::Geometry geom = file_system->geometry();

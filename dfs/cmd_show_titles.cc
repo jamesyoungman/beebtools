@@ -35,7 +35,7 @@ class CommandShowTitles : public DFS::CommandInterface
     auto mounted(storage.mount(vol, error));
     if (!mounted)
       return false;
-    std::cout << d << ":" << mounted->file_system()->root().title() << "\n";
+    std::cout << d << ":" << mounted->volume()->root().title() << "\n";
     if (mounted->file_system()->disc_format() == DFS::Format::OpusDDOS)
       {
 	// TODO: fix this for Opus DDOS.
