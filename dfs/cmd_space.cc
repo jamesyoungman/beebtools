@@ -72,19 +72,21 @@ public:
 	if (!error.empty())
 	  std::cerr << "warning: " << error << "\n";
       }
-    auto file_system(storage.mount(vol, error));
-    if (!file_system)
+    auto mounted(storage.mount(vol, error));
+    if (!mounted)
       return faild(vol);
-    auto root(file_system->root());
-
+    auto root(mounted->file_system()->root());
+    // TODO: For Opus DDOS there will be more than one volume per disc.
+    // Therre is a case for seeing the free space in a selected volume,
+    // or in the whole disc.
     std::cerr << "Disc total sectors = "
-       << std::setw(3) << std::hex << std::uppercase
-       << file_system->disc_sector_count() << "\n";
+	      << std::setw(3) << std::hex << std::uppercase
+	      << mounted->file_system()->disc_sector_count() << "\n";
     std::cerr << "Disc sectors occupied by catalog = "
 	      << std::setw(3) << std::hex << std::uppercase
 	      << root.catalog_sectors() << "\n";
     std::cerr << "Total file storage space in sectors = "
-	      << (file_system->disc_sector_count()
+	      << (mounted->file_system()->disc_sector_count()
 		  - root.catalog_sectors()) << "\n";
 
     // Files occur on the disk in a kind of reverse order.  The last

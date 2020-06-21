@@ -77,10 +77,10 @@ public:
 	if (!error.empty())
 	  std::cerr << "warning: " << error << "\n";
       }
-    auto file_system(storage.mount(vol, error));
-    if (!file_system)
+    auto mounted = storage.mount(vol, error);
+    if (!mounted)
       return faild(vol);
-    auto catalog(file_system->root());
+    auto catalog(mounted->file_system()->root());
 
     int sectors_used = 2;
     const std::vector<DFS::CatalogEntry> entries = catalog.entries();

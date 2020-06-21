@@ -85,22 +85,22 @@ public:
 	  }
       }
     DFS::VolumeSelector vol(drive_num); // TODO: wrong for Opus DDOS, see below.
-    auto file_system(storage.mount(vol, error));
-    if (!file_system)
+    auto mounted(storage.mount(vol, error));
+    if (!mounted)
       return faild(drive_num);
-    if (file_system->disc_format() == DFS::Format::OpusDDOS)
+    if (mounted->file_system()->disc_format() == DFS::Format::OpusDDOS)
       {
 	// TODO: this is still all wrong, since for an effective sector map
 	// we would need to iterate over all Opus DDOS volumes.
 	std::cerr << "Opus DDOS is not yet supported\n";
 	return false;
       }
-    auto catalog(file_system->root());
+    auto catalog(mounted->file_system()->root());
 
     const std::vector<DFS::CatalogEntry> entries(catalog.entries());
     typedef std::vector<DFS::CatalogEntry>::size_type catalog_entry_index;
     std::vector<std::optional<std::vector<DFS::CatalogEntry>::size_type>> occupied_by;
-    occupied_by.resize(file_system->disc_sector_count());
+    occupied_by.resize(mounted->file_system()->disc_sector_count());
     catalog_entry_index occ_by_catalog = entries.size();
     for (std::vector<DFS::CatalogEntry>::size_type i = 0;
 	 i < entries.size();

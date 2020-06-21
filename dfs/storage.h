@@ -18,6 +18,7 @@
 namespace DFS
 {
   class FileSystem;
+  class Volume;
 
   // DriveAllocation represents a choice of how to assign image
   // files to drive slots.
@@ -60,6 +61,18 @@ namespace DFS
     AbstractDrive* drive_;	// not owned
   };
 
+  class VolumeMountResult
+  {
+  public:
+    VolumeMountResult(std::unique_ptr<DFS::FileSystem>, DFS::Volume*);
+    DFS::FileSystem* file_system() const;
+    DFS::Volume* volume() const;
+
+  private:
+    std::unique_ptr<DFS::FileSystem> fs_;
+    DFS::Volume* vol_;
+  };
+
   class StorageConfiguration
   {
   public:
@@ -83,7 +96,8 @@ namespace DFS
     void connect_internal(const DFS::SurfaceSelector& d, const DriveConfig& drive);
     std::optional<Format> drive_format(drive_number drive, std::string& error) const;
     bool select_drive(const DFS::SurfaceSelector&, AbstractDrive **pp, std::string& error) const;
-    std::unique_ptr<DFS::FileSystem> mount(const DFS::VolumeSelector& vol, std::string& error) const;
+    std::unique_ptr<DFS::FileSystem> mount_fs(const DFS::SurfaceSelector& vol, std::string& error) const;
+    std::optional<VolumeMountResult> mount(const DFS::VolumeSelector& vol, std::string& error) const;
 
   private:
     std::map<drive_number, DriveConfig> drives_;

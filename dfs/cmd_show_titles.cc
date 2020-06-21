@@ -32,11 +32,11 @@ class CommandShowTitles : public DFS::CommandInterface
 		  const DFS::SurfaceSelector& d, std::string& error)
   {
     DFS::VolumeSelector vol(d);
-    auto file_system(storage.mount(vol, error));
-    if (!file_system)
+    auto mounted(storage.mount(vol, error));
+    if (!mounted)
       return false;
-    std::cout << d << ":" << file_system->root().title() << "\n";
-    if (file_system->disc_format() == DFS::Format::OpusDDOS)
+    std::cout << d << ":" << mounted->file_system()->root().title() << "\n";
+    if (mounted->file_system()->disc_format() == DFS::Format::OpusDDOS)
       {
 	// TODO: fix this for Opus DDOS.
 	// For Opus DDOS, we should probably iterate over all the

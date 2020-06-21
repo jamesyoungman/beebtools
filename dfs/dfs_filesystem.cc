@@ -29,25 +29,14 @@ namespace
     return result;
   }
 
-  class OpusUnsupported : public std::exception
-  {
-  public:
-    OpusUnsupported() {};
-    const char *what() const noexcept override
-    {
-      return "Opus DDOS is not yet supported";
-    }
-  };
-
   std::map<std::optional<char>, std::unique_ptr<DFS::Volume>>
   init_volumes(DFS::DataAccess& media, DFS::Format fmt, DFS::Geometry)
   {
     if (fmt == DFS::Format::OpusDDOS)
-      throw OpusUnsupported();	// TODO: implement Opus DDOS support
+      throw DFS::OpusUnsupported();	// TODO: implement Opus DDOS support
     std::map<std::optional<char>, std::unique_ptr<DFS::Volume>> result;
     auto vol = std::make_unique<DFS::Volume>(fmt, media);
-    std::optional<char> key = std::nullopt;
-    result.insert(std::make_pair(key, std::move(vol)));
+    result.insert(std::make_pair(DFS::FileSystem::DEFAULT_VOLUME, std::move(vol)));
     return result;
   }
 
@@ -197,9 +186,23 @@ const Catalog& FileSystem::root() const
 {
   if (disc_format() == DFS::Format::OpusDDOS)
     throw OpusUnsupported();	// TODO: implement Opus DDOS support
-  auto it = volumes_.find(std::nullopt);
+  auto it = volumes_.find('A');
   assert(it != volumes_.end());
   return it->second->root();
+}
+
+Volume* FileSystem::mount() const
+{
+  return mount(DEFAULT_VOLUME);
+}
+
+
+Volume* FileSystem::mount(char key) const
+{
+  auto it = volumes_.find(key);
+  if (it == volumes_.end())
+    return 0;
+  return it->second.get();
 }
 
 std::string format_name(Format f)

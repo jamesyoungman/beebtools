@@ -80,13 +80,13 @@ public:
 
     const DFS::VolumeSelector vol = matcher->get_volume();
     std::string error;
-    std::unique_ptr<DFS::FileSystem> file_system(storage.mount(vol, error));
-    if (!file_system)
+    auto mounted = storage.mount(vol, error);
+    if (!mounted)
       {
 	std::cerr << "failed to select drive " << vol << ": " << error << "\n";
 	return false;
       }
-    const auto& catalog(file_system->root());
+    const auto& catalog(mounted->file_system()->root());
 
     cout << std::hex;
     cout << std::uppercase;

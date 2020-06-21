@@ -85,10 +85,10 @@ public:
 	std::cerr << "Opus DDOS volumes are not yet supported";
 	return false;
       }
-    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive, error);
-    if (!file_system)
+    auto mounted = storage.mount(ctx.current_drive, error);
+    if (!mounted)
       return fail();
-    const DFS::Catalog& root(file_system->root());
+    const DFS::Catalog& root(mounted->file_system()->root());
 
     // We're going to loop over the unoccupied areas of the disc,
     // extracting each.  We add a sentinel value to ensure that we

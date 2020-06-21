@@ -1,6 +1,7 @@
 #include "dfs_unused.h"
 
 #include "abstractio.h"
+#include "dfs_filesystem.h"
 
 namespace
 {
@@ -36,6 +37,13 @@ namespace DFS
   SpaceMap::SpaceMap(const Catalog& catalog, std::optional<std::string> sentinel)
     : used_by_(make_space_map(catalog, sentinel))
   {
+    if (catalog.disc_format() == Format::OpusDDOS)
+      {
+	// The problem here is that to figure out which sectors are
+	// truly unused, one has to consider all volumes, not just a
+	// single catalog.
+	throw OpusUnsupported();
+      }
   }
 
   std::optional<std::string> SpaceMap::at(DFS::sector_count_type sec) const

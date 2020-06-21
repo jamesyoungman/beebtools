@@ -78,13 +78,13 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       std::cerr << args[1] << " is not a valid file name: " << error << "\n";
       return false;
     }
-  std::unique_ptr<DFS::FileSystem> file_system(storage.mount(name.vol, error));
-  if (!file_system)
+  auto mounted = storage.mount(name.vol, error);
+  if (!mounted)
     {
       std::cerr << "failed to select drive " << name.vol << ": " << error << "\n";
       return false;
     }
-  const auto& root(file_system->root());
+  const auto& root(mounted->volume()->root());
   const std::optional<CatalogEntry> entry = root.find_catalog_entry_for_name(name);
   if (!entry)
     {
@@ -92,7 +92,9 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
       return false;
     }
   std::vector<DFS::byte> body;
-  read_file_body(*entry, file_system->device(), &body);
+  // TODO: this call to read_file_body may need to take account of
+  // the track offsets for Opus DDOS.
+  read_file_body(*entry, mounted->file_system()->device(), &body);
   const std::vector<std::string> tail(args.begin() + 1, args.end());
   return logic(body.data(), body.data() + body.size(), tail);
 }

@@ -121,6 +121,24 @@ namespace DFS
   {
   }
 
+  VolumeMountResult::VolumeMountResult(std::unique_ptr<DFS::FileSystem> fs, DFS::Volume* vol)
+    : fs_(std::move(fs)), vol_(vol)
+  {
+    assert(fs_.get() != 0);
+    assert(vol != 0);
+  }
+
+  FileSystem* VolumeMountResult::file_system() const
+  {
+    return fs_.get();
+  }
+
+
+  Volume* VolumeMountResult::volume() const
+  {
+    return vol_;
+  }
+
   StorageConfiguration::StorageConfiguration()
   {
   }
@@ -288,21 +306,33 @@ namespace DFS
   }
 
 
-  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount(const DFS::VolumeSelector& vol, std::string& error) const
+  std::unique_ptr<DFS::FileSystem> StorageConfiguration::mount_fs(const DFS::SurfaceSelector& drive, std::string& error) const
   {
     AbstractDrive *p;
-    if (vol.effective_subvolume() != 'A')
-      {
-	error = "Opus DDOS volumes are not yet supported";
-	return 0;
-      }
-    auto drive = vol.surface();
     if (!select_drive(drive, &p, error))
       return 0;
     std::optional<Format> fmt = drive_format(drive, error);
     if (!fmt)
       return 0;
     return std::make_unique<FileSystem>(*p, *fmt, p->geometry());
+  }
+
+  std::optional<VolumeMountResult> StorageConfiguration::mount(const DFS::VolumeSelector& vol,
+							       std::string& error) const
+  {
+    std::unique_ptr<DFS::FileSystem> fs = mount_fs(vol.surface(), error);
+    if (!fs)
+      return std::nullopt;
+
+    Volume *pvol = fs->mount(vol.effective_subvolume()); // we retain ownership
+    if (!pvol)
+      {
+	std::ostringstream ss;
+	ss << "drive " << vol.surface() << " has no volume " << vol.effective_subvolume();
+	error.assign(ss.str());
+	return std::nullopt;
+      }
+    return VolumeMountResult(std::move(fs), pvol);
   }
 
 }  // namespace DFS

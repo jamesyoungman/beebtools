@@ -114,9 +114,10 @@ namespace
 	{
 	  d = ctx.current_drive;
 	}
-      std::unique_ptr<DFS::FileSystem> file_system = storage.mount(d, error);
-      if (!file_system)
+      auto mounted = storage.mount(d, error);
+      if (!mounted)
 	return faild(d);
+      DFS::FileSystem* file_system = mounted->file_system();
       const Catalog& catalog(file_system->root());
       const auto ui = file_system->ui_style(ctx);
 

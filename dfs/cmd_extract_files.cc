@@ -93,12 +93,13 @@ public:
       dest_dir.push_back('/');
 
     std::string error;
-    std::unique_ptr<DFS::FileSystem> file_system = storage.mount(ctx.current_drive, error);
-    if (!file_system)
+    auto mounted = storage.mount(ctx.current_drive, error);
+    if (!mounted)
       {
 	cerr << "failed to select drive " << ctx.current_drive << ": " << error << "\n";
 	return false;
       }
+    DFS::FileSystem* file_system = mounted->file_system();
     const DFS::Catalog& catalog(file_system->root());
 
     std::vector<DFS::byte> file_body;

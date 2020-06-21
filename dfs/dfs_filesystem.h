@@ -23,6 +23,18 @@
 
 namespace DFS
 {
+  // OpusDDOS support is incomplete.  We throw this exception when
+  // encountering a case where the format makes a difference.
+  class OpusUnsupported : public std::exception
+  {
+  public:
+    OpusUnsupported() {};
+    const char *what() const noexcept override
+    {
+      return "Opus DDOS is not yet supported";
+    }
+  };
+
 
 // Opus DDOS divides a disc into up to 8 volumes (identified by a
 // letter, A-H).  In our object model, the file system is divided into
@@ -45,8 +57,11 @@ private:
 class FileSystem
 {
 public:
+  static constexpr char DEFAULT_VOLUME = 'A';
   explicit FileSystem(DataAccess&, DFS::Format fmt, DFS::Geometry geom);
   const Catalog& root() const;
+  Volume* mount(char vol) const;
+  Volume* mount() const;
 
   // Determine what UI styling to use for the current file system.
   DFS::UiStyle ui_style(const DFSContext&) const;
