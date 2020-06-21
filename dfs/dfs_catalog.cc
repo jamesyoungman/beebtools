@@ -264,7 +264,7 @@ CatalogFragment::CatalogFragment(DFS::Format format,
   }
 
   Catalog::Catalog(DFS::Format format, DataAccess& media)
-    : disc_format_(format), media_(media)
+    : disc_format_(format)
   {
     // All DFS formats have two sectors of catalog data, at sectors
     // 0 and 1.  WDFS also at 2 and 3.

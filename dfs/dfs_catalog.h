@@ -201,7 +201,6 @@ class Catalog
 private:
   DFS::Format disc_format_;
   // class invariant: drive_ is non-null.
-  DataAccess& media_;
   // class invariant: fragments_ is non-empty.
   // class invariant: for all items f in fragments_, f.drive_ == drive.
   std::vector<CatalogFragment> fragments_;
