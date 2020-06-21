@@ -130,7 +130,7 @@ namespace
 	   << density_desc(geom, ui) << std::setbase(10) << "\n";
 
       const int left_col_width = 20;
-      cout << "Drive "<< std::setw(left_col_width-6) << ctx.current_drive
+      cout << "Drive "<< std::setw(left_col_width-6) << d
 	   << "Option " << catalog.boot_setting() << "\n";
 
       if (DFS::UiStyle::Watford == ui)

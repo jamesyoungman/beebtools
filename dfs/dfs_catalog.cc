@@ -378,8 +378,9 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 
 namespace std
 {
-  ostream& operator<<(ostream& os, const DFS::CatalogFragment& f)
+  ostream& operator<<(ostream& outer_os, const DFS::CatalogFragment& f)
   {
+    std::ostringstream os;
     auto entries = f.entries();
     os << "Title " << f.title() << "\n"
        << "Boot setting " << f.boot_setting() << "\n"
@@ -390,24 +391,27 @@ namespace std
       {
 	os << entry << "\n";
       }
-    return os;
+    outer_os << os.str();
+    return outer_os;
   }
 
-  ostream& operator<<(ostream& os, const DFS::CatalogEntry& entry)
+  ostream& operator<<(ostream& outer_os, const DFS::CatalogEntry& entry)
   {
+    std::ostringstream os;
     unsigned long load_addr, exec_addr;
     load_addr = DFS::sign_extend(entry.load_address());
     exec_addr = DFS::sign_extend(entry.exec_address());
-    return os << entry.directory() << "."
-	      << left
-	      << setw(8) << setfill(' ')
-	      << entry.name() << " "
-	      << setw(3)
-	      << (entry.is_locked() ? "L" : "")
-	      << std::right
-	      << setw(6) << setfill('0') << load_addr << " "
-	      << setw(6) << setfill('0') << exec_addr << " "
-	      << setw(6) << setfill('0') << entry.file_length() << " "
-	      << setw(3) << setfill('0') << entry.start_sector();
+    os << entry.directory() << "."
+       << left
+       << setw(8) << setfill(' ')
+       << entry.name() << " "
+       << setw(3)
+       << (entry.is_locked() ? "L" : "")
+       << std::right << std::hex << std::uppercase
+       << setw(6) << setfill('0') << load_addr << " "
+       << setw(6) << setfill('0') << exec_addr << " "
+       << setw(6) << setfill('0') << entry.file_length() << " "
+       << setw(3) << setfill('0') << entry.start_sector();
+    return outer_os << os.str();
   }
 }

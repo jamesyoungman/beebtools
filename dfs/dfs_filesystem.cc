@@ -221,6 +221,8 @@ namespace std
 
   std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt)
   {
-    return os << std::dec << value(opt) << " (" << description(opt) << ")";
+    std::ostringstream ss;
+    ss << std::dec << value(opt) << " (" << description(opt) << ")";
+    return os << ss.str();
   }
 }

@@ -214,9 +214,18 @@ namespace DFS
 
   void VolumeSelector::ostream_insert(std::ostream& os) const
   {
-    os << surface_;
     if (subvolume_)
-      os << *subvolume_;
+      {
+	std::ostringstream ss;
+	// We can't just emit the parts directly because there may be
+	// a field width specification in effect on os.
+	ss << surface_ << *subvolume_;
+	os << ss.str();
+      }
+    else
+      {
+	os << surface_;
+      }
   }
 
 }  // namespace DFS
