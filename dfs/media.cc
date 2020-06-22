@@ -71,11 +71,11 @@ namespace
     std::unique_ptr<DFS::DataAccess> data_;
   };
 
-  class SsdFile : public ViewFile
+  class NonInterleavedFile : public ViewFile
   {
   public:
-    explicit SsdFile(const std::string& name, bool compressed,
-		     std::unique_ptr<DFS::DataAccess>&& access)
+    explicit NonInterleavedFile(const std::string& name, bool compressed,
+				std::unique_ptr<DFS::DataAccess>&& access)
       : ViewFile(name, std::move(access))
     {
       // TODO: name != the file inside media for the case where the
@@ -93,7 +93,7 @@ namespace
 	  std::ostringstream os;
 	  if (compressed)
 	    os << "compressed ";
-	  os << "SSD file " << name;
+	  os << "non-interleaved file " << name;
 	  if (geometry.heads > 1)
 	    {
 	      os << " side " << surface_num;
@@ -107,11 +107,11 @@ namespace
     }
   };
 
-  class DsdFile : public ViewFile
+  class InterleavedFile : public ViewFile
   {
   public:
-    explicit DsdFile(const std::string& name, bool compressed,
-		     std::unique_ptr<DFS::DataAccess>&& access)
+    explicit InterleavedFile(const std::string& name, bool compressed,
+			     std::unique_ptr<DFS::DataAccess>&& access)
       : ViewFile(name, std::move(access))
     {
       auto make_desc = [compressed, &name](int side) -> std::string
@@ -121,7 +121,7 @@ namespace
 			    << " of ";
 			 if (compressed)
 			   os << "compressed ";
-			 os << "DSD file " << name;
+			 os << "interleaved file " << name;
 			 return os.str();
 		       };
 
@@ -273,13 +273,13 @@ namespace DFS
       }
 
     const std::string ext(extensions.back());
-    if (ext == "ssd")
+    if (ext == "ssd" || ext == "sdd")
       {
-	return std::make_unique<SsdFile>(name, compressed, std::move(da));
+	return std::make_unique<NonInterleavedFile>(name, compressed, std::move(da));
       }
-    if (ext == "dsd")
+    if (ext == "dsd" || ext == "ddd")
       {
-	return std::make_unique<DsdFile>(name, compressed, std::move(da));
+	return std::make_unique<InterleavedFile>(name, compressed, std::move(da));
       }
     if (ext == "mmb")
       {

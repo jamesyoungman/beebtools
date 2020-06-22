@@ -57,10 +57,10 @@ then
     exit 1
 fi
 check_config_substring T010 \
-     "Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file ${image}" \
-     "Drive 1: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file ${image}" \
-     "Drive 2: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file ${image}" \
-     "Drive 3: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file ${image}" || exit 1
+     "Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file ${image}" \
+     "Drive 1: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file ${image}" \
+     "Drive 2: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file ${image}" \
+     "Drive 3: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file ${image}" || exit 1
 
 # Test the --drive-physical option.
 if ! get_config --drive-physical --show-config \
@@ -79,7 +79,7 @@ fi
 # Drives 6 and 7 are the side 1 drives for those, so the next
 # free drive is 8.
 #
-desc="single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file ${image}"
+desc="single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file ${image}"
 check_config_substring T020 \
      "Drive 0: occupied, ${desc}" \
      "Drive 1: occupied, ${desc}" \

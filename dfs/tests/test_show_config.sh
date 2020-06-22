@@ -62,7 +62,7 @@ fi
 
 rm -f "${imagefile}"
 if ! check_config 010 actual.txt \
-	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, SSD file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
+	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, non-interleaved file .*show_config_imagefile_acorn-dfs-sd-40t[.]......[.]ssd' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
 	     '^Drive 3: empty'
@@ -79,7 +79,7 @@ then
 fi
 
 if ! check_config 020 actual.txt \
-	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed SSD file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
+	     '^Drive 0: occupied, single density, 1 side, 40 tracks, 10 sectors per track, compressed non-interleaved file .*/acorn-dfs-sd-40t[.]ssd[.]gz' \
 	     '^Drive 1: empty' \
 	     '^Drive 2: empty' \
 	     '^Drive 3: empty'

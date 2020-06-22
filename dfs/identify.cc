@@ -419,14 +419,23 @@ namespace
     std::optional<DFS::Encoding> encoding_hint;
     std::optional<bool> interleaving_hint;
     std::optional<int> sides_hint;
-    if (DFS::stringutil::ends_with(name, ".ssd"))
+    if (DFS::stringutil::ends_with(name, ".ssd") || DFS::stringutil::ends_with(name, ".sdd"))
       {
 	interleaving_hint = false;
+	// might be 1 or 2 sides.
       }
-    else if (DFS::stringutil::ends_with(name, ".dsd"))
+    if (DFS::stringutil::ends_with(name, ".dsd") || DFS::stringutil::ends_with(name, ".ddd"))
       {
 	interleaving_hint = true;
 	sides_hint = 2;
+      }
+    if (DFS::stringutil::ends_with(name, ".ssd") || DFS::stringutil::ends_with(name, ".dsd"))
+      {
+	encoding_hint = DFS::Encoding::FM;
+      }
+    if (DFS::stringutil::ends_with(name, ".sdd") || DFS::stringutil::ends_with(name, ".ddd"))
+      {
+	encoding_hint = DFS::Encoding::MFM;
       }
 
     // Some combinations are documented at
