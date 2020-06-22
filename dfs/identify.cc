@@ -301,8 +301,15 @@ namespace
 	eliminated_format(ff, os.str());
 	return false;
       };
-    possible = filter_formats(possible, other_side_has_catalog_too);
-    show_possible("probe_geometry after removing two-sided geometries lacking a catalog on the other side", possible);
+
+    if (possible.size() > 1)
+      {
+	// The "file system" of the other side may not be valid, so
+	// this filter has some false negatives.  Therefore, only use
+	// it if we would otherwise not be able to guess the format.
+	possible = filter_formats(possible, other_side_has_catalog_too);
+	show_possible("probe_geometry after removing two-sided geometries lacking a catalog on the other side", possible);
+      }
 
     if (possible.size() > 1 && DFS::verbose)
       {
