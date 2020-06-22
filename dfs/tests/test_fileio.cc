@@ -130,11 +130,10 @@ namespace
   bool test_fileview(const std::string& name, DFS::sector_count_type maxblocks)
   {
     DFS::internal::OsFile underlying(name);
-    const DFS::Format fmt = DFS::Format::DFS;
     const DFS::Geometry geom(3, 2, 2, DFS::Encoding::FM);
     assert(geom.total_sectors() <= maxblocks);
     DFS::internal::FileView v(underlying, name,
-			      "test file", fmt, geom,
+			      "test file", geom,
 			      1, // initial skip
 			      2, // take
 			      3, // leave

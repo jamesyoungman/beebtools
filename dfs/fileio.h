@@ -51,7 +51,6 @@ namespace DFS
 	       // contains two sides each having a seprate file system,
 	       // the geometry for each of them describes one side.
 	       const std::string& description,
-	       DFS::Format format,
 	       const DFS::Geometry& geometry,
 	       unsigned long initial_skip,
 	       sector_count_type take,
@@ -63,7 +62,6 @@ namespace DFS
       virtual ~FileView();
 
       DFS::Geometry geometry() const override;
-      DFS::Format format() const;
       std::string description() const override;
       std::optional<DFS::SectorBuffer> read_block(unsigned long sector) override;
 
@@ -71,7 +69,6 @@ namespace DFS
       DataAccess& media_;
       std::string file_name_;
       std::string description_;
-      DFS::Format format_;
       DFS::Geometry geometry_;
       // initial_skip_ is wider than sector_count_type because MMB files
       // are much larger than a single disc image.

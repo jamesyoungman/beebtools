@@ -82,14 +82,13 @@ namespace DFS
 		       // contains two sides each having a seprate file system,
 		       // the geometry for each of them describes one side.
 		       const std::string& description,
-		       DFS::Format format,
 		       const DFS::Geometry& geometry,
 		       unsigned long initial_skip,
 		       sector_count_type take,
 		       sector_count_type leave,
 		       sector_count_type total)
       : media_(media), file_name_(file_name), description_(description),
-	format_(format), geometry_(geometry),
+	geometry_(geometry),
 	initial_skip_(initial_skip), take_(take), leave_(leave), total_(total)
     {
       // If take_ is 0, we could sequentially read an arbitrary amount
@@ -105,11 +104,6 @@ namespace DFS
     DFS::Geometry FileView::geometry() const
     {
       return geometry_;
-    }
-
-    DFS::Format FileView::format() const
-    {
-      return format_;
     }
 
     std::string FileView::description() const

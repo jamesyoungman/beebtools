@@ -48,7 +48,10 @@ namespace
     {
       std::vector<DFS::DriveConfig> drives;
       for (auto& view : views_)
-	drives.emplace_back(view.format(), &view);
+	{
+	  Format fmt = identify_file_system(view, view.geometry(), false);
+	  drives.emplace_back(fmt, &view);
+	}
       return storage->connect_drives(drives, how);
     }
 
@@ -78,8 +81,7 @@ namespace
       // TODO: name != the file inside media for the case where the
       // input file was foo.ssd.gz.  It might be better to keep the
       // original name.
-      std::pair<Format, ImageFileFormat> fmt = identify_image(media(), name);
-      const DFS::Geometry geometry = fmt.second.geometry;
+      const DFS::Geometry geometry = identify_image(media(), name).geometry;
       DFS::sector_count_type skip = 0;
       const DFS::Geometry single_side_geom = DFS::Geometry(geometry.cylinders,
 							   1,
@@ -97,7 +99,7 @@ namespace
 	      os << " side " << surface_num;
 	    }
 	  std::string desc = os.str();
-	  FileView v(media(), name, desc, fmt.first, single_side_geom,
+	  FileView v(media(), name, desc, single_side_geom,
 		     skip, side_len, 0, side_len);
 	  skip = DFS::sector_count(skip + side_len);
 	  add_view(v);
@@ -123,22 +125,21 @@ namespace
 			 return os.str();
 		       };
 
-      std::pair<Format, ImageFileFormat> fmt = identify_image(media(), name);
-      const DFS::Geometry geometry = fmt.second.geometry;
+      const DFS::Geometry geometry = identify_image(media(), name).geometry;
       const DFS::Geometry single_side_geom = DFS::Geometry(geometry.cylinders,
 							   1,
 							   geometry.sectors,
 							   geometry.encoding);
       const DFS::sector_count_type track_len = single_side_geom.sectors;
       FileView side0(media(), name, make_desc(0),
-		     fmt.first, single_side_geom,
+		     single_side_geom,
 		     0,		/* side 0 begins immediately */
 		     track_len, /* read the whole of the track */
 		     track_len, /* ignore track data for side 1 */
 		     single_side_geom.total_sectors());
       add_view(side0);
       FileView side1(media(), name, make_desc(1),
-		     fmt.first, single_side_geom,
+		     single_side_geom,
 		     track_len, /* side 1 begins after the first track of side 0 */
 		     track_len, /* read the whole of the track */
 		     track_len, /* ignore track data for side 0 */
@@ -212,11 +213,8 @@ namespace
 		 << "MMB file " << name;
 	      const std::string disc_name = ss.str();
 	      auto initial_skip_sectors = mmb_sectors + (slot * disc_image_sectors);
-	      Format fmt;
 	      DFS::internal::NarrowedFileView narrow(media(), initial_skip_sectors, disc_image_sectors);
-	      fmt = identify_file_system(narrow, disc_image_geom, false);
 	      add_view(FileView(media(), name, disc_name,
-				fmt,
 				disc_image_geom,
 				initial_skip_sectors,
 				disc_image_sectors,

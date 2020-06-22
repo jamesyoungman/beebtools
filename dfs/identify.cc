@@ -455,11 +455,10 @@ namespace
 
 namespace DFS
 {
-  std::pair<Format, ImageFileFormat>
-  identify_image(DataAccess& access, const std::string& name)
+  ImageFileFormat identify_image(DataAccess& access, const std::string& name)
   {
     std::vector<ImageFileFormat> candidates = make_candidate_list(name);
-    return probe(access, candidates);
+    return probe(access, candidates).second;
   }
 
   Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved)

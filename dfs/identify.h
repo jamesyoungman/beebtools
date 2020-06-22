@@ -23,9 +23,9 @@ namespace DFS
     bool interleaved;
   };
 
+  // Probe some media to figure out what geometry the disc (image) is.
+  ImageFileFormat identify_image(DataAccess&, const std::string& filename);
   // Probe some media to figure out what filesystem is on it.
-  std::pair<Format, ImageFileFormat> identify_image(DataAccess&,
-						    const std::string& filename);
   Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved);
 
 }  // namespace DFS
