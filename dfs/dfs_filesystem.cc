@@ -13,6 +13,7 @@
 #include "dfs_format.h"
 #include "dfs_volume.h"
 #include "fsp.h"
+#include "opus_cat.h"
 #include "stringutil.h"
 
 using std::string;
@@ -162,17 +163,50 @@ offset calc_cat_offset(int slot, Format fmt)
 }
 
 
-Volume* FileSystem::mount() const
+Volume* FileSystem::mount(std::optional<char> key, std::string& error) const
 {
-  return mount(DEFAULT_VOLUME);
-}
+  if (volumes_.size() > 1 && !key)
+    {
+      // When the disc image we are working with is an Opus DDOS image
+      // (but at no other time) , drive "0" is equivalent to "0A".
+      key = DEFAULT_VOLUME;
+    }
 
-Volume* FileSystem::mount(char key) const
-{
   auto it = volumes_.find(key);
   if (it == volumes_.end())
-    return 0;
+    {
+      if (key)
+	{
+	  std::ostringstream ss;
+	  ss << "volume " << (*key) << " not found";
+	  error.assign(ss.str());
+	}
+      else
+	{
+	  error = "no file system found";
+	}
+      return 0;
+    }
   return it->second.get();
+}
+
+std::unique_ptr<SectorMap> FileSystem::get_sector_map(const SurfaceSelector& surface) const
+{
+  const bool multiple_catalogs = volumes_.size() > 1;
+  std::unique_ptr<SectorMap> result = std::make_unique<SectorMap>(disc_sector_count(), multiple_catalogs);
+  for (const auto& vol : volumes_)
+    {
+      DFS::VolumeSelector volsel(surface);
+      if (vol.first)
+	volsel = DFS::VolumeSelector(surface, *vol.first);
+      vol.second->map_sectors(volsel, result.get());
+    }
+  if (disc_format() == Format::OpusDDOS)
+    {
+      auto disc_catalogue = internal::OpusDiscCatalogue::get_catalogue(media_, geometry());
+      disc_catalogue.map_sectors(result.get());
+    }
+  return result;
 }
 
 std::string format_name(Format f)

@@ -325,14 +325,9 @@ namespace DFS
     if (!fs)
       return std::nullopt;
 
-    Volume *pvol = fs->mount(vol.effective_subvolume()); // we retain ownership
+    Volume *pvol = fs->mount(vol.subvolume(), error); // we retain ownership
     if (!pvol)
-      {
-	std::ostringstream ss;
-	ss << "drive " << vol.surface() << " has no volume " << vol.effective_subvolume();
-	error.assign(ss.str());
-	return std::nullopt;
-      }
+      return std::nullopt;
     return VolumeMountResult(std::move(fs), pvol);
   }
 

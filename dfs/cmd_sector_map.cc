@@ -65,9 +65,10 @@ public:
       {
 	if (ctx.current_drive.subvolume())
 	  {
-	    std::cerr << "Opus DDOS volumes are not yet supported\n";
+	    std::cerr << "Please specify only a drive number with --drive(to get a sector map of the whole drive).\n";
 	    return false;
 	  }
+	drive_num = ctx.current_drive.surface();
       }
     else
       {
@@ -85,41 +86,17 @@ public:
 	    return false;
 	  }
       }
-    DFS::VolumeSelector vol(drive_num); // TODO: wrong for Opus DDOS, see below.
-    auto mounted(storage.mount(vol, error));
-    if (!mounted)
+    std::unique_ptr<DFS::FileSystem> fs = (storage.mount_fs(drive_num, error));
+    if (!fs)
       return faild(drive_num);
-    if (mounted->file_system()->disc_format() == DFS::Format::OpusDDOS)
-      {
-	// TODO: this is still all wrong, since for an effective sector map
-	// we would need to iterate over all Opus DDOS volumes.
-	std::cerr << "Opus DDOS is not yet supported\n";
-	return false;
-      }
-    auto catalog(mounted->volume()->root());
-
-    const std::vector<DFS::CatalogEntry> entries(catalog.entries());
-    typedef std::vector<DFS::CatalogEntry>::size_type catalog_entry_index;
-    std::vector<std::optional<std::vector<DFS::CatalogEntry>::size_type>> occupied_by;
-    occupied_by.resize(mounted->file_system()->disc_sector_count());
-    catalog_entry_index occ_by_catalog = entries.size();
-    for (std::vector<DFS::CatalogEntry>::size_type i = 0;
-	 i < entries.size();
-	 ++i)
-      {
-	const DFS::CatalogEntry& entry(entries[i]);
-	assert(entry.start_sector() < occupied_by.size());
-	assert(entry.last_sector() < occupied_by.size());
-	std::fill(occupied_by.begin() + entry.start_sector(),
-		  occupied_by.begin() + entry.last_sector() + 1,
-		  i);
-      }
-    for (DFS::sector_count_type sec : catalog.get_sectors_occupied_by_catalog())
-      occupied_by[sec] = occ_by_catalog;
+    std::unique_ptr<DFS::SectorMap> sector_map = fs->get_sector_map(drive_num);
 
     int column = 0;
-    constexpr int max_col = 5;
-    constexpr int name_col_width = 9;
+    // Ensure that a track is an integer number of lines of output
+    // (3 for double density, 2 for single density).
+    const int track_len = fs->geometry().sectors;
+    const int max_col = (track_len == 18) ? 6 : (track_len == 16) ? 4 : 5;
+    constexpr int name_col_width = 12;
     constexpr char sector_col_header[] = "Sector";
     assert(strlen(sector_col_header) < std::numeric_limits<int>::max());
     const int sector_col_width =
@@ -127,7 +104,8 @@ public:
     std::cout << std::setw(sector_col_width) << sector_col_header << ":\n"
 	      << std::setw(sector_col_width) << "(dec)" << ": "
 	      << "Name of file occupying each sector\n";
-    for (DFS::sector_count_type sec = 0; sec < occupied_by.size(); ++sec)
+    const auto sectors = fs->disc_sector_count();
+    for (DFS::sector_count_type sec = 0; sec < sectors; ++sec)
       {
 	if (0 == column)
 	  {
@@ -139,22 +117,7 @@ public:
 		      << sec << ": ";
 	  }
 
-	std::string name = "?";
-	if (!occupied_by[sec])
-	  {
-  	    name = "-";
-	  }
-	else if (*occupied_by[sec] == occ_by_catalog)
-	  {
-	    name = "catalog";
-	  }
-	else
-	  {
-	    assert(*occupied_by[sec] <= entries.size());
-	    const auto& e = entries[*occupied_by[sec]];
-	    name = std::string(1, e.directory()) + "." + e.name();
-	    assert(name.size() <= name_col_width);
-	  }
+	const std::string name = sector_map->at(sec).value_or("-");
 	std::cout << std::setw(name_col_width) << std::setfill(' ') << std::left << name << ' ';
 	if (++column == max_col)
 	  column = 0;

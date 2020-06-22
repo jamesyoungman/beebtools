@@ -96,7 +96,7 @@ namespace DFS
     void connect_internal(const DFS::SurfaceSelector& d, const DriveConfig& drive);
     std::optional<Format> drive_format(drive_number drive, std::string& error) const;
     bool select_drive(const DFS::SurfaceSelector&, AbstractDrive **pp, std::string& error) const;
-    std::unique_ptr<DFS::FileSystem> mount_fs(const DFS::SurfaceSelector& vol, std::string& error) const;
+    std::unique_ptr<DFS::FileSystem> mount_fs(const DFS::SurfaceSelector&, std::string& error) const;
     std::optional<VolumeMountResult> mount(const DFS::VolumeSelector& vol, std::string& error) const;
 
   private:

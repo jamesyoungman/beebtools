@@ -2,12 +2,13 @@
 #define INC_DFS_VOLUME_H 1
 
 #include <map>
-#include <optional>
 #include <memory>
+#include <optional>
 
 #include "abstractio.h"
 #include "dfs_catalog.h"
 #include "dfs_format.h"
+#include "dfs_unused.h"
 #include "geometry.h"
 
 namespace DFS
@@ -26,6 +27,13 @@ class Volume
 		  DataAccess&);
   const Catalog& root() const;
   DataAccess& data_region();
+  // TODO: map_sectors should probably be const.
+  void map_sectors(const DFS::VolumeSelector& vol, DFS::SectorMap*);
+
+  unsigned long volume_data_origin() const
+  {
+    return volume_tracks_.origin();
+  }
 
  private:
   class Access : public DataAccess
@@ -44,11 +52,17 @@ class Volume
 	 return underlying_.read_block(origin_ + lba);
        }
 
+     unsigned long origin() const
+     {
+       return origin_;
+     }
+
    private:
      unsigned long origin_;
      unsigned long len_;
      DataAccess& underlying_;
    };
+ sector_count_type catalog_location_;
  Access volume_tracks_;
  std::unique_ptr<Catalog> root_;
 };

@@ -11,88 +11,8 @@
 #include "dfs_catalog.h"
 #include "dfs_filesystem.h"
 #include "dfs_format.h"
+#include "opus_cat.h"
 #include "geometry.h"
-
-
-namespace
-{
-  class OpusDiscCatalogue
-  {
-  public:
-    struct VolumeLocation
-    {
-      VolumeLocation(int catalog_sector, unsigned long start, unsigned long end, char vol)
-	: catalog_location(catalog_sector),
-	  start_sector(start), len(end - start), volume(vol)
-      {
-      }
-
-      bool operator<(const VolumeLocation& other) const
-      {
-	return start_sector < other.start_sector;
-      }
-
-      int catalog_location;
-      unsigned long start_sector;
-      unsigned long len;
-      char volume;
-    };
-
-    explicit OpusDiscCatalogue(const DFS::SectorBuffer& sector16,
-			       const DFS::Geometry geom)
-      : total_disc_sectors_((sector16[1] << 8) | sector16[2]),
-	sectors_per_track_(sector16[3])
-    {
-      if (total_disc_sectors_ != geom.total_sectors())
-	{
-	  throw DFS::BadFileSystem("inconsistent total sector count in Opus DDOS disc catalogue");
-	}
-      if (sectors_per_track_ != geom.sectors)
-	{
-	  throw DFS::BadFileSystem("inconsistent sectors-per-ttrack in Opus DDOS disc catalogue");
-	}
-      static const char labels[] = "ABCDEFGH";
-      char label;
-      unsigned offset = 8;
-      for (int i = 0; (label=labels[i]) != '\0'; ++i)
-	{
-	  const unsigned int track = sector16[offset];
-	  assert(geom.cylinders >= 0);
-	  if (track >= static_cast<unsigned int>(geom.cylinders))
-	    {
-	      std::ostringstream os;
-	      os << "Opus DDOS volume " << label << " has starting track "
-		 << std::dec << std::setw(0) << track << " but the disc itself "
-		 << "only has " << geom.cylinders << " tracks";
-	      throw DFS::BadFileSystem(os.str());
-	    }
-	  auto start = DFS::safe_unsigned_multiply(track, sectors_per_track_);
-	  locations_.emplace_back(i*2, start, start, label);
-	  offset += 2u;
-	}
-      std::sort(locations_.begin(), locations_.end());
-      unsigned long next_sector = total_disc_sectors_;
-      for (auto it = locations_.rbegin();
-	   it != locations_.rend();
-	   ++it)
-	{
-	  it->len = next_sector - it->start_sector;
-	  next_sector = it->start_sector;
-	}
-    }
-
-    const std::vector<VolumeLocation> get_volume_locations() const
-    {
-      return locations_;
-    }
-
-  private:
-    int total_disc_sectors_;
-    unsigned int sectors_per_track_;
-    // we don't store the total track count because we see it set to 0 anyway.
-    std::vector<VolumeLocation> locations_;
-  };
-}  // namespace
 
 
 namespace DFS
@@ -122,7 +42,7 @@ namespace DFS
       else
 	{
 	  auto vol = std::make_unique<DFS::Volume>(fmt, 0, 0, geom.total_sectors(), media);
-	  result.insert(std::make_pair(DFS::FileSystem::DEFAULT_VOLUME, std::move(vol)));
+	  result.insert(std::make_pair(std::nullopt, std::move(vol)));
 	}
       return result;
     }
@@ -134,7 +54,8 @@ namespace DFS
 		 unsigned long first_sector,
 		 unsigned long total_sectors,
 		 DataAccess& media)
-    : volume_tracks_(first_sector, total_sectors, media),
+    : catalog_location_(catalog_location),
+      volume_tracks_(first_sector, total_sectors, media),
       root_(std::make_unique<Catalog>(format, catalog_location, media))
   {
   }
@@ -147,6 +68,12 @@ namespace DFS
   DataAccess& Volume::data_region()
   {
     return volume_tracks_;
+  }
+
+  void Volume::map_sectors(const DFS::VolumeSelector& vol,
+			   DFS::SectorMap* out)
+  {
+    root_->map_sectors(vol, catalog_location_, volume_data_origin(), out);
   }
 
 }  // namespace DFS

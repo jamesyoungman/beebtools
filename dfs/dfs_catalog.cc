@@ -8,6 +8,7 @@
 
 #include "abstractio.h"
 #include "dfs.h"
+#include "dfs_unused.h"
 #include "stringutil.h"
 
 namespace
@@ -373,6 +374,30 @@ CatalogFragment::CatalogFragment(DFS::Format format,
     return result;
   }
 
+
+  void Catalog::map_sectors(const VolumeSelector& vol,
+			    unsigned long catalog_origin_lba,
+			    unsigned long data_origin_lba,
+			    DFS::SectorMap* out) const
+  {
+    for (DFS::sector_count_type sec = 0;
+	 sec < catalog_sectors();
+	 ++sec)
+      {
+	out->add_catalog_sector(DFS::sector_count(sec + catalog_origin_lba),
+				vol);
+      }
+    for (const auto& entry : entries())
+      {
+	ParsedFileName file_name;
+	file_name.vol = vol;
+	file_name.dir = entry.directory();
+	file_name.name = entry.name();
+	out->add_file_sectors(DFS::sector_count(data_origin_lba + entry.start_sector()),
+			      DFS::sector_count(data_origin_lba + entry.last_sector() + 1),
+			      file_name);
+      }
+  }
 }  // namespace DFS
 
 

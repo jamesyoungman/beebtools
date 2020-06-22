@@ -54,6 +54,12 @@ public:
 		  const DFS::DFSContext& ctx,
 		  const std::vector<std::string>& args) override
   {
+    if (ctx.current_drive.subvolume())
+      {
+	std::cerr << name() << ": please specify only a drive number, not also a volume letter.\n";
+	return false;
+      }
+
     // Use the --drive option to select which drive to extract data from.
     if (args.size() < 2)
       {
@@ -70,38 +76,34 @@ public:
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
 
-    DFS::AbstractDrive *drive = 0;
+    const DFS::SurfaceSelector surface(ctx.current_drive.surface());
     std::string error;
-    auto fail = [&error, &ctx]()  -> bool
+    auto fail = [&surface, &error]()
 		{
-		  std::cerr << "failed to select drive " << ctx.current_drive
+		  std::cerr << "failed to select drive " << surface
 			    << ": " << error << "\n";
 		  return false;
 		};
-    if (!storage.select_drive(ctx.current_drive.surface(), &drive, error))
+    DFS::AbstractDrive *drive = 0;
+    if (!storage.select_drive(surface, &drive, error))
       return fail();
-    if (ctx.current_drive.effective_subvolume() != 'A')
-      {
-	std::cerr << "Opus DDOS volumes are not yet supported";
-	return false;
-      }
-    auto mounted = storage.mount(ctx.current_drive, error);
-    if (!mounted)
+    auto mounted_fs = storage.mount_fs(surface, error);
+    if (!mounted_fs)
       return fail();
-    const DFS::Catalog& root(mounted->volume()->root());
 
     // We're going to loop over the unoccupied areas of the disc,
     // extracting each.  We add a sentinel value to ensure that we
     // also extract the final free span, if any (this avoids
     // duplication of code).
-    const std::string end_of_disc_sentinel = ":::end";
-    const DFS::SpaceMap occupied_by(root, end_of_disc_sentinel);
-    const sector_count_type last_sec = root.total_sectors();
+    std::unique_ptr<DFS::SectorMap> occupied_by = mounted_fs->get_sector_map(surface);
+
+    const sector_count_type last_sec = mounted_fs->disc_sector_count();
+    occupied_by->add_other(last_sec, ":::end");
     int begin = -1;
     unsigned short count = 0;
     for (DFS::sector_count_type sec = 0; sec <= last_sec; ++sec)
       {
-	std::optional<std::string> name = occupied_by.at(sec);
+	std::optional<std::string> name = occupied_by->at(sec);
 	if (name)
 	  {
 	    if (begin >= 0)

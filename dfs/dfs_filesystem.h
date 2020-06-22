@@ -24,6 +24,7 @@
 namespace DFS
 {
   class Volume;
+  class SectorMap;
 
 // FileSystem is an image of a single file system (as opposed to a
 // wrapper around a disk image file, which might for example contain a
@@ -33,13 +34,13 @@ class FileSystem
 public:
   static constexpr char DEFAULT_VOLUME = 'A';
   explicit FileSystem(DataAccess&, DFS::Format fmt, DFS::Geometry geom);
-  Volume* mount(char vol) const;
-  Volume* mount() const;
+  Volume* mount(std::optional<char> vol, std::string& error) const;
 
   // Determine what UI styling to use for the current file system.
   DFS::UiStyle ui_style(const DFSContext&) const;
   Format disc_format() const;
 
+  std::unique_ptr<SectorMap> get_sector_map(const SurfaceSelector& surface) const;
 
   DFS::sector_count_type disc_sector_count() const;
   Geometry geometry() const;

@@ -189,9 +189,7 @@ namespace DFS
 
   char VolumeSelector::effective_subvolume() const
   {
-    if (subvolume_)
-      return *subvolume_;
-    return 'A';
+    return subvolume_.value_or('A');
   }
 
   bool VolumeSelector::operator<(const VolumeSelector& other) const

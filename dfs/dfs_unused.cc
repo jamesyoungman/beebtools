@@ -1,51 +1,42 @@
 #include "dfs_unused.h"
 
+#include <sstream>
+
 #include "abstractio.h"
+#include "dfs_filesystem.h"
+#include "dfs_volume.h"
+#include "opus_cat.h"
 
 namespace
 {
-  std::map<int, std::string> make_space_map(const DFS::Catalog& catalog,
-					    std::optional<std::string> sentinel)
+  std::string file_label(const DFS::ParsedFileName& name,
+			 bool multiple_catalogs)
   {
-    std::map<int, std::string> result;
-    for (const DFS::CatalogEntry& entry : catalog.entries())
+    std::ostringstream ss;
+    if (multiple_catalogs)
       {
-	auto here = result.begin();
-	for (DFS::sector_count_type i = entry.start_sector(); i < entry.last_sector(); ++i)
-	  {
-	    result.insert(here, std::make_pair(i, entry.name()));
-	  }
+	ss << ':' << name.vol.effective_subvolume() << '.';
       }
-    const std::string cat_name("catalog");
-    auto here = result.begin();
-    for (DFS::sector_count_type sec : catalog.get_sectors_occupied_by_catalog())
+    if (name.dir)
       {
-	result.insert(here, std::make_pair(sec, cat_name));
+	ss << name.dir << '.';
       }
-    if (sentinel)
-      {
-	result.insert(result.end(), std::make_pair(catalog.total_sectors(), *sentinel));
-      }
-    return result;
+    ss << name.name;
+    return ss.str();
   }
 
 }  // namespace
 
 namespace DFS
 {
-  SpaceMap::SpaceMap(const Catalog& catalog, std::optional<std::string> sentinel)
-    : used_by_(make_space_map(catalog, sentinel))
+  SectorMap::SectorMap(const DFS::sector_count_type total_sectors, bool multiple_catalogs)
+    : total_sectors_(total_sectors),
+      multiple_catalogs_(multiple_catalogs)
   {
-    if (catalog.disc_format() == Format::OpusDDOS)
-      {
-	// The problem here is that to figure out which sectors are
-	// truly unused, one has to consider all volumes, not just a
-	// single catalog.
-	throw OpusUnsupported();
-      }
+
   }
 
-  std::optional<std::string> SpaceMap::at(DFS::sector_count_type sec) const
+  std::optional<std::string> SectorMap::at(DFS::sector_count_type sec) const
   {
     std::optional<std::string> result;
     auto it = used_by_.find(sec);
@@ -54,4 +45,36 @@ namespace DFS
     return result;
   }
 
+  void SectorMap::add_other(DFS::sector_count_type where, const std::string& label)
+  {
+    used_by_[where] = label;
+  }
+
+  void SectorMap::add_catalog_sector(DFS::sector_count_type where, const VolumeSelector& vol)
+  {
+    if (vol.subvolume())
+      {
+	std::ostringstream ss;
+	ss << "*CAT:" << vol;
+	used_by_[where] = ss.str();
+      }
+    else
+      {
+	// There is no need for a distinguishing suffix to identify
+	// which catalog, so use a more descriptive label.
+	used_by_[where] = "catalog";
+      }
+  }
+
+  void SectorMap::add_file_sectors(DFS::sector_count_type begin,
+				   DFS::sector_count_type end, // not included
+				   const ParsedFileName& name)
+  {
+    std::string label = file_label(name, multiple_catalogs_);
+    auto hint = used_by_.begin();
+    for (auto sec = begin; sec < end; ++sec)
+      {
+	used_by_.insert(hint, std::make_pair(sec, label));
+      }
+  }
 }  // DFS

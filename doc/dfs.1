@@ -55,8 +55,8 @@ image,
 .I D
 can contain a letter suffix to indicate a volume, just as with the
 .B *DRIVE
-command in Opus DDOS.  See also
-.B "Drive Number Handling"
+command in Opus DDOS.  See
+.B "Opus DDOS Drive Numbers"
 below.
 
 .IP "\-\-ui \fISTYLE\fR"
@@ -108,6 +108,13 @@ See
 Extracts a copy of the unused parts of the file system into the named
 directory.  The file names contain the number of the sector at which
 they start.
+You can optionally use the
+.B \-\-drive
+option to specify which disc image to work with if more than one is
+available.
+Do not use a volume specifier even if the disc image is an Opus DDOS
+image.
+
 
 .SS "free [drive]"
 
@@ -233,6 +240,8 @@ section.
 
 Print a description of the layout of the disc, showing the locations
 of the files.
+Do not use a volume specifier even if the disc image is an Opus DDOS
+image.
 
 .SS "show-titles [drive]..."
 
@@ -554,13 +563,9 @@ Variant|Status
 Acorn DFS|Supported.
 Watford DFS|Supported.  Some differences are described below.
 Opus DDOS|T{
-Limited support (e.g. the
-.B cat
-and
-.B dump
-commands work but
-.B sector-map
-does not).
+Supported but only lightly tested.
+See
+.BR "Opus DDOS Drive Numbers" .
 T}
 Solidisk DFS|Not yet supported.
 HDFS|Not yet supported.
@@ -577,6 +582,20 @@ CAT command has four columns.
 The
 .BR dfs (1)
 program does not emulate this feature.
+
+.SS "Opus DDOS Drive Numbers"
+
+The
+.B \-\-drive
+option support and commands which take drive number arguments
+accept Opus DDOS volume labels (A\-H) when dealing with
+Opus DDOS images.
+Volume letters can appear in file names and wildcards (e.g. with
+.BR INFO ).
+This is analogous to the fact that Opus DDOS reads non-Opus discs as
+if they were Acorn DFS discs.
+Please do not rely on drive 0A being accepted for discs which are not
+in the Opus DDOS format.
 
 .SH "NOTES"
 
@@ -617,26 +636,6 @@ DDOS volume identifiers.
 
 Please do not rely on future versions of the program accepting
 arguments which might reasonably be considered to contain an error.
-
-The
-.B \-\-drive
-option support and commands which take drive number arguments
-accept Opus DDOS volume labels (A\-H) even when dealing with
-image files which are not Opus DDOS images.  Volume letters can
-appear in file names and wildcards (e.g. with
-.BR INFO ).
-This is analogous to the fact that Opus DDOS reads non-Opus discs as
-if they were Acorn DFS discs.
-Volumes B\-H are invalid on non-Opus discs.
-Drives 0A and 0 are treated similarly, though in come cases there are
-small differences in what is displayed in the user interface.
-
-In the future, a small number of commands will treat 0 and 0A
-differently when working with Opus DDOS images.
-The
-.B sector-map
-command, for example, will likely distinguish these, in one case
-displaying a single volume and in the other displaying the whole disc.
 
 .SH "BUGS"
 Please report bugs to james@youngman.org.

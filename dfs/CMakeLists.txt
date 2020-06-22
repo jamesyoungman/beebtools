@@ -33,9 +33,11 @@ target_sources(dfslib
   crc.cc
   dfs_catalog.cc
   dfs_filesystem.cc
+  dfs_unused.cc
   dfs_volume.cc
   fsp.cc
   afsp.cc
+  opus_cat.cc
   )
 if ( ZLIB_FOUND )
   target_sources(dfslib PRIVATE gzmedia.cc)
@@ -68,6 +70,7 @@ set(HEADERS
   fsp.h
   geometry.h
   media.h
+  opus_cat.h
   regularexpression.h
   storage.h
   stringutil.h
@@ -76,7 +79,6 @@ set(HEADERS
 target_sources(dfs
   PRIVATE
   # command infrastructure
-  dfs_unused.cc
   commands.cc
   # commands
   cmd_cat.cc
