@@ -139,15 +139,19 @@ namespace
     int total_disk_sectors = (sector16[1] << 8) | sector16[2];
     switch (total_disk_sectors)
       {
+      case 630: // 35 tracks, 18 sectors per track
       case 720: // 40 tracks, 18 sectors per track
       case 1440: // 80 tracks, 18 sectors per track
         break;
       default:
         {
+	  // 35 tracks is unusual but the Opus DDOS FORMAT command
+	  // will produce it.
           std::ostringstream ss;
           ss << "total sectors field of sector 16 is " << total_disk_sectors
-             << " but we assume only 720 (40 tracks) or 1440 (80 tracks)"
-             << " is actually possible for the Opus DDOS format\n";
+             << " but we assume only "
+	     << "630 (35 tracks), 720 (40 tracks) or 1440 (80 tracks) "
+             << "is actually possible for the Opus DDOS format\n";
           eliminated_format(DFS::Format::OpusDDOS, ss.str().c_str());
           return false;
         }
@@ -450,7 +454,8 @@ namespace
       {
 	for (int sides : sides_options(sides_hint))
 	  {
-	    for (int tracks : {40,80}) // TODO: Opus, 35
+	    // Opus DDOS will format 35-track single or double density discs.
+	    for (int tracks : {40, 80, 35})
 	      {
 		for (DFS::sector_count_type sectors : sectors_per_track_options(encoding))
 		  {
