@@ -47,7 +47,6 @@ namespace DFS
       unsigned int sectors_per_track_;
       // we don't store the total track count because we see it set to 0 anyway.
       std::vector<VolumeLocation> locations_;
-      std::array<char, 18> track0_summary_;
     };
   }  // namespace internal
 

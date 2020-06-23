@@ -26,10 +26,6 @@ namespace DFS
       : total_disc_sectors_((sector16[1] << 8) | sector16[2]),
 	sectors_per_track_(sector16[3])
     {
-      std::fill(track0_summary_.begin(), track0_summary_.end(), '\0');
-      track0_summary_[16] = 'T'; // disc catalogue
-      track0_summary_[17] = 'X'; // unused, reserved
-
       if (total_disc_sectors_ != geom.total_sectors())
 	{
 	  std::ostringstream os;
@@ -58,8 +54,6 @@ namespace DFS
 		 << "only has " << geom.cylinders << " tracks";
 	      throw DFS::BadFileSystem(os.str());
 	    }
-	  track0_summary_[i*2] = label;
-	  track0_summary_[i*2+1] = label;
 	  auto start = DFS::safe_unsigned_multiply(track, sectors_per_track_);
 	  locations_.emplace_back(i*2, start, start, label);
 	  offset += 2u;
@@ -83,24 +77,9 @@ namespace DFS
 
     void OpusDiscCatalogue::map_sectors(DFS::SectorMap* out) const
     {
-      DFS::sector_count_type sector = 0;
-      for (char label : track0_summary_)
-	{
-	  switch (label)
-	    {
-	    case '\0': // unused
-	      break;
-	    case 'X':
-	      out->add_other(sector, "reserved");
-	      break;
-	    case 'T':
-	      out->add_other(sector, "disc-cat");
-	      break;
-	    default:
-	      break;
-	    }
-	  ++sector;
-	}
+      // The catalogs will register themselves.
+      out->add_other(16, "disc-cat");
+      out->add_other(17, "reserved");
     }
 
   }  // namespace internal
