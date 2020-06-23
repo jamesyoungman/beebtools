@@ -546,33 +546,43 @@ results when the terminal is resized.
 
 .SH DISC IMAGE FILES
 
-Three disc image formats are supported, ".ssd", ".dsd" and ".mmb".
+Five disc image formats are supported.  Two (.ssd" and ".sdd") are
+non-interleaved formats, two (".dsd" and ".ddd") are interleaved
+formats, and the last one (".mmb") is a multi-disc format.
 
-.SS SSD images
-
-SSD disc images should have the file extension ".ssd" (for example
-.BR foo.ssd ).
-Disc images compressed with GNU
+Any of the supported disc images may be compressed with GNU
 .B gzip
-are also accepted and should have the file extension ".ssd.gz".
+are also accepted and should have the additional file extension.  For
+example a compressed non-interleaved double-density image file would
+have a name ending with ".sdd.gz".
 
-The data in an SSD-format file starts with the initial sector at the
-begining of the image file, followed by the rest of the initial track,
-and so on up that surface of the disc.  No sectors from the other side
-of the disc are included in the image file.
+.TS
+tab(|);
+lb lb lb lb
+lb l  l l.
+File extension|Interleaved|Density (sectors-per-track)|Number of sides
+ssd|No|FM, single density (10)|1 or 2
+sdd|No|MFM, double density (16 or, more usually, 18)|1 or 2
+dsd|Yes|FM, single sensity (10)|Always 2
+ddd|Yes|MFM, double density (16 or, more usually, 18)|Always 2
+.TE
 
-.SS DSD images
+.SS Non-interleaved images
 
-DSD disc images should have the file extension ".dsd" (for example
-.BR double-sided.dsd ).
-Disc images compressed with GNU
-.B gzip
-are also accepted and should have the file extension ".dsd.gz".
+The data in an non-interleaved image files starts with the initial
+sector at the begining of the image file, followed by the rest of the
+initial track, and so on up that surface of the disc.  If a second
+side is also included in the image file, it immediately follows the
+first.
 
-The data in a DSD-format file contains all the sectors of the first
-track of side 0, followed by all the sectors of the first track of
-side 1, then all the sectors of the second track of side 0 and all the
-sectors of the second track of side 1, and so on.
+
+.SS Interleaved images
+
+The data in an interleaved image file starts with all the sectors of
+the first track of side 0, followed by all the sectors of the first
+track of side 1, then all the sectors of the second track of side 0
+and all the sectors of the second track of side 1, and so on.  Two
+sides always exist in the file.
 
 .SS MMB files
 
