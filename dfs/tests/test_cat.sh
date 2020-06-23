@@ -10,12 +10,13 @@ shift
 # Ensure TMPDIR is set.
 : ${TMPDIR:=/tmp}
 
+
 check_cat() {
     input="$1"
     shift
 
     dfs() {
-	"${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
+	COLUMNS=40 "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
 
     if ! workdir="$(mktemp --tmpdir=${TMPDIR} -d test_cat_XXXXXX)"
@@ -69,6 +70,7 @@ check_cat() {
 		echo "Output matches extended regular expression ${expected}, good"
 	    else
 		echo "FAIL Output did not match extended regular expression ${expected}" >&2
+		echo "Actual output was:"; cat actual.txt
 		exit 1
 	    fi
 	done

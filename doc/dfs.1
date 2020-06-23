@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-06-21 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-06-23 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -77,6 +77,11 @@ This is analogous to the Acorn DFS command
 .BR "*CAT" .
 A drive number can be specified as an optional argument (but is rarely
 useful).
+The number of output columns varies with the user interface in
+effect (see the
+.B \-\-ui
+option) and the environment (see
+.BR ENVIRONMENT ).
 
 .SS "dump filename"
 
@@ -507,6 +512,38 @@ If the exit status is non-zero but no error message is issued on the
 standard error stream, that is a bug (see
 .BR BUGS ).
 
+.SH ENVIRONMENT
+
+.SS COLUMNS
+
+The
+.B COLUMNS
+environment variable affects how many columns of output are produced
+for the
+.B cat
+command:
+
+.TS
+tab(|);
+lb rb rb rb
+lb rb rb rb
+l  r  r  r.
+DFS Variant|less than 40 columns|less than 80 columns|80 columns or more
+(u=unimplemented)|(mode 2 is 20)|(mode 7 is 40)|(mode 0 is 80)
+Acorn|1|2|2
+Watford DFS|1|2|4
+Opus DDOS|1|2|2
+HDFS (u)|1|2|4
+Solidisk DFS (u)|1|2|2
+.TE
+
+The DFS ROM implementations often generate more actual columns of
+output and rely on screen wrapping to line things up.  Watford DFS for
+example produces 4 columns of output in all modes.  The
+.BR dfs (1)
+program doesn't work like that because it would generate unsightly
+results when the terminal is resized.
+
 .SH DISC IMAGE FILES
 
 Three disc image formats are supported, ".ssd", ".dsd" and ".mmb".
@@ -641,7 +678,6 @@ arguments which might reasonably be considered to contain an error.
 Please report bugs to james@youngman.org.
 
 .SH EXAMPLES
-
 
 The
 .B list

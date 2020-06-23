@@ -1,5 +1,6 @@
 #include "commands.h"
 
+#include <cstdlib>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -8,6 +9,7 @@
 
 #include "cleanup.h"
 #include "commands.h"
+#include "dfs.h"
 #include "dfs_volume.h"
 #include "driveselector.h"
 #include "stringutil.h"
@@ -28,6 +30,21 @@ namespace
     colstream(std::ostream& os)
       : col_(0u), forward_to_(os)
     {
+    }
+
+    string::size_type current_column() const
+    {
+      return col_;
+    }
+
+    colstream& advance_to_column(std::string::size_type n)
+    {
+      assert(col_ <= n);
+      if (n == 0)
+	put('\n');
+      while (col_ < n)
+	put(' ');
+      return *this;
     }
 
     template <class T>
@@ -172,34 +189,98 @@ namespace
       return "display the disc catalogue";
     }
 
+    static std::optional<int> get_screen_cols()
+    {
+      const char * cols = std::getenv("COLUMNS");
+      if (cols)
+	{
+	  char *end;
+	  const long n = std::strtol(cols, &end, 10);
+	  if (n)
+	    {
+	      if (n >= std::numeric_limits<int>::min() || n <= std::numeric_limits<int>::max())
+		{
+		  return static_cast<int>(n);
+		}
+	      else
+		{
+		  // Unrepresentable, we will choose a sane default.
+		  return std::nullopt;  // COLUMNS=999999999999999999999999999
+		}
+	    }
+	  else
+	    {
+	      return std::nullopt;  // COLUMNS=0 or COLUMNS=not-a-number
+	    }
+	}
+      // In theory we could do something complex here, such as
+      // initialising curses and asking it to probe the terminal size,
+      // but that's a lot of complexity. Instead we just use a
+      // default.
+      return std::nullopt;  // $COLUMNS is not set
+    }
+
+    // Some DFS implementations produce an adaptive number of columns:
+    //
+    // DFS variant      Mode 2        Mode 7       Mode 0
+    //                  [20 cols]     [40 cols]    [80 cols]
+    // Acorn            2 (w=1)       2            2
+    // Watford          4 (w=1)       4 (w=2)      4
+    // HDFS             1             2            4
+    // Solidisk         2 (w=1)       2            2
+    // Opus             2 (w=1)       2            2
+    //
+    // Taking Watford DFS as an example, it always produces 4
+    // columns of output.  However, since the screen width is always
+    // a multiple of 20, in modes 7 and 2 this appears to be
+    // 2-column and 1-column output, respectively (which is what w=2
+    // and w=1 means in the table above).  Similarly, Acorn DFS
+    // always produces 2 colums of output, but this appears as 1
+    // column in mode 2.
+    //
+    // We are producing output for systems whose terminal width is not
+    // always a multiple of 20, and so we cannot take the same
+    // approach.  The output_columns() function returns the actual
+    // number of columns we should produce, which follows the w=N
+    // values where these are different (so that we generate the same
+    // appearance).
+    static int select_output_columns(DFS::UiStyle ui, int screen_width)
+    {
+      switch (ui)
+	{
+	case DFS::UiStyle::Watford:
+	  if (screen_width < 40)
+	    return 1;
+	  else if (screen_width < 80)
+	    return 2;
+	  else
+	    return 4;
+
+	case DFS::UiStyle::Default:
+	case DFS::UiStyle::Acorn:
+	case DFS::UiStyle::Opus:
+	default:
+	  return screen_width < 40 ? 1 : 2;
+
+	}
+    }
+
     bool invoke(const DFS::StorageConfiguration& storage,
 		const DFS::DFSContext& ctx,
 		const std::vector<std::string>& args) override
     {
-      // Some DFS implementations produce an adaptive number of columns:
-      //
-      // DFS variant      Mode 2        Mode 7       Mode 0
-      //                  [20 cols]     [40 cols]    [80 cols]
-      // Acorn            2 (w=1)       2            2
-      // Watford          4 (w=1)       4 (w=2)      4
-      // HDFS             1             2            4
-      // Solidisk         2 (w=1)       2            2
-      // Opus             2 (w=1)       2            2
-      //
-      // Taking Watford DFS as an example, it always produces 4
-      // columns of output.  However, since the screen width is always
-      // a multiple of 20, in modes 7 and 2 this appears to be
-      // 2-column and 1-column output, respectively (which is what w=2
-      // and w=1 means in the table above).  Similarly, Acorn DFS
-      // always produces 2 colums of output, but this appears as 1
-      // column in mode 2.
-      //
-      // We are producing output for systems whose terminal width is
-      // not always a multiple of 20, and so we cannot take the same
-      // approach.
-
+      const std::optional<int> screen_width = get_screen_cols();
+      if (DFS::verbose)
+	{
+	  std::cerr << "Screen width is ";
+	  if (screen_width)
+	    std::cerr << *screen_width;
+	  else
+	    std::cerr << "unknown";
+	  std::cerr << "\n";
+	}
+      std::cout << std::setfill(' ');
       colstream out(std::cout);
-
       std::string error;
       auto fail = [&error]()
 		  {
@@ -242,34 +323,67 @@ namespace
 	return faild(d);
       DFS::FileSystem* file_system = mounted->file_system();
       const Catalog& catalog(mounted->volume()->root());
+      DFS::Geometry geom = file_system->geometry();
       const auto ui = file_system->ui_style(ctx);
 
-      DFS::Geometry geom = file_system->geometry();
-      out << std::setw(DFS::UiStyle::Watford == ui ? 20 : 0)
-          << std::setfill(' ')
-          << std::left
-          << title_and_cycle(catalog.title(), catalog.sequence_number());
-      out << (DFS::UiStyle::Watford == ui ? "" : " ")
-	  << density_desc(geom, ui) << std::setbase(10) << "\n";
+      // Produce output which is suitable for the actual width of the device
+      // and the selected ui.
+      constexpr int col_width = 20;
+      const std::string::size_type rmargin =
+	select_output_columns(ui, screen_width.value_or(40)) * col_width;
 
-      const int left_col_width = 20;
-      out << "Drive "<< std::setw(left_col_width-6) << d
-	  << "Option " << catalog.boot_setting() << "\n";
+      std::string::size_type current_col = 0;
+      auto next_line = [&current_col](colstream& cs)
+		       {
+			 cs.put('\n');
+			 current_col = 0;
+		       };
+      auto next_column = [&current_col, rmargin, col_width](colstream& cs)
+			 {
+			   ++current_col;
+			   auto nextpos = current_col * col_width;
+			   if (cs.current_column() == nextpos)
+			     nextpos += col_width;
+
+			   if (nextpos >= rmargin)
+			     {
+			       cs.put('\n');
+			       current_col = 0;
+			     }
+			   else
+			     {
+			       cs.advance_to_column(nextpos);
+			     }
+			 };
+
+      out << title_and_cycle(catalog.title(), catalog.sequence_number());
+      if (DFS::UiStyle::Watford == ui)
+	next_column(out);
+      else
+	out << " ";
+      out << density_desc(geom, ui) << std::setbase(10);
+      next_column(out);
+      out << "Drive "<< d;
+      next_column(out);
+      out << "Option " << catalog.boot_setting();
+      next_line(out);
 
       if (DFS::UiStyle::Watford == ui)
 	{
-	  out << "Directory :" << ctx.current_drive << "." << ctx.current_directory
-	      << "      "
-	      << "Library :0.$\n";
-	  out << "Work file $.\n";
+	  out << "Directory :" << ctx.current_drive << "." << ctx.current_directory;
+	  next_column(out);
+	  out << "Library :0.$";
+	  next_column(out);
+	  out << "Work file $.";
 	}
       else
 	{
-	  out << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
-	       << "           "
-	       << "Lib. :0.$\n";
+	  out << "Dir. :" << ctx.current_drive << "." << ctx.current_directory;
+	  next_column(out);
+	  out << "Lib. :0.$";
 	}
-      out << "\n";
+      next_line(out);
+      next_line(out);
 
       auto entries = catalog.entries();
       auto compare_entries =
@@ -294,51 +408,50 @@ namespace
 
       std::sort(entries.begin(), entries.end(), compare_entries);
 
-      bool left_column = true;
       bool printed_gap = false;
       out << std::left;
-      constexpr int name_col_width = 8;
+
       bool first = true;
-      const int left_col_indent = (DFS::UiStyle::Watford == ui) ? 2 : 1;
       for (const auto& entry : entries)
 	{
 	  if (entry.directory() != ctx.current_directory)
 	    {
 	      if (!printed_gap)
 		{
-		  if (!first)
-		    out << (left_column ? "\n" : "\n\n");
-		  left_column = true;
+		  if (out.current_column() > 0)
+		    next_line(out);
+		  next_line(out);
 		  printed_gap = true;
+		  first = true;
 		}
 	    }
-	  first = false;
 
-	  out << std::setw(left_column ? left_col_indent : 7) << "";
-	  out << std::setw(0);
-	  if (entry.directory() != ctx.current_directory)
-	    out << " " << entry.directory() << ".";
+	  if (first)
+	    first = false;
 	  else
-	    out << "   ";
-	  out << std::setw(0) << std::left << entry.name();
-	  int acc_col_width = name_col_width - static_cast<int>(entry.name().size());
-	  if (entry.is_locked() || left_column)
+	    next_column(out);
+
+	  std::ostringstream os;
+	  os << std::setw(DFS::UiStyle::Watford == ui ? 3 : 2) << "";
+	  if (entry.directory() != ctx.current_directory)
+	    os << entry.directory() << ".";
+	  else
+	    os << "  ";
+	  os << entry.name();
+	  out << std::setw(8) << std::right << os.str();
+	  if (entry.is_locked())
 	    {
-	      out << std::setfill(' ') << std::setw(2 + acc_col_width)
-		  << std::right << (entry.is_locked() ? "L": "") << std::setfill(' ');
+	      out << std::setfill(' ') << std::setw(5) << std::right << "L";
 	    }
-	  if (!left_column)
-	    {
-	      out << "\n";
-	    }
-	  left_column = !left_column;
 	}
-      out << "\n";
+      next_line(out);
       if (DFS::UiStyle::Watford == ui)
 	{
+	  next_line(out);
 	  out << std::setw(2) << std::setfill('0') << std::right << entries.size()
 	      << " files of " << catalog.max_file_count()
-	      << " on " << geom.cylinders << " tracks\n";
+	      << " on " << geom.cylinders << " tracks\n"
+	      << std::setfill(' ');
 	}
       return true;
     }

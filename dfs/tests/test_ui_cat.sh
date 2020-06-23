@@ -18,7 +18,7 @@ check_cat() {
     shift 3
 
     dfs() {
-	"${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@"
+	COLUMNS=40 "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
 
     if ! actual="$(mktemp --tmpdir=${TMPDIR} cat_out_XXXXXX)"

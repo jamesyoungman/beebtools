@@ -28,6 +28,9 @@ namespace DFS
      Acorn,
      Watford,
      Opus
+     // If you add an entry to this enum, update
+     // DFS::FileSystem::ui_style() and (at least) cmd_cat.cc and its
+     // tests.
     };
 
 class FileSystem;
