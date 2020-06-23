@@ -45,6 +45,8 @@ namespace DFS
       for (int i = 0; (label=labels[i]) != '\0'; ++i)
 	{
 	  const unsigned int track = sector16[offset];
+	  if (track == 0)
+	    continue;
 	  assert(geom.cylinders >= 0);
 	  if (track >= static_cast<unsigned int>(geom.cylinders))
 	    {

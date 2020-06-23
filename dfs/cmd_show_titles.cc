@@ -34,17 +34,17 @@ class CommandShowTitles : public DFS::CommandInterface
   bool show_title(const DFS::StorageConfiguration& storage,
 		  const DFS::SurfaceSelector& d, std::string& error)
   {
-    DFS::VolumeSelector vol(d);
-    auto mounted(storage.mount(vol, error));
-    if (!mounted)
+    std::unique_ptr<DFS::FileSystem> fs(storage.mount_fs(d, error));
+    if (!fs)
       return false;
-    std::cout << d << ":" << mounted->volume()->root().title() << "\n";
-    if (mounted->file_system()->disc_format() == DFS::Format::OpusDDOS)
+    std::vector<std::optional<char>> subvolumes = fs->subvolumes();
+    for (std::optional<char> sv : subvolumes)
       {
-	// TODO: fix this for Opus DDOS.
-	// For Opus DDOS, we should probably iterate over all the
-	// volumes on the drive.
-	std::cerr << "warning: this disc may contain other volumes too.\n";
+	DFS::Volume *p = fs->mount(sv, error);
+	if (!p)
+	  return false;
+	auto vol = sv ? std::make_unique<DFS::VolumeSelector>(d, *sv) : std::make_unique<DFS::VolumeSelector>(d);
+	std::cout << (*vol) << ": " << p->root().title() << "\n";
       }
     return std::cout.good();
   }
@@ -64,7 +64,7 @@ class CommandShowTitles : public DFS::CommandInterface
 		   std::cerr << error << "\n";
 		   return false;
 		 };
-    std::vector<DFS::drive_number> todo;
+    std::vector<DFS::SurfaceSelector> todo;
     if (args.size() > 1)
       {
 	bool first = true;
@@ -75,20 +75,14 @@ class CommandShowTitles : public DFS::CommandInterface
 		first = false;
 		continue;      // this is the command name, ignore it.
 	      }
-	    DFS::VolumeSelector vol(0);
 	    error.clear();
-	    // TODO: for Opus DDOS, allow the user to request all
-	    // volumes on a drive.
-	    if (!DFS::StorageConfiguration::decode_drive_number(arg, &vol, error))
+	    size_t end;
+	    std::optional<DFS::SurfaceSelector> surf(DFS::SurfaceSelector::parse(arg, &end, error));
+	    if (!surf)
 	      return fail();
 	    if (!error.empty())
 	      std::cerr << "warning: " << error << "\n";
-	    if (vol.subvolume())
-	      {
-		std::cerr << "Opus DDOS volumes are not yet supported.\n";
-		return false;
-	      }
-	    todo.push_back(vol.surface());
+	    todo.push_back(*surf);
 	  }
       }
     else
@@ -96,10 +90,10 @@ class CommandShowTitles : public DFS::CommandInterface
 	todo = storage.get_all_occupied_drive_numbers();
       }
 
-    for (DFS::drive_number drive_num : todo)
+    for (DFS::SurfaceSelector surface : todo)
       {
-	if (!show_title(storage, drive_num, error))
-	  return faild(drive_num);
+	if (!show_title(storage, surface, error))
+	  return faild(surface);
       }
     return true;
   }

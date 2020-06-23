@@ -35,7 +35,7 @@ public:
   static constexpr char DEFAULT_VOLUME = 'A';
   explicit FileSystem(DataAccess&, DFS::Format fmt, DFS::Geometry geom);
   Volume* mount(std::optional<char> vol, std::string& error) const;
-
+  std::vector<std::optional<char>> subvolumes() const;
   // Determine what UI styling to use for the current file system.
   DFS::UiStyle ui_style(const DFSContext&) const;
   Format disc_format() const;

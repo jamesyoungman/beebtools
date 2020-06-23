@@ -113,6 +113,17 @@ namespace DFS
     return DFS::UiStyle::Acorn;
   }
 
+  std::vector<std::optional<char>>
+  FileSystem::subvolumes() const
+  {
+    std::vector<std::optional<char>> result;
+    for (const auto& vol : volumes_)
+      {
+	result.push_back(vol.first);
+      }
+    return result;
+  }
+
   Format FileSystem::disc_format() const
   {
     return format_;
