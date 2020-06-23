@@ -210,9 +210,9 @@ namespace
 	    }
 	  left_column = !left_column;
 	}
+      cout << "\n";
       if (DFS::UiStyle::Watford == ui)
 	{
-	  cout << "\n";
 	  cout << std::setw(2) << std::setfill('0') << std::right << entries.size()
 	       << " files of " << catalog.max_file_count()
 	       << " on " << geom.cylinders << " tracks\n";
