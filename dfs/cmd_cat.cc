@@ -77,6 +77,27 @@ namespace
 		const DFS::DFSContext& ctx,
 		const std::vector<std::string>& args) override
     {
+      // Some DFS implementations produce an adaptive number of columns:
+      //
+      // DFS variant      Mode 2        Mode 7       Mode 0
+      //                  [20 cols]     [40 cols]    [80 cols]
+      // Acorn            2 (w=1)       2            2
+      // Watford          4 (w=1)       4 (w=2)      4
+      // HDFS             1             2            4
+      // Solidisk         2 (w=1)       2            2
+      // Opus             2 (w=1)       2            2
+      //
+      // Taking Watford DFS as an example, it always produces 4
+      // columns of output.  However, since the screen width is always
+      // a multiple of 20, in modes 7 and 2 this appears to be
+      // 2-column and 1-column output, respectively (which is what w=2
+      // and w=1 means in the table above).  Similarly, Acorn DFS
+      // always produces 2 colums of output, but this appears as 1
+      // column in mode 2.
+      //
+      // We are producing output for systems whose terminal width is
+      // not always a multiple of 20, and so we cannot take the same
+      // approach.
       std::string error;
       auto fail = [&error]()
 		  {
