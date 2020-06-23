@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "cleanup.h"
 #include "commands.h"
 #include "dfs_volume.h"
 #include "driveselector.h"
@@ -13,7 +14,6 @@
 
 using std::string;
 using std::vector;
-using std::cout;
 
 namespace
 {
@@ -21,6 +21,105 @@ namespace
   using DFS::CatalogEntry;
   using DFS::FileSystem;
   using DFS::Format;
+
+  class colstream
+  {
+  public:
+    colstream(std::ostream& os)
+      : col_(0u), forward_to_(os)
+    {
+    }
+
+    template <class T>
+    colstream& operator<<(const T& item)
+    {
+      std::ostringstream ss;
+      ss.copyfmt(forward_to_);
+      ss << item;
+      forward_to_ << item;
+      update_col(ss.str());
+      return *this;
+    }
+
+    colstream& put(char ch)
+    {
+      forward_to_.put(ch);
+      update_col(ch);
+      return *this;
+    }
+
+    colstream& write(const char* s, std::streamsize n)
+    {
+      forward_to_.write(s, n);
+      update_col(s, n);
+      return *this;
+    }
+
+  colstream& operator<< (std::ostream& (*f)(std::ostream &)) {
+    f(forward_to_);
+    return *this;
+  }
+
+    colstream& operator<< (std::ostream& (*f)(std::ios &)) {
+      f(forward_to_);
+      return *this;
+    }
+
+    colstream& operator<< (std::ostream& (*f)(std::ios_base &)) {
+      f(forward_to_);
+      return *this;
+    }
+
+  private:
+    static constexpr int TAB_WIDTH = 8;
+
+    void update_col(char ch)
+    {
+      if (ch == '\n' || ch == '\r')
+	{
+	  col_ = 0;
+	}
+      else if (ch == '\t')
+	{
+	  tab();
+	}
+      else
+	{
+	  ++col_;
+	}
+    }
+
+    void update_col(const std::string& s)
+    {
+      for (char ch : s)
+	update_col(ch);
+    }
+
+    void update_col(const char* s, std::streamsize n)
+    {
+      while (n--)
+	update_col(*s++);
+    }
+
+    void tab()
+    {
+      auto oldcol = col_;
+      auto past = col_ % TAB_WIDTH;
+      if (!past)
+	{
+	  col_ += TAB_WIDTH;
+	}
+      else
+	{
+	  col_ += (TAB_WIDTH - past);
+	}
+      assert(col_ > oldcol);
+      assert((col_ % TAB_WIDTH) == 0);
+    }
+
+    std::string::size_type col_;
+    std::ostream& forward_to_;
+  };
 
   std::string title_and_cycle(const std::string& title,
 			      std::optional<int> cycle)
@@ -98,6 +197,9 @@ namespace
       // We are producing output for systems whose terminal width is
       // not always a multiple of 20, and so we cannot take the same
       // approach.
+
+      colstream out(std::cout);
+
       std::string error;
       auto fail = [&error]()
 		  {
@@ -143,31 +245,31 @@ namespace
       const auto ui = file_system->ui_style(ctx);
 
       DFS::Geometry geom = file_system->geometry();
-      cout << std::setw(DFS::UiStyle::Watford == ui ? 20 : 0)
+      out << std::setw(DFS::UiStyle::Watford == ui ? 20 : 0)
           << std::setfill(' ')
           << std::left
           << title_and_cycle(catalog.title(), catalog.sequence_number());
-      cout << (DFS::UiStyle::Watford == ui ? "" : " ")
-	   << density_desc(geom, ui) << std::setbase(10) << "\n";
+      out << (DFS::UiStyle::Watford == ui ? "" : " ")
+	  << density_desc(geom, ui) << std::setbase(10) << "\n";
 
       const int left_col_width = 20;
-      cout << "Drive "<< std::setw(left_col_width-6) << d
-	   << "Option " << catalog.boot_setting() << "\n";
+      out << "Drive "<< std::setw(left_col_width-6) << d
+	  << "Option " << catalog.boot_setting() << "\n";
 
       if (DFS::UiStyle::Watford == ui)
 	{
-	  cout << "Directory :" << ctx.current_drive << "." << ctx.current_directory
-	       << "      "
-	       << "Library :0.$\n";
-	  cout << "Work file $.\n";
+	  out << "Directory :" << ctx.current_drive << "." << ctx.current_directory
+	      << "      "
+	      << "Library :0.$\n";
+	  out << "Work file $.\n";
 	}
       else
 	{
-	  cout << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
+	  out << "Dir. :" << ctx.current_drive << "." << ctx.current_directory
 	       << "           "
 	       << "Lib. :0.$\n";
 	}
-      cout << "\n";
+      out << "\n";
 
       auto entries = catalog.entries();
       auto compare_entries =
@@ -194,7 +296,7 @@ namespace
 
       bool left_column = true;
       bool printed_gap = false;
-      std::cout << std::left;
+      out << std::left;
       constexpr int name_col_width = 8;
       bool first = true;
       const int left_col_indent = (DFS::UiStyle::Watford == ui) ? 2 : 1;
@@ -205,38 +307,38 @@ namespace
 	      if (!printed_gap)
 		{
 		  if (!first)
-		    cout << (left_column ? "\n" : "\n\n");
+		    out << (left_column ? "\n" : "\n\n");
 		  left_column = true;
 		  printed_gap = true;
 		}
 	    }
 	  first = false;
 
-	  cout << std::setw(left_column ? left_col_indent : 7) << "";
-	  std::cout << std::setw(0);
+	  out << std::setw(left_column ? left_col_indent : 7) << "";
+	  out << std::setw(0);
 	  if (entry.directory() != ctx.current_directory)
-	    cout << " " << entry.directory() << ".";
+	    out << " " << entry.directory() << ".";
 	  else
-	    cout << "   ";
-	  cout << std::setw(0) << std::left << entry.name();
+	    out << "   ";
+	  out << std::setw(0) << std::left << entry.name();
 	  int acc_col_width = name_col_width - static_cast<int>(entry.name().size());
 	  if (entry.is_locked() || left_column)
 	    {
-	      cout << std::setfill(' ') << std::setw(2 + acc_col_width)
-		   << std::right << (entry.is_locked() ? "L": "") << std::setfill(' ');
+	      out << std::setfill(' ') << std::setw(2 + acc_col_width)
+		  << std::right << (entry.is_locked() ? "L": "") << std::setfill(' ');
 	    }
 	  if (!left_column)
 	    {
-	      cout << "\n";
+	      out << "\n";
 	    }
 	  left_column = !left_column;
 	}
-      cout << "\n";
+      out << "\n";
       if (DFS::UiStyle::Watford == ui)
 	{
-	  cout << std::setw(2) << std::setfill('0') << std::right << entries.size()
-	       << " files of " << catalog.max_file_count()
-	       << " on " << geom.cylinders << " tracks\n";
+	  out << std::setw(2) << std::setfill('0') << std::right << entries.size()
+	      << " files of " << catalog.max_file_count()
+	      << " on " << geom.cylinders << " tracks\n";
 	}
       return true;
     }
