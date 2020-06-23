@@ -272,7 +272,7 @@ int main (int argc, char *argv[])
 	case OPT_HELP:
 	  {
 	    DFS::CommandHelp help;
-	    return help(storage, ctx, extra_args) ? 0 : 1;
+	    return help.invoke(storage, ctx, extra_args) ? 0 : 1;
 	  }
 	}
     }
@@ -298,7 +298,7 @@ int main (int argc, char *argv[])
 	{
 	  storage.show_drive_configuration(std::cerr);
 	}
-      return (*instance)(storage, ctx, extra_args) ? 0 : 1;
+      return instance->invoke(storage, ctx, extra_args) ? 0 : 1;
     }
   catch (std::exception& e)
     {

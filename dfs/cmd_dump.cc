@@ -60,9 +60,9 @@ public:
       return "displays the contents of a file in both hex and printable characters";
     }
 
-    bool operator()(const DFS::StorageConfiguration& storage,
-		    const DFS::DFSContext& ctx,
-		    const std::vector<std::string>& args) override
+    bool invoke(const DFS::StorageConfiguration& storage,
+		const DFS::DFSContext& ctx,
+		const std::vector<std::string>& args) override
     {
       return body_command(storage, ctx, args,
 			  [](const DFS::byte* body_start,

@@ -73,9 +73,9 @@ public:
     return "extract all the files from the disc";
   }
 
-  bool operator()(const DFS::StorageConfiguration& storage,
-		  const DFS::DFSContext& ctx,
-		  const std::vector<std::string>& args) override
+  bool invoke(const DFS::StorageConfiguration& storage,
+	      const DFS::DFSContext& ctx,
+	      const std::vector<std::string>& args) override
   {
     // Use the --drive option to select which drive to extract files from.
     if (args.size() < 2)

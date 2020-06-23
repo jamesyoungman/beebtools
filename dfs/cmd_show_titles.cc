@@ -49,9 +49,9 @@ class CommandShowTitles : public DFS::CommandInterface
     return std::cout.good();
   }
 
-  bool operator()(const DFS::StorageConfiguration& storage,
-		  const DFS::DFSContext&,
-		  const std::vector<std::string>& args) override
+  bool invoke(const DFS::StorageConfiguration& storage,
+	      const DFS::DFSContext&,
+	      const std::vector<std::string>& args) override
   {
     std::string error;
     auto faild = [&error](DFS::drive_number d)

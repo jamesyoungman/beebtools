@@ -57,9 +57,9 @@ public:
     return "display information about a file (for example load address)";
   }
 
-  bool operator()(const DFS::StorageConfiguration& storage,
-		  const DFS::DFSContext& ctx,
-		  const std::vector<std::string>& args) override
+  bool invoke(const DFS::StorageConfiguration& storage,
+	      const DFS::DFSContext& ctx,
+	      const std::vector<std::string>& args) override
   {
     if (args.size() < 2)
       {

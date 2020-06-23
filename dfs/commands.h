@@ -21,9 +21,9 @@ namespace DFS
     virtual const std::string name() const = 0;
     virtual const std::string usage() const = 0;
     virtual const std::string description() const = 0;
-    virtual bool operator()(const StorageConfiguration&,
-			    const DFSContext&,
-			    const std::vector<std::string>& args) = 0;
+    virtual bool invoke(const StorageConfiguration&,
+			const DFSContext&,
+			const std::vector<std::string>& args) = 0;
   };
 
   class CIReg
@@ -78,9 +78,9 @@ bool cmd_list(const StorageConfiguration& config, const DFSContext& ctx,
     const std::string usage() const override;
     const std::string description() const override;
     static bool check_consistency();
-    bool operator()(const DFS::StorageConfiguration&,
-		    const DFS::DFSContext&,
-		    const std::vector<std::string>& args) override;
+    bool invoke(const DFS::StorageConfiguration&,
+		const DFS::DFSContext&,
+		const std::vector<std::string>& args) override;
   };
 
 

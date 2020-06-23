@@ -28,9 +28,9 @@ namespace DFS
       return "display the contents of a file as text, with line numbers";
     }
 
-    bool operator()(const DFS::StorageConfiguration& storage,
-		    const DFS::DFSContext& ctx,
-		    const std::vector<std::string>& args) override
+    bool invoke(const DFS::StorageConfiguration& storage,
+		const DFS::DFSContext& ctx,
+		const std::vector<std::string>& args) override
     {
       file_body_logic display_numbered_lines =
 	[](const byte* body_start,

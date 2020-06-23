@@ -43,9 +43,9 @@ public:
     return "display information about a disc's free space";
   }
 
-  bool operator()(const DFS::StorageConfiguration& storage,
-		  const DFS::DFSContext& ctx,
-		  const std::vector<std::string>& args) override
+  bool invoke(const DFS::StorageConfiguration& storage,
+	      const DFS::DFSContext& ctx,
+	      const std::vector<std::string>& args) override
   {
     std::string error;
     auto faild = [&error](const DFS::VolumeSelector& vol)

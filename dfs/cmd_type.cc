@@ -71,9 +71,9 @@ namespace DFS
       return "display the contents of a file as text";
     }
 
-    bool operator()(const DFS::StorageConfiguration& storage,
-		    const DFS::DFSContext& ctx,
-		    const std::vector<std::string>& args) override
+    bool invoke(const DFS::StorageConfiguration& storage,
+		const DFS::DFSContext& ctx,
+		const std::vector<std::string>& args) override
     {
       bool binary = false;
       std::vector<string> options, non_options;

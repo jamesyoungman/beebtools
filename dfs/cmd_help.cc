@@ -29,9 +29,9 @@ namespace DFS
     return "explain how to use one or more commands";
   }
 
-  bool CommandHelp::operator()(const DFS::StorageConfiguration&,
-			       const DFS::DFSContext&,
-			       const std::vector<std::string>& args)
+  bool CommandHelp::invoke(const DFS::StorageConfiguration&,
+			   const DFS::DFSContext&,
+			   const std::vector<std::string>& args)
   {
     const auto& option_help = get_option_help();
     const int max_command_name_len = 14;
