@@ -147,8 +147,9 @@ namespace
 		   });
     setbuffer(f, readbuf.data(), readbuf.size());
 
-    z_stream stream;
     gz_header header;
+    memset(&header, 0, sizeof(header));
+    z_stream stream;
     memset(&stream, 0, sizeof(stream));
     stream.zalloc = Z_NULL;
     stream.zfree = Z_NULL;
@@ -196,7 +197,7 @@ namespace
     while (zerr != Z_STREAM_END)
       {
 	errno = 0;
-	stream.avail_in = static_cast<avail_in_type>(fread(input_buffer, 1, input_buf_size, f));
+	auto got = stream.avail_in = static_cast<avail_in_type>(fread(input_buffer, 1, input_buf_size, f));
 	if (ferror(f))
 	  {
 	    throw DFS::FileIOError(name, errno);
@@ -216,13 +217,18 @@ namespace
 	    stream.next_out = output_buffer;
 	    stream.avail_out = output_buf_size;
 	    zerr = inflate(&stream, Z_NO_FLUSH);
-	    if (zerr != Z_STREAM_END)
-	      check_zlib_error_code(zerr);
 	    const size_t bytes_to_write = output_buf_size - stream.avail_out;
 	    errno = 0;
 	    const size_t bytes_written = fwrite(output_buffer, 1, bytes_to_write, fout);
 	    if (bytes_written != bytes_to_write)
 	      throw DFS::FileIOError(name, errno);
+	    if (zerr == Z_BUF_ERROR && got)
+	      {
+		// Want more input data.
+		break;
+	      }
+	    if (zerr != Z_STREAM_END)
+	      check_zlib_error_code(zerr);
 	  }
 	while (stream.avail_out == 0);
       }
