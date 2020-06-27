@@ -133,6 +133,15 @@ public:
     return *this;
   }
 
+  ImageBuilder with_bitmask_change(DFS::sector_count_type sec, byte offset,
+				   byte and_bits, byte or_bits)
+  {
+    assert(content_.find(sec) != content_.end());
+    content_[sec][offset] &= and_bits;
+    content_[sec][offset] |= or_bits;
+    return *this;
+  }
+
   ImageBuilder& with_string(DFS::sector_count_type lba, byte offset, const std::string& s)
   {
     assert(s.size() < DFS::SECTOR_BYTES);
@@ -382,6 +391,18 @@ TestImage actual_watford()
   return ImageBuilder().with_sectors(CatalogBuilder(80*10, 2).build()).build();
 }
 
+ImageBuilder empty_hdfs(int sides)
+{
+  assert(sides == 1 || sides == 2);
+  byte byte6bits23 = (1 << 3);
+  if (sides == 2)
+    byte6bits23 |= (1 << 2);
+  return ImageBuilder()
+    .with_sectors(CatalogBuilder(80*10, 1).build())
+    .with_bitmask_change(1, 6, byte(~12u), byte6bits23);
+}
+
+
   std::vector<Example> make_examples()
   {
     std::vector<Example> result;
@@ -413,7 +434,8 @@ TestImage actual_watford()
     result.push_back(Example("file_at_s2", DFS::Format::DFS, near_watford_file_overlap()));
     result.push_back(Example("watford_empty", DFS::Format::WDFS, actual_watford()));
     result.push_back(Example("no_wdfs_recog", DFS::Format::DFS, near_watford_no_recognition()));
-
+    result.push_back(Example("empty_hdfs_1s", DFS::Format::HDFS, empty_hdfs(1).build()));
+    result.push_back(Example("empty_hdfs_2s", DFS::Format::HDFS, empty_hdfs(2).build()));
 
     std::set<std::string> labels;
     for (const auto& ex : result)
