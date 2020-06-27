@@ -71,6 +71,50 @@ namespace
 				  | (sec1[0x06] & 7) << 8); // bits 8-10
   }
 
+  bool has_valid_dfs_catalog(DFS::DataAccess& media,
+			     unsigned long location,
+			     std::string& error)
+  {
+    std::optional<DFS::SectorBuffer> s0 = media.read_block(location);
+    std::optional<DFS::SectorBuffer> s1 = media.read_block(location + 1uL);
+    if (!s0 || !s1)
+      {
+	std::ostringstream os;
+	os << "media is too short to contain a catalog at location "
+	   << std::dec << location;
+	error = os.str();
+	return false;
+      }
+    DFS::CatalogFragment f(DFS::Format::DFS, *s0, *s1);
+    const bool valid = f.valid(error);
+    if (valid)
+      {
+	if (DFS::verbose)
+	  {
+	    std::cerr << "catalog fragment is valid: " << f << "\n";
+	  }
+      }
+    return valid;
+  }
+
+  std::vector<DFS::ImageFileFormat>
+  filter_formats(const std::vector<DFS::ImageFileFormat>& candidates,
+		 std::function<bool(const DFS::ImageFileFormat&)> pred)
+  {
+    std::vector<DFS::ImageFileFormat> result;
+    result.reserve(candidates.size());
+    std::copy_if(candidates.begin(), candidates.end(),
+		 std::back_inserter(result), pred);
+    return result;
+  }
+
+}  // namespace
+
+namespace DFS
+{
+  namespace internal
+  {
+
   bool smells_like_hdfs(const DFS::SectorBuffer& sec1)
   {
     // The cycle count byte of the root catalog is, apparently, a
@@ -233,43 +277,6 @@ namespace
 
     *sectors = DFS::sector_count(total_disk_sectors);
     return true;
-  }
-
-  bool has_valid_dfs_catalog(DFS::DataAccess& media,
-			     unsigned long location,
-			     std::string& error)
-  {
-    std::optional<DFS::SectorBuffer> s0 = media.read_block(location);
-    std::optional<DFS::SectorBuffer> s1 = media.read_block(location + 1uL);
-    if (!s0 || !s1)
-      {
-	std::ostringstream os;
-	os << "media is too short to contain a catalog at location "
-	   << std::dec << location;
-	error = os.str();
-	return false;
-      }
-    DFS::CatalogFragment f(DFS::Format::DFS, *s0, *s1);
-    const bool valid = f.valid(error);
-    if (valid)
-      {
-	if (DFS::verbose)
-	  {
-	    std::cerr << "catalog fragment is valid: " << f << "\n";
-	  }
-      }
-    return valid;
-  }
-
-  std::vector<DFS::ImageFileFormat>
-  filter_formats(const std::vector<DFS::ImageFileFormat>& candidates,
-		 std::function<bool(const DFS::ImageFileFormat&)> pred)
-  {
-    std::vector<DFS::ImageFileFormat> result;
-    result.reserve(candidates.size());
-    std::copy_if(candidates.begin(), candidates.end(),
-		 std::back_inserter(result), pred);
-    return result;
   }
 
   DFS::ImageFileFormat
@@ -516,22 +523,23 @@ namespace
       }
     return candidates;
   }
+}  // namespace DFS::internal
 
-}  // namespace
-
-
-namespace DFS
-{
   ImageFileFormat identify_image(DataAccess& access, const std::string& name)
   {
-    std::vector<ImageFileFormat> candidates = make_candidate_list(name);
-    return probe(access, candidates).second;
+    std::vector<ImageFileFormat> candidates = DFS::internal::make_candidate_list(name);
+    return DFS::internal::probe(access, candidates).second;
   }
 
   Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved)
   {
     const std::vector<ImageFileFormat> only{ImageFileFormat(geom, interleaved)};
-    return probe(access, only).first;
+    return DFS::internal::probe(access, only).first;
+  }
+
+  ImageFileFormat::ImageFileFormat(Geometry g, bool interleave)
+    : geometry(g), interleaved(interleave)
+  {
   }
 
   std::string ImageFileFormat::description() const

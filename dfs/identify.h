@@ -12,11 +12,7 @@ namespace DFS
 {
   struct ImageFileFormat
   {
-    ImageFileFormat(Geometry g, bool interleave)
-      : geometry(g), interleaved(interleave)
-    {
-    }
-
+    ImageFileFormat(Geometry g, bool interleave);
     std::string description() const;
 
     Geometry geometry;
@@ -27,6 +23,14 @@ namespace DFS
   ImageFileFormat identify_image(DataAccess&, const std::string& filename);
   // Probe some media to figure out what filesystem is on it.
   Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved);
+
+  namespace internal		/* exposed for unit testing */
+  {
+    bool smells_like_hdfs(const SectorBuffer& sec1);
+    bool smells_like_watford(DataAccess& access,
+			     const DFS::SectorBuffer& sec1);
+    bool smells_like_opus_ddos(DataAccess& media, sector_count_type* sectors);
+  }
 
 }  // namespace DFS
 #endif
