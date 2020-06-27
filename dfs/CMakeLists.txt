@@ -132,6 +132,17 @@ target_compile_options(test_geometry
 add_test(NAME dfs_test_geometry_passes COMMAND test_geometry)
 set_property(TEST dfs_test_geometry_passes PROPERTY LABELS dfs unit_test)
 
+add_executable(test_prober)
+target_sources(test_prober
+  PRIVATE
+  tests/test_prober.cc)
+target_compile_options(test_prober
+  PRIVATE ${EXTRA_WARNING_OPTIONS}
+  -I ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_prober dfslib dfsbase ${ZLIB_LIBRARIES})
+add_test(NAME dfs_test_prober_passes COMMAND test_prober)
+set_property(TEST dfs_test_prober_passes PROPERTY LABELS dfs unit_test)
+
 add_executable(test_regularexpression)
 target_sources(test_regularexpression
   PRIVATE
