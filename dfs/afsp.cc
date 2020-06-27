@@ -107,8 +107,11 @@ namespace
 	error_message->assign(invalid);
 	return false;
       }
-     // TODO: there is probably a more efficient way to perform this assignment.
-    out->assign(drive + directory + name);
+    out->clear();
+    out->reserve(drive.size() + directory.size() + name.size());
+    out->append(drive);
+    out->append(directory);
+    out->append(name);
     return true;
   }
 
