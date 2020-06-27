@@ -444,8 +444,25 @@ bool set_dialect(const char* name, enum Dialect* d)
   return false;
 }
 
-bool dump_map(FILE *f, const char* dialect_name, const char* map_name, const char *map[NUM_TOKENS])
+static bool any_tokens_valid(const char *map[NUM_TOKENS])
 {
+  for (unsigned int i = 0; i < NUM_TOKENS; ++i)
+    {
+      if (map[i] != invalid)
+	return true;
+    }
+  return false;
+}
+
+static bool dump_map(FILE *f, const char* dialect_name, const char* map_name, const char *map[NUM_TOKENS])
+{
+  if (!any_tokens_valid(map))
+    {
+      if (fprintf(f, "%s (%s map): dialect has no valid tokens in the %s map\n",
+		  dialect_name, map_name, map_name) < 0)
+	return false;
+      return true;
+    }
   for (unsigned int i = 0; i < NUM_TOKENS; ++i)
     {
       const char *dest = map[i];
@@ -471,10 +488,10 @@ static bool internal_dump_all_dialects_to_file(FILE *f)
       fprintf(f, "dialect %s:\n", m->name);
       if (!build_mapping(m->value, &xmap))
 	return false;
-      if (!dump_map(f, m->name, "base", xmap.base) &&
-	  dump_map(f, m->name, "c6", xmap.c6) &&
-	  dump_map(f, m->name, "c7", xmap.c7) &&
-	  dump_map(f, m->name, "c8", xmap.c8))
+      if (!(dump_map(f, m->name, "base", xmap.base) &&
+	    dump_map(f, m->name, "c6", xmap.c6) &&
+	    dump_map(f, m->name, "c7", xmap.c7) &&
+	    dump_map(f, m->name, "c8", xmap.c8)))
 	{
 	  return false;
 	}

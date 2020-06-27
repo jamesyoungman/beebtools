@@ -25,7 +25,7 @@ then
 fi
 echo "Golden token file is $2"
 echo "Current token file is ${tf}"
-if ! diff "$2" "${tf}"
+if ! diff -u "$2" "${tf}"
 then
     echo "current token map does not match golden token map" >&2
     cleanup
