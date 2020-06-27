@@ -109,7 +109,6 @@ namespace DFS
       case Format::OpusDDOS:
 	return DFS::UiStyle::Opus;
       }
-    // TODO: find out if there are differences for Opus, too.
     return DFS::UiStyle::Acorn;
   }
 
