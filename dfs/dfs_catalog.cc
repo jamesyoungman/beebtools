@@ -289,6 +289,16 @@ CatalogFragment::CatalogFragment(DFS::Format format,
       }
   }
 
+  bool Catalog::valid(std::string& error) const
+  {
+    for (const CatalogFragment& f : fragments_)
+      {
+	if (!f.valid(error))
+	  return false;
+      }
+    return true;
+  }
+
   std::optional<byte> Catalog::sequence_number() const
   {
     if (disc_format() != Format::HDFS)

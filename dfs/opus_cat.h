@@ -2,6 +2,7 @@
 #define INC_DISC_CAT_H
 
 #include <iomanip>
+#include <optional>
 #include <vector>
 
 #include "abstractio.h"
@@ -36,9 +37,14 @@ namespace DFS
       };
 
       static OpusDiscCatalogue get_catalogue(DFS::DataAccess& media,
-					     const DFS::Geometry& geom);
+					     std::optional<const DFS::Geometry> geom);
+      // We construct an OpusDiscCatalogue once were certain an image
+      // file contains an Opus DDOS disc catalogue, but also we do
+      // this while probing the image file in order to guess what's in
+      // it.  This means we don't always have an accurate idea yet of
+      // what's in the image file (e.g. the sectors per track).
       explicit OpusDiscCatalogue(const DFS::SectorBuffer& sector16,
-				 const DFS::Geometry& geom);
+				 std::optional<const DFS::Geometry> geom);
       const std::vector<VolumeLocation> get_volume_locations() const;
       void map_sectors(DFS::SectorMap*) const;
 
