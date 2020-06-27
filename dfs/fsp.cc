@@ -16,7 +16,7 @@ bool parse_filename(const DFSContext& ctx, const std::string& fsp, ParsedFileNam
 {
   std::string name(fsp);
   ParsedFileName result;
-  result.vol = ctx.current_drive;
+  result.vol = ctx.current_volume;
   result.dir = ctx.current_directory;
   // If there is a drive specification, parse and remove it.
   if (fsp[0] == ':')

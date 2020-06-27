@@ -316,7 +316,7 @@ namespace
 	}
       else
 	{
-	  d = ctx.current_drive;
+	  d = ctx.current_volume;
 	}
       auto mounted = storage.mount(d, error);
       if (!mounted)
@@ -370,7 +370,7 @@ namespace
 
       if (DFS::UiStyle::Watford == ui)
 	{
-	  out << "Directory :" << ctx.current_drive << "." << ctx.current_directory;
+	  out << "Directory :" << ctx.current_volume << "." << ctx.current_directory;
 	  next_column(out);
 	  out << "Library :0.$";
 	  next_column(out);
@@ -378,7 +378,7 @@ namespace
 	}
       else
 	{
-	  out << "Dir. :" << ctx.current_drive << "." << ctx.current_directory;
+	  out << "Dir. :" << ctx.current_volume << "." << ctx.current_directory;
 	  next_column(out);
 	  out << "Lib. :0.$";
 	}

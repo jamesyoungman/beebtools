@@ -196,7 +196,7 @@ namespace
 		     const string& expected_output,
 		     const string& expected_error)
   {
-    return one_xfrm_test(ctx.current_drive, ctx.current_directory, "extend_wildcard",
+    return one_xfrm_test(ctx.current_volume, ctx.current_directory, "extend_wildcard",
 			 DFS::internal::extend_wildcard, wildcard,
 			 expected_return, expected_output, expected_error);
   }
@@ -207,7 +207,7 @@ namespace
 			const string& expected_output,
 			const string& expected_error)
   {
-    return one_xfrm_test(ctx.current_drive, ctx.current_directory, "qualify",
+    return one_xfrm_test(ctx.current_volume, ctx.current_directory, "qualify",
 			 DFS::internal::qualify, filename,
 			 expected_return, expected_output, expected_error);
   }

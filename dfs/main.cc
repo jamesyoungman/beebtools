@@ -233,7 +233,7 @@ int main (int argc, char *argv[])
 	case OPT_DRIVE:
 	  {
 	    bool ok;
-	    std::tie(ok, ctx.current_drive) = get_drive_number(optarg);
+	    std::tie(ok, ctx.current_volume) = get_drive_number(optarg);
 	    if (!ok)
 	      return 1;
 	  }
@@ -260,7 +260,7 @@ int main (int argc, char *argv[])
 		std::cerr << err << "\n";
 		return 1;
 	      }
-	    ctx = DFS::DFSContext(ctx.current_directory, ctx.current_drive,
+	    ctx = DFS::DFSContext(ctx.current_directory, ctx.current_volume,
 				  *ui_opt);
 	    break;
 	  }

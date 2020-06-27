@@ -93,10 +93,10 @@ public:
       dest_dir.push_back('/');
 
     std::string error;
-    auto mounted = storage.mount(ctx.current_drive, error);
+    auto mounted = storage.mount(ctx.current_volume, error);
     if (!mounted)
       {
-	cerr << "failed to select drive " << ctx.current_drive << ": " << error << "\n";
+	cerr << "failed to select drive " << ctx.current_volume << ": " << error << "\n";
 	return false;
       }
     const DFS::Catalog& catalog(mounted->volume()->root());

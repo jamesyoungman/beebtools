@@ -54,7 +54,7 @@ public:
 	      const DFS::DFSContext& ctx,
 	      const std::vector<std::string>& args) override
   {
-    if (ctx.current_drive.subvolume())
+    if (ctx.current_volume.subvolume())
       {
 	std::cerr << name() << ": please specify only a drive number, not also a volume letter.\n";
 	return false;
@@ -76,7 +76,7 @@ public:
     if (dest_dir.back() != '/')
       dest_dir.push_back('/');
 
-    const DFS::SurfaceSelector surface(ctx.current_drive.surface());
+    const DFS::SurfaceSelector surface(ctx.current_volume.surface());
     std::string error;
     auto fail = [&surface, &error]()
 		{

@@ -39,22 +39,22 @@ struct DFSContext
 {
 public:
   DFSContext(char dir, DFS::VolumeSelector vol)
-    : current_directory(dir), current_drive(vol), ui_(UiStyle::Default)
+    : current_directory(dir), current_volume(vol), ui_(UiStyle::Default)
   {
   }
 
   DFSContext(char dir, DFS::VolumeSelector vol, UiStyle style)
-    : current_directory(dir), current_drive(vol), ui_(style)
+    : current_directory(dir), current_volume(vol), ui_(style)
   {
   }
 
   DFSContext()
-    : current_directory('$'), current_drive(0), ui_(UiStyle::Default)
+    : current_directory('$'), current_volume(0), ui_(UiStyle::Default)
    {
    }
 
   char current_directory;
-  DFS::VolumeSelector current_drive; // TODO: rename?
+  DFS::VolumeSelector current_volume;
 
 private:
   friend class FileSystem;

@@ -63,12 +63,12 @@ public:
       }
     if (args.size() < 2)
       {
-	if (ctx.current_drive.subvolume())
+	if (ctx.current_volume.subvolume())
 	  {
 	    std::cerr << "Please specify only a drive number with --drive(to get a sector map of the whole drive).\n";
 	    return false;
 	  }
-	drive_num = ctx.current_drive.surface();
+	drive_num = ctx.current_volume.surface();
       }
     else
       {

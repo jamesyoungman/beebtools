@@ -248,7 +248,7 @@ namespace DFS
 AFSPMatcher::AFSPMatcher(const AFSPMatcher::FactoryKey&,
 			 const DFSContext& ctx, const string& wildcard,
 			 string *error_message)
-  : valid_(false), vol_(ctx.current_drive), implementation_(0)
+  : valid_(false), vol_(ctx.current_volume), implementation_(0)
 {
   string ere;
   valid_ = convert_wildcard_into_extended_regex(&vol_,

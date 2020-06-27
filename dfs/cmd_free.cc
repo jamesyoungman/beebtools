@@ -67,7 +67,7 @@ public:
       }
     if (args.size() < 2)
       {
-	vol = ctx.current_drive;
+	vol = ctx.current_volume;
       }
     else
       {
