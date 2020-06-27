@@ -34,7 +34,7 @@ namespace
       return sec < cache_.size() && cache_[sec].get() != 0;
     }
 
-    bool get(unsigned long sec, DFS::AbstractDrive::SectorBuffer *buf) const
+    bool get(unsigned long sec, DFS::SectorBuffer *buf) const
     {
       if (!has(sec))
 	return false;
@@ -42,16 +42,16 @@ namespace
       return true;
     }
 
-    void put(unsigned long sec, const DFS::AbstractDrive::SectorBuffer *buf)
+    void put(unsigned long sec, const DFS::SectorBuffer *buf)
     {
       if (sec >= cache_.size())
 	return;
-      cache_[sec] = std::make_unique<DFS::AbstractDrive::SectorBuffer>();
+      cache_[sec] = std::make_unique<DFS::SectorBuffer>();
       std::copy(buf->begin(), buf->end(), cache_[sec]->begin());
     }
 
   private:
-    std::vector<std::unique_ptr<DFS::AbstractDrive::SectorBuffer>> cache_;
+    std::vector<std::unique_ptr<DFS::SectorBuffer>> cache_;
   };
 
   class CachedDevice : public DFS::AbstractDrive
@@ -75,7 +75,7 @@ namespace
 	{
 	  return buf;
 	}
-      std::optional<SectorBuffer> b = underlying_->read_block(sector);
+      std::optional<DFS::SectorBuffer> b = underlying_->read_block(sector);
       if (b)
 	{
 	  cache_.put(sector, &*b);

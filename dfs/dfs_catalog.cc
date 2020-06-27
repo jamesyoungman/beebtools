@@ -15,8 +15,8 @@ namespace
 {
   using DFS::stringutil::byte_to_ascii7;
 
-  std::string convert_title(const DFS::AbstractDrive::SectorBuffer& s0,
-			    const DFS::AbstractDrive::SectorBuffer& s1)
+  std::string convert_title(const DFS::SectorBuffer& s0,
+			    const DFS::SectorBuffer& s1)
   {
     std::string title;
     bool title_done = false;

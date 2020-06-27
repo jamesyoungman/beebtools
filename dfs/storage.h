@@ -39,7 +39,6 @@ namespace DFS
   {
   public:
     virtual ~AbstractDrive();
-    using SectorBuffer = DFS::SectorBuffer; // TODO: get rid of this.
     virtual Geometry geometry() const = 0;
     virtual std::string description() const = 0;
   };
