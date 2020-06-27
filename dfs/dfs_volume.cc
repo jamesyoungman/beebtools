@@ -71,7 +71,7 @@ namespace DFS
   }
 
   void Volume::map_sectors(const DFS::VolumeSelector& vol,
-			   DFS::SectorMap* out)
+			   DFS::SectorMap* out) const
   {
     root_->map_sectors(vol, catalog_location_, volume_data_origin(), out);
   }

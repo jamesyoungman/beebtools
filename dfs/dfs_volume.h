@@ -27,8 +27,7 @@ class Volume
 		  DataAccess&);
   const Catalog& root() const;
   DataAccess& data_region();
-  // TODO: map_sectors should probably be const.
-  void map_sectors(const DFS::VolumeSelector& vol, DFS::SectorMap*);
+  void map_sectors(const DFS::VolumeSelector& vol, DFS::SectorMap*) const;
 
   unsigned long volume_data_origin() const
   {
