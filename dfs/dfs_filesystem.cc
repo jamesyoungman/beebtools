@@ -235,10 +235,24 @@ std::string format_name(Format f)
 // Returns true if the format is double-sided.  that is to say, the
 // "total sectors" field of the catalog includes the sectors on both
 // sides.
-bool single_sided_filesystem(Format)
+bool single_sided_filesystem(Format fmt, DataAccess& media)
 {
-  // No double-sided formats are supported yet.  HDFS can, apparently,
-  // be double-sided.
+  // TODO: move this function to identify.cc.
+  if (fmt != DFS::Format::HDFS)
+    return true;
+  std::optional<DFS::SectorBuffer> got = media.read_block(1);
+  if (!got)
+    {
+      // Zero sides isn't really an option.
+      return true;
+    }
+  const DFS::SectorBuffer& sec1(*got);
+  if (sec1[6] & 4)
+    {
+      // Two-sided HDFS.  We don't have examples or tests for this, so
+      // implementation quality will likely be spotty.
+      return false;
+    }
   return true;
 }
 

@@ -20,12 +20,16 @@ namespace DFS
   };
 
   // Probe some media to figure out what geometry the disc (image) is.
-  ImageFileFormat identify_image(DataAccess&, const std::string& filename);
+  std::optional<ImageFileFormat> identify_image(DataAccess&, const std::string& filename, std::string& error);
   // Probe some media to figure out what filesystem is on it.
-  Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved);
+  std::optional<Format> identify_file_system(DataAccess& access, Geometry geom, bool interleaved, std::string& error);
+
+  bool single_sided_filesystem(Format f, DataAccess&);
 
   namespace internal		/* exposed for unit testing */
   {
+    bool smells_like_acorn_dfs(DataAccess& access,
+			       const DFS::SectorBuffer& sec1);
     bool smells_like_hdfs(const SectorBuffer& sec1);
     bool smells_like_watford(DataAccess& access,
 			     const DFS::SectorBuffer& sec1);

@@ -25,6 +25,31 @@ namespace
   using DFS::internal::FileView;
   using DFS::sector_count_type;
 
+  class Unrecognized : public std::exception
+  {
+  public:
+    Unrecognized(const std::string& cause)
+      : msg_(make_msg(cause))
+    {
+    }
+
+    const char* what() const noexcept
+    {
+      return msg_.c_str();
+    }
+
+  private:
+    static std::string make_msg(const std::string& cause)
+    {
+      std::ostringstream ss;
+      ss <<  "file format was not recognized: " << cause;
+      return ss.str();
+    }
+    std::string msg_;
+  };
+
+
+
   // A ViewFile is a disc image file which contains the sectors of one
   // or more emulated devices, in order, but with regular gaps.
   // Examples include a DSD file (which contains all the sectors from
@@ -44,13 +69,21 @@ namespace
       {
       }
 
-    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how) override
+    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how, std::string& error) override
     {
       std::vector<DFS::DriveConfig> drives;
       for (auto& view : views_)
 	{
-	  Format fmt = identify_file_system(view, view.geometry(), false);
-	  drives.emplace_back(fmt, &view);
+	  std::string cause;
+	  std::optional<Format> fmt = identify_file_system(view, view.geometry(), false, cause);
+	  if (!fmt)
+	    {
+	      std::ostringstream ss;
+	      ss << "unable to connect " << view.description() << ": " << cause;
+	      error = ss.str();
+	      return false;
+	    }
+	  drives.emplace_back(*fmt, &view);
 	}
       return storage->connect_drives(drives, how);
     }
@@ -81,7 +114,12 @@ namespace
       // TODO: name != the file inside media for the case where the
       // input file was foo.ssd.gz.  It might be better to keep the
       // original name.
-      const DFS::Geometry geometry = identify_image(media(), name).geometry;
+      std::string error;
+      auto probe_result = identify_image(media(), name, error);
+      if (!probe_result)
+	throw Unrecognized(error);
+
+      const DFS::Geometry geometry = probe_result->geometry;
       DFS::sector_count_type skip = 0;
       const DFS::Geometry single_side_geom = DFS::Geometry(geometry.cylinders,
 							   1,
@@ -125,7 +163,11 @@ namespace
 			 return os.str();
 		       };
 
-      const DFS::Geometry geometry = identify_image(media(), name).geometry;
+      std::string error;
+      auto probe_result = identify_image(media(), name, error);
+      if (!probe_result)
+	throw Unrecognized(error);
+      const DFS::Geometry geometry = probe_result->geometry;
       const DFS::Geometry single_side_geom = DFS::Geometry(geometry.cylinders,
 							   1,
 							   geometry.sectors,
@@ -273,21 +315,33 @@ namespace DFS
       }
 
     const std::string ext(extensions.back());
-    if (ext == "ssd" || ext == "sdd")
+    try
       {
-	return std::make_unique<NonInterleavedFile>(name, compressed, std::move(da));
+	if (ext == "ssd" || ext == "sdd")
+	  {
+	    return std::make_unique<NonInterleavedFile>(name, compressed, std::move(da));
+	  }
+	if (ext == "dsd" || ext == "ddd")
+	  {
+	    return std::make_unique<InterleavedFile>(name, compressed, std::move(da));
+	  }
+	if (ext == "mmb")
+	  {
+	    return std::make_unique<MmbFile>(name, compressed, std::move(da));
+	  }
+	// TODO: this breaks the convention that only the UI is allowed to
+	// interace with the input/output.
+	std::cerr << "Image file " << name << " does not seem to be of a supported type; "
+		  << "the extension " << ext << " is not recognised.\n";
+	return 0;
       }
-    if (ext == "dsd" || ext == "ddd")
+    catch (Unrecognized& e)
       {
-	return std::make_unique<InterleavedFile>(name, compressed, std::move(da));
+	// TODO: this breaks the convention that only the UI is
+	// allowed to interace with the input/output.
+	std::cerr << e.what();
+	return 0;
       }
-    if (ext == "mmb")
-      {
-	return std::make_unique<MmbFile>(name, compressed, std::move(da));
-      }
-    std::cerr << "Image file " << name << " does not seem to be of a supported type; "
-	      << "the extension " << ext << " is not recognised.\n";
-    return 0;
   }
 
 }  // namespace DFS

@@ -47,8 +47,8 @@ void dump(std::ostream& os, const DFS::SectorBuffer& data)
 struct TestImage : public DFS::DataAccess
 {
 public:
-  TestImage(const std::map<DFS::sector_count_type, DFS::SectorBuffer> data)
-    : total_sectors_(DFS::sector_count(data.size())), content_(data)
+  TestImage(const std::map<DFS::sector_count_type, DFS::SectorBuffer> data, const DFS::Geometry geom)
+    : total_sectors_(DFS::sector_count(data.size())), content_(data), geom_(geom)
   {
     // Verify that all sector numbers >= 0
     assert(std::all_of(content_.begin(), content_.end(),
@@ -97,9 +97,15 @@ public:
     return result;
   }
 
+  const DFS::Geometry& geometry() const
+  {
+    return geom_;
+  }
+
 private:
-  const DFS::sector_count_type total_sectors_;
+  const DFS::sector_count_type total_sectors_; // may be fewer than in geom_.
   std::map<DFS::sector_count_type, DFS::SectorBuffer> content_;
+  DFS::Geometry geom_;
 };
 
 
@@ -107,6 +113,12 @@ struct ImageBuilder
 {
 public:
   ImageBuilder() {};
+
+  ImageBuilder& with_geometry(const DFS::Geometry& g)
+  {
+    geom_ = g;
+    return *this;
+  }
 
   ImageBuilder& with_sector(DFS::sector_count_type where, const DFS::SectorBuffer& data)
   {
@@ -156,10 +168,12 @@ public:
 
   TestImage build()
   {
-    return TestImage(content_);
+    assert(geom_);
+    return TestImage(content_, *geom_);
   }
 
 private:
+  std::optional<DFS::Geometry> geom_;
   std::map<DFS::sector_count_type, DFS::SectorBuffer> content_;
 };
 
@@ -308,13 +322,16 @@ std::map<DFS::sector_count_type, DFS::SectorBuffer> acorn_catalog(DFS::sector_co
 	{
 	  is_hdfs = DFS::internal::smells_like_hdfs(*sec1);
 	  is_watford = DFS::internal::smells_like_watford(da, *sec1);
+	  is_acorn_dfs = DFS::internal::smells_like_acorn_dfs(da, *sec1);
 	}
       else
 	{
 	  is_hdfs = false;
 	  is_watford = false;
+	  is_acorn_dfs = false;
 	}
       is_opus_ddos = DFS::internal::smells_like_opus_ddos(da, &sec);
+      total_selected_ += is_acorn_dfs;
       total_selected_ += is_hdfs;
       total_selected_ += is_watford;
       total_selected_ += is_opus_ddos;
@@ -343,17 +360,19 @@ std::map<DFS::sector_count_type, DFS::SectorBuffer> acorn_catalog(DFS::sector_co
       ss << std::boolalpha
 	 << "is_hdfs=" << is_hdfs
 	 << ", is_watford=" << is_watford
-	 << ", is_opus_ddos=" << is_opus_ddos;
+	 << ", is_opus_ddos=" << is_opus_ddos
+	 << ", is_acorn_dfs=" << is_acorn_dfs;
       return ss.str();
     }
 
     int total_selected_;
+    bool is_acorn_dfs;
     bool is_hdfs;
     bool is_watford;
     bool is_opus_ddos;
   };
 
-TestImage near_watford_file_overlap()
+ImageBuilder near_watford_file_overlap()
 {
   // Create an acorn image which cannot be a Watford DFS image
   // because the location otherwise occupied by the extended catalog
@@ -373,30 +392,28 @@ TestImage near_watford_file_overlap()
     .with_sectors(catalog_sectors)
     // Put the recognition bytes in sector 2.
     .with_sector(file_start_sector, file_body)
-    .with_sector(file_start_sector+1, DFS::SectorBuffer())
-    .build();
+    .with_sector(file_start_sector+1, DFS::SectorBuffer());
 }
 
-TestImage near_watford_no_recognition()
+ImageBuilder near_watford_no_recognition()
 {
   return ImageBuilder()
     .with_sectors(CatalogBuilder(80*10, 2).build())
     // change one of the recognition bytes.
-    .with_byte_change(2, 1, static_cast<byte>('X'))
-    .build();
+    .with_byte_change(2, 1, static_cast<byte>('X'));
 }
 
-TestImage actual_watford()
+ImageBuilder actual_watford()
 {
-  return ImageBuilder().with_sectors(CatalogBuilder(80*10, 2).build()).build();
+  return ImageBuilder().with_sectors(CatalogBuilder(80*10, 2).build());
 }
 
 ImageBuilder empty_hdfs(int sides)
 {
   assert(sides == 1 || sides == 2);
-  byte byte6bits23 = (1 << 3);
+  byte byte6bits23 = 8;
   if (sides == 2)
-    byte6bits23 |= (1 << 2);
+    byte6bits23 |= 4;
   return ImageBuilder()
     .with_sectors(CatalogBuilder(80*10, 1).build())
     .with_bitmask_change(1, 6, byte(~12u), byte6bits23);
@@ -406,16 +423,31 @@ ImageBuilder empty_hdfs(int sides)
   std::vector<Example> make_examples()
   {
     std::vector<Example> result;
+    DFS::Geometry fm_40t_ss(40, 1, 10,DFS::Encoding::FM);
+    DFS::Geometry fm_80t_ss(80, 1, 10,DFS::Encoding::FM);
+    DFS::Geometry mfm_80t_ss(80, 1, 18,DFS::Encoding::FM);
+    DFS::Geometry mfm_80t_ds(80, 2, 18,DFS::Encoding::MFM);
 
-    result.push_back(Example("empty", std::nullopt, ImageBuilder().build()));
+    result.push_back(Example("empty", std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(fm_40t_ss)
+			     .build()));
     result.push_back(Example("acorn_ss_40t", DFS::Format::DFS,
-			     ImageBuilder().with_sectors(acorn_catalog(40*10)).build()));
+			     ImageBuilder()
+			     .with_geometry(fm_40t_ss)
+			     .with_sectors(acorn_catalog(40*10)).build()));
     result.push_back(Example("acorn_ss_80t", DFS::Format::DFS,
-			     ImageBuilder().with_sectors(acorn_catalog(80*10)).build()));
+			     ImageBuilder()
+			     .with_geometry(fm_80t_ss)
+			     .with_sectors(acorn_catalog(80*10)).build()));
     result.push_back(Example("acorn_0_sectors", std::nullopt,
-			     ImageBuilder().with_sectors(acorn_catalog(0)).build()));
+			     ImageBuilder()
+			     .with_geometry(fm_80t_ss)
+			     .with_sectors(acorn_catalog(0)).build()));
     result.push_back(Example("acorn_1_sector", std::nullopt,
-			     ImageBuilder().with_sectors(acorn_catalog(1)).build()));
+			     ImageBuilder()
+			     .with_geometry(fm_80t_ss)
+			     .with_sectors(acorn_catalog(1)).build()));
 
     for (int last_cat_enty_offset = 1; last_cat_enty_offset < 8; ++last_cat_enty_offset)
       {
@@ -423,6 +455,7 @@ ImageBuilder empty_hdfs(int sides)
 	ss << "acorn_bad_entry_offset_" << last_cat_enty_offset;
 	result.push_back(Example(ss.str(), std::nullopt,
 				 ImageBuilder()
+				 .with_geometry(fm_80t_ss)
 				 .with_sectors(CatalogBuilder(80*10).build())
 				 // This image cannot be valid as the "offset
 				 // of last catalog entry" byte is not a
@@ -431,11 +464,30 @@ ImageBuilder empty_hdfs(int sides)
 				 .build()));
       }
 
-    result.push_back(Example("file_at_s2", DFS::Format::DFS, near_watford_file_overlap()));
-    result.push_back(Example("watford_empty", DFS::Format::WDFS, actual_watford()));
-    result.push_back(Example("no_wdfs_recog", DFS::Format::DFS, near_watford_no_recognition()));
-    result.push_back(Example("empty_hdfs_1s", DFS::Format::HDFS, empty_hdfs(1).build()));
-    result.push_back(Example("empty_hdfs_2s", DFS::Format::HDFS, empty_hdfs(2).build()));
+    result.push_back(Example("file_at_s2_fm", DFS::Format::DFS,
+			     near_watford_file_overlap()
+			     .with_geometry(fm_80t_ss)
+			     .build()));
+    result.push_back(Example("file_at_s2_mfm", DFS::Format::DFS,
+			     near_watford_file_overlap()
+			     .with_geometry(mfm_80t_ss)
+			     .build()));
+    result.push_back(Example("watford_empty", DFS::Format::WDFS,
+			     actual_watford()
+			     .with_geometry(fm_80t_ss)
+			     .build()));
+    result.push_back(Example("no_wdfs_recog", DFS::Format::DFS,
+			     near_watford_no_recognition()
+			     .with_geometry(fm_80t_ss)
+			     .build()));
+    result.push_back(Example("empty_hdfs_1s", DFS::Format::HDFS,
+			     empty_hdfs(1)
+			     .with_geometry(fm_80t_ss)
+			     .build()));
+    result.push_back(Example("empty_hdfs_2s", DFS::Format::HDFS,
+			     empty_hdfs(2)
+			     .with_geometry(mfm_80t_ds)
+			     .build()));
 
     std::set<std::string> labels;
     for (const auto& ex : result)
@@ -450,8 +502,61 @@ ImageBuilder empty_hdfs(int sides)
     return result;
   }
 
+
+bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
+{
+  std::string error;
+  if (!v.exclusive(error))
+    {
+      std::cerr <<  "identified as being more than one thing: "
+		<< v.to_str() << ": " << error << "\n";
+      return false;
+    }
+
+  if (!expected_id)
+    {
+      std::cerr << "expected not to be identifiable: ";
+      if (v.selected_something())
+	{
+	  std::cerr << "identified as " << v.to_str() << " but expected format was [unknown]\n";
+	  return false;
+	}
+      return true;
+    }
+
+  std::cerr << " expected format was " << *expected_id << ": ";
+
+  if (!v.selected_something())
+    {
+      std::cerr << "not identified: FAIL\n";
+      return false;
+    }
+  if (v.is_hdfs && *expected_id != DFS::Format::HDFS)
+    {
+      std::cerr << "identified as HDFS: FAIL\n";
+      return false;
+    }
+  if (v.is_watford && expected_id != DFS::Format::WDFS)
+    {
+      std::cerr << "identified as Watford DFS: FAIL\n";
+      return false;
+    }
+  if (v.is_opus_ddos && expected_id != DFS::Format::OpusDDOS)
+    {
+      std::cerr << "identified as Opus DDOS: FAIL\n";
+      return false;
+    }
+  if (v.is_acorn_dfs && expected_id != DFS::Format::DFS)
+    {
+      std::cerr << "identified as Acorn DFS: FAIL\n";
+      return false;
+    }
+  return true;
+}
+
   bool test_id_exclusive_and_exhaustive()
   {
+    bool all_ok = true;
     auto examples = make_examples();
     size_t longest_label_len = 0u;
     for (auto& ex : examples)
@@ -463,63 +568,55 @@ ImageBuilder empty_hdfs(int sides)
     for (auto& ex : examples)
       {
 	std::cerr << "image " << std::setw(static_cast<int>(longest_label_len)) << ex.label << ": ";
+
+	// Run the individual recognisers.
 	Votes v(ex.image);
 	std::string error;
-	if (!v.exclusive(error))
+	if (!check_votes(v, ex.expected_id))
 	  {
-	    std::cerr <<  "identified as being more than one thing: "
-		      << v.to_str() << ": " << error << "\n";
-	    return false;
-	  }
-
-	if (!ex.expected_id)
-	  {
-	    std::cerr << "expected not to be identifiable";
-	    if (v.selected_something())
-	      {
-		std::cerr << "identified as " << v.to_str() << " but expected format was [unknown]\n";
-		return false;
-	      }
-	    std::cerr << ": PASS\n";
+	    all_ok = false;
 	    continue;
 	  }
 
-	std::cerr << " expected format was " << *ex.expected_id;
-
-	if (*ex.expected_id == DFS::Format::DFS)
+	std::optional<DFS::Format> fmt;
+	try
 	  {
-	    if (v.selected_something())
+	    fmt = DFS::identify_file_system(ex.image, ex.image.geometry(), false, error);
+	    if (fmt)
 	      {
-		std::cerr << ": identified as non-Acorn (" << v.to_str() << ") but expected format was Acorn: FAIL\n";
-		return false;
+		std::cerr << "identify_file_system returned " << (*fmt) << ": ";
 	      }
-	    std::cerr << ": PASS\n";
-	    continue;
+	    else
+	      {
+		std::cerr << "identify_file_system failed (" << error << "): ";
+	      }
 	  }
-
-	if (!v.selected_something())
+	catch (std::exception& e)
 	  {
-	    std::cerr << ": not identified: FAIL\n";
-	    return false;
+	    std::cerr << "(caught exception " << e.what() << " while trying to identify file system): ";
+	    fmt = std::nullopt;
 	  }
-	if (v.is_hdfs && *ex.expected_id != DFS::Format::HDFS)
+	if (ex.expected_id)
 	  {
-	    std::cerr << ": identified as HDFS: FAIL\n";
-	    return false;
+	    if (fmt != *ex.expected_id)
+	      {
+		std::cerr << ": FAIL\n";
+		all_ok = false;
+		continue;
+	      }
 	  }
-	if (v.is_watford && ex.expected_id != DFS::Format::WDFS)
+	else
 	  {
-	    std::cerr << ": identified as Watford DFS: FAIL\n";
-	    return false;
-	  }
-	if (v.is_opus_ddos && ex.expected_id != DFS::Format::OpusDDOS)
-	  {
-	    std::cerr << ": identified as Opus DDOS: FAIL\n";
-	    return false;
+	    if (fmt)
+	      {
+		std::cerr << "but wasn't supposed to be recognisable: FAIL\n";
+		all_ok = false;
+		continue;
+	      }
 	  }
 	std::cerr << ": PASS\n";
       }
-    return true;
+    return all_ok;
   }
 
 }  // namespace

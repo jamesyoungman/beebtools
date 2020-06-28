@@ -46,7 +46,7 @@ namespace
   {
     auto sectors_per_side = sec1[0x07] // bits 0-7
       | (sec1[0x06] & 3) << 8;     // bits 8-9
-    auto side_shift = 1 + (sec1[0x06] & 4) ? 1 : 0;
+    const auto side_shift = (sec1[0x06] & 4) ? 1 : 0;
     return DFS::sector_count_type(sectors_per_side << side_shift);
   }
 
@@ -279,6 +279,35 @@ namespace DFS
     return true;
   }
 
+  bool smells_like_acorn_dfs(DFS::DataAccess& media, const DFS::SectorBuffer& sec1)
+  {
+    std::string error;
+    if (sec1[0x06] & 8)
+      {
+	// It's most likely HDFS.
+	eliminated_format(DFS::Format::DFS, "sector 1 byte 6 has bit 3 set");
+	return false;
+      }
+    if (smells_like_watford(media, sec1))
+      {
+	eliminated_format(DFS::Format::DFS, "Watford DFS recognition bytes are present");
+	return false;
+      }
+    DFS::sector_count_type sectors;
+    if (smells_like_opus_ddos(media, &sectors))
+      {
+	eliminated_format(DFS::Format::DFS, "a valid Opus DDOS volume catalog is present");
+	return false;
+      }
+    if (!has_valid_dfs_catalog(media, 0, error))
+      {
+	eliminated_format(DFS::Format::DFS, error.c_str());
+	return false;
+      }
+    return true;
+  }
+
+
   DFS::ImageFileFormat
   probe_geometry(DFS::DataAccess& media,
 		 DFS::Format fmt, DFS::sector_count_type total_sectors,
@@ -286,7 +315,7 @@ namespace DFS
   {
     show_possible("probe_geometry initial possibilities", candidates);
     auto large_enough =
-      [total_sectors, fmt](const DFS::ImageFileFormat& ff) -> bool
+      [total_sectors, fmt, &media](const DFS::ImageFileFormat& ff) -> bool
       {
 	// We do not use ff.geometry.total_sectors for the comparison
 	// below because it would lead us to accept a double-sided
@@ -297,7 +326,7 @@ namespace DFS
 	// of the disc).
 	DFS::sector_count_type available_sectors;
 	std::string sides_desc;
-	if (DFS::single_sided_filesystem(fmt))
+	if (DFS::single_sided_filesystem(fmt, media))
 	  {
 	    available_sectors = DFS::sector_count(ff.geometry.cylinders * ff.geometry.sectors);
 	    sides_desc = "single-sided";
@@ -393,13 +422,16 @@ namespace DFS
     return *it;
   }
 
-  std::pair<DFS::Format, DFS::sector_count_type>
-  probe_format(DFS::DataAccess& access)
+  std::optional<std::pair<DFS::Format, DFS::sector_count_type>>
+  probe_format(DFS::DataAccess& access, std::string& error)
   {
     DFS::SectorBuffer buf1;
     auto got = access.read_block(1);
     if (!got)
-      throw DFS::eof_in_catalog();
+      {
+	error = "failed to read catalog from sector 1";
+	return std::nullopt;
+      }
     buf1 = *got;
 
     if (smells_like_hdfs(buf1))
@@ -418,16 +450,26 @@ namespace DFS
 	return std::make_pair(DFS::Format::OpusDDOS, opus_sectors);
       }
 
-    return std::make_pair(DFS::Format::DFS, get_dfs_sector_count(buf1));
+    if (smells_like_acorn_dfs(access, buf1))
+      {
+	return std::make_pair(DFS::Format::DFS, get_dfs_sector_count(buf1));
+      }
+
+    error = "unable to find a match";
+    return std::nullopt;
   }
 
-  std::pair<DFS::Format, DFS::ImageFileFormat>
+  std::optional<std::pair<DFS::Format, DFS::ImageFileFormat>>
   probe(DFS::DataAccess& access,
-	const std::vector<DFS::ImageFileFormat>& candidates)
+	const std::vector<DFS::ImageFileFormat>& candidates,
+	std::string& error)
   {
     DFS::Format fmt;
     DFS::sector_count_type total_sectors;
-    std::tie(fmt, total_sectors) = probe_format(access);
+    auto fmt_probe_result = probe_format(access, error);
+    if (!fmt_probe_result)
+      return std::nullopt;
+    std::tie(fmt, total_sectors) = *fmt_probe_result;
     if (DFS::verbose)
       {
 	std::cerr << "File system format appears to be " << format_name(fmt)
@@ -525,16 +567,22 @@ namespace DFS
   }
 }  // namespace DFS::internal
 
-  ImageFileFormat identify_image(DataAccess& access, const std::string& name)
+  std::optional<ImageFileFormat> identify_image(DataAccess& access, const std::string& name, std::string& error)
   {
     std::vector<ImageFileFormat> candidates = DFS::internal::make_candidate_list(name);
-    return DFS::internal::probe(access, candidates).second;
+    auto probe_result = DFS::internal::probe(access, candidates, error);
+    if (!probe_result)
+      return std::nullopt;
+    return probe_result->second;
   }
 
-  Format identify_file_system(DataAccess& access, Geometry geom, bool interleaved)
+  std::optional<Format> identify_file_system(DataAccess& access, Geometry geom, bool interleaved, std::string& error)
   {
     const std::vector<ImageFileFormat> only{ImageFileFormat(geom, interleaved)};
-    return DFS::internal::probe(access, only).first;
+    auto probe_result = DFS::internal::probe(access, only, error);
+    if (!probe_result)
+      return std::nullopt;
+    return probe_result->first;
   }
 
   ImageFileFormat::ImageFileFormat(Geometry g, bool interleave)

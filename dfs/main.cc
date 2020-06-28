@@ -208,8 +208,12 @@ int main (int argc, char *argv[])
 	      std::unique_ptr<DFS::AbstractImageFile> file = DFS::make_image_file(optarg);
 	      if (!file)
 		return 1;
-	      if (!file->connect_drives(&storage, how_to_allocate_drives))
-		return 1;
+	      std::string error;
+	      if (!file->connect_drives(&storage, how_to_allocate_drives, error))
+		{
+		  std::cerr << error << '\n';
+		  return 1;
+		}
 	      files.push_back(std::move(file));
 	    }
 	  catch (std::exception& e)

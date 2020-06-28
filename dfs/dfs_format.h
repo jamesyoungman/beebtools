@@ -16,7 +16,6 @@ enum class Format
    OpusDDOS,
   };
   std::string format_name(Format f);
-  bool single_sided_filesystem(Format f);
 }  // namespace DFS
 
 
