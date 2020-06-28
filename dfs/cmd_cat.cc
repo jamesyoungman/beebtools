@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 #include "cleanup.h"
 #include "commands.h"
@@ -191,6 +192,15 @@ namespace
 
     static std::optional<int> get_screen_cols()
     {
+      // $COLUMNS (if it is set) is the width of the user's terminal.
+      // Hence it applies only if the output is actually going to a
+      // terminal.
+      if (0 == isatty(STDOUT_FILENO))
+	{
+	  // Either stdout is not a terminal or isatty failed.  in
+	  // either case the caller will have to use a default.
+	  return std::nullopt;
+	}
       const char * cols = std::getenv("COLUMNS");
       if (cols)
 	{
@@ -276,7 +286,7 @@ namespace
 	  if (screen_width)
 	    std::cerr << *screen_width;
 	  else
-	    std::cerr << "unknown";
+	    std::cerr << "unknown or inapplicable";
 	  std::cerr << "\n";
 	}
       std::cout << std::setfill(' ');
