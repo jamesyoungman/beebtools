@@ -44,11 +44,12 @@ void dump(std::ostream& os, const DFS::SectorBuffer& data)
     }
 }
 
+
 struct TestImage : public DFS::DataAccess
 {
 public:
   TestImage(const std::map<DFS::sector_count_type, DFS::SectorBuffer> data, const DFS::Geometry geom)
-    : total_sectors_(DFS::sector_count(data.size())), content_(data), geom_(geom)
+    : total_sectors_(geom.total_sectors()), content_(data), geom_(geom)
   {
     // Verify that all sector numbers >= 0
     assert(std::all_of(content_.begin(), content_.end(),
@@ -440,14 +441,43 @@ ImageBuilder empty_hdfs(int sides)
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
 			     .with_sectors(acorn_catalog(80*10)).build()));
+    // Full size disc but the catalog says the file system has 0
+    // sectors.  Not DFS because the prospective "catalog" says the
+    // media too short to contain a the catalog itself.
     result.push_back(Example("acorn_0_sectors", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
 			     .with_sectors(acorn_catalog(0)).build()));
-    result.push_back(Example("acorn_1_sector", std::nullopt,
+    // 1 track disc but the catalog says the file system has 0
+    // sectors.  Not DFS because the prospective "catalog" says the
+    // media too short to contain a the catalog itself.
+    result.push_back(Example("acorn_0_sectors_g1track", std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
+			     .with_sectors(acorn_catalog(0)).build()));
+    // Full size disc but the catalog says the file system has 1
+    // sector.  Not DFS because the prospective "catalog" says the
+    // media too short to contain a the catalog itself.
+    result.push_back(Example("acorn_1_sector",
+			     std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
 			     .with_sectors(acorn_catalog(1)).build()));
+    // 1 track disc but the catalog says the file system has 1 sector.
+    // Not DFS because the prospective "catalog" says the media too
+    // short to contain a the catalog itself.
+    result.push_back(Example("acorn_1_sector_g1track",
+			     std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
+			     .with_sectors(acorn_catalog(1)).build()));
+    // 1 track single-density disc and the catalog says the file
+    // system has 3 sectors (which is the minimum to feasibly contain
+    // file data).
+    result.push_back(Example("acorn_3_sector_g1track", DFS::Format::DFS,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
+			     .with_sectors(acorn_catalog(3)).build()));
 
     for (int last_cat_enty_offset = 1; last_cat_enty_offset < 8; ++last_cat_enty_offset)
       {
@@ -623,7 +653,11 @@ bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
 
 int main(int, char *[])
 {
-  if (!test_id_exclusive_and_exhaustive())
-    return 1;
+  for (bool verbose : {false, true})
+    {
+      DFS::verbose = verbose;
+      if (!test_id_exclusive_and_exhaustive())
+	return 1;
+    }
   return 0;
 }
