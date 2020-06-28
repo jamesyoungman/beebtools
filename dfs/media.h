@@ -21,7 +21,7 @@ namespace DFS
     virtual bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how, std::string& error) = 0;
   };
 
-  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name);
+  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name, std::string& error);
 #if USE_ZLIB
   class DecompressedFile : public DataAccess
   {

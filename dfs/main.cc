@@ -205,10 +205,13 @@ int main (int argc, char *argv[])
 	case OPT_IMAGE_FILE:
 	  try
 	    {
-	      std::unique_ptr<DFS::AbstractImageFile> file = DFS::make_image_file(optarg);
-	      if (!file)
-		return 1;
 	      std::string error;
+	      std::unique_ptr<DFS::AbstractImageFile> file = DFS::make_image_file(optarg, error);
+	      if (!file)
+		{
+		  std::cerr << error << '\n';
+		  return 1;
+		}
 	      if (!file->connect_drives(&storage, how_to_allocate_drives, error))
 		{
 		  std::cerr << error << '\n';

@@ -243,6 +243,7 @@ namespace
 		default:
 		  slot_status_desc = "unknown";
 		  fill = 5;
+		  // TODO: provide infrsstructure for issuing warnings
 		  std::cerr << "MMB entry " << i << " has unexpected type 0x"
 			    << std::setw(2) << std::uppercase << std::setbase(16)
 			    << entry[0x0F] << "\n";
@@ -285,14 +286,16 @@ namespace DFS
     {
     }
 
-  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& name)
+  std::unique_ptr<AbstractImageFile> make_image_file(const std::string& name, std::string& error)
   {
     std::deque<std::string> extensions = split_extensions(name);
     bool compressed = false;
     if (extensions.empty())
       {
-	std::cerr << "Image file " << name
-		  << " has no extension, we cnanot tell what kind of image file it is.\n";
+	std::ostringstream ss;
+	ss << "Image file " << name
+	   << " has no extension, we cnanot tell what kind of image file it is.\n";
+	error = ss.str();
 	return 0;
       }
     std::unique_ptr<DataAccess> da;
@@ -302,9 +305,11 @@ namespace DFS
 	extensions.pop_back();
 	if (extensions.empty())
 	  {
-	    std::cerr << "Compressed image file " << name
-		      << " has no additional extension, "
-		      << "we cnanot tell what kind of image file it contains.\n";
+	    std::ostringstream ss;
+	    ss << "Compressed image file " << name
+	       << " has no additional extension, "
+	       << "we cnanot tell what kind of image file it contains.\n";
+	    error = ss.str();
 	    return 0;
 	  }
 	da = std::make_unique<DecompressedFile>(name);
@@ -329,17 +334,17 @@ namespace DFS
 	  {
 	    return std::make_unique<MmbFile>(name, compressed, std::move(da));
 	  }
-	// TODO: this breaks the convention that only the UI is allowed to
-	// interace with the input/output.
-	std::cerr << "Image file " << name << " does not seem to be of a supported type; "
-		  << "the extension " << ext << " is not recognised.\n";
+	std::ostringstream ss;
+	ss << "Image file " << name << " does not seem to be of a supported type; "
+	   << "the extension " << ext << " is not recognised.\n";
+	error = ss.str();
 	return 0;
       }
     catch (Unrecognized& e)
       {
 	// TODO: this breaks the convention that only the UI is
 	// allowed to interace with the input/output.
-	std::cerr << e.what();
+	error = e.what();
 	return 0;
       }
   }
