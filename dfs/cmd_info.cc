@@ -92,10 +92,6 @@ public:
       }
     const auto& catalog(mounted->volume()->root());
 
-    cout << std::hex;
-    cout << std::uppercase;
-    using std::setw;
-    using std::setfill;
     const std::vector<DFS::CatalogEntry> entries(catalog.entries());
     for (const auto& entry : entries)
       {

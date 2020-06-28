@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "abstractio.h"
+#include "cleanup.h"
 #include "dfs.h"
 #include "dfs_catalog.h"
 #include "dfs_format.h"
@@ -56,6 +57,7 @@ namespace
     if (!DFS::verbose)
       return;
     int i = 1;
+    ostream_flag_saver restore_cerr_flags(std::cerr);
     std::cerr << intro << "\n";
     for (const auto& cand : candidates)
       {
@@ -340,7 +342,9 @@ namespace DFS
 	  {
 	    if (DFS::verbose)
 	      {
-		std::cerr << "Candidate format " << ff.description()
+		ostream_flag_saver restore_cerr_flags(std::cerr);
+		std::cerr << std::dec
+			  << "Candidate format " << ff.description()
 			  << " has " << available_sectors << " available sectors "
 			  << "for a " << sides_desc << " filesystem and so "
 			  << "is large enough to hold a filesystem "
@@ -472,6 +476,7 @@ namespace DFS
     std::tie(fmt, total_sectors) = *fmt_probe_result;
     if (DFS::verbose)
       {
+	ostream_flag_saver restore_cerr_flags(std::cerr);
 	std::cerr << "File system format appears to be " << format_name(fmt)
 		  << " occupying " << std::dec << total_sectors
 		  << " sectors.\n";

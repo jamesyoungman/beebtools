@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "afsp.h"
+#include "cleanup.h"
 #include "dfs.h"
 #include "dfs_volume.h"
 #include "driveselector.h"
@@ -105,6 +106,7 @@ public:
 	      << std::setw(sector_col_width) << "(dec)" << ": "
 	      << "Name of file occupying each sector\n";
     const auto sectors = fs->disc_sector_count();
+    ostream_flag_saver restore_cout_flags(std::cout);
     for (DFS::sector_count_type sec = 0; sec < sectors; ++sec)
       {
 	if (0 == column)

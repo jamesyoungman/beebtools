@@ -232,13 +232,21 @@ namespace std
 {
   ostream& operator<<(ostream& os, const DFS::SurfaceSelector& sel)
   {
-    sel.ostream_insert(os);
+    std::ostream::sentry s(os);
+    if (s)
+      {
+	sel.ostream_insert(os);
+      }
     return os;
   }
 
   ostream& operator<<(ostream& os, const DFS::VolumeSelector& vol)
   {
-    vol.ostream_insert(os);
+    std::ostream::sentry s(os);
+    if (s)
+      {
+	vol.ostream_insert(os);
+      }
     return os;
   }
 

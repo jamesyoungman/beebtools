@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "cleanup.h"
 #include "dfstypes.h"
 
 namespace
@@ -69,7 +70,8 @@ public:
 			     const DFS::byte *body_end,
 			     const std::vector<std::string>&)
 			  {
-			    std::cout << std::hex;
+			    ostream_flag_saver restore_cout_flags(std::cout);
+			    std::cout << std::hex << std::uppercase;
 			    assert(body_end > body_start);
 			    size_t len = body_end - body_start;
 			    for (size_t pos = 0; pos < len; pos += HexdumpStride)

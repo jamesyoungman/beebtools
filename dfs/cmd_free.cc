@@ -5,6 +5,7 @@
 #include <locale>
 #include <string>
 
+#include "cleanup.h"
 #include "dfs_volume.h"
 #include "driveselector.h"
 
@@ -95,6 +96,7 @@ public:
 	    sectors_used = last_sector_of_file;
 	  }
       }
+    ostream_flag_saver restore_cout_flags(std::cout);
     auto show = [](int files, int sectors, const std::string& desc)
 		{
 		  std::cout << std::setw(2) << std::setfill('0') << std::dec

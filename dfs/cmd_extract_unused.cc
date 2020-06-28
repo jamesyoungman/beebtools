@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include "cleanup.h"
 #include "dfscontext.h"
 #include "dfs_volume.h"
 #include "dfs_unused.h"
@@ -120,6 +121,7 @@ public:
 	    begin = sec;
 	  }
       }
+    ostream_flag_saver restore_cout_flags(std::cout);
     std::cout << std::dec << count << " files were written to "
 	      << dest_dir << "\n";
     return true;

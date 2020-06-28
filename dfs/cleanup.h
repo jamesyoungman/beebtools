@@ -18,5 +18,23 @@ class cleanup
   std::function<void()> run_;
 };
 
+// Saves and restores format flags on an ostream instance.
+class ostream_flag_saver
+{
+public:
+  ostream_flag_saver(std::ostream& os)
+    : os_(os), saved_(os.flags())
+  {
+  }
+
+  ~ostream_flag_saver()
+  {
+    os_.flags(saved_);
+  }
+
+private:
+  std::ostream& os_;
+  std::ostream::fmtflags saved_;
+};
 
 #endif

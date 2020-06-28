@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "afsp.h"
+#include "cleanup.h"
 #include "dfs.h"
 #include "dfscontext.h"
 #include "dfs_volume.h"
@@ -83,6 +84,7 @@ public:
     // TODO: For Opus DDOS there will be more than one volume per disc.
     // Therre is a case for seeing the free space in a selected volume,
     // or in the whole disc.
+    ostream_flag_saver restore_cerr_flags(std::cerr);
     std::cerr << "Disc total sectors = "
 	      << std::setw(3) << std::hex << std::uppercase
 	      << mounted->file_system()->disc_sector_count() << "\n";
@@ -167,17 +169,17 @@ public:
 
     std::cout << "Gap sizes on disc " << vol << ":\n";
     bool first = true;
+    ostream_flag_saver restore_cout_flags(std::cout);
+    std::cout << std::hex << std::uppercase << std::setfill('0');
     for (const auto& gap : gaps)
       {
 	if (!first)
 	  std::cout << ' ';
 	first = false;
-	std::cout << std::setw(3) << std::hex << std::uppercase
-		  << std::setfill('0') << gap;
+	std::cout << std::setw(3) << gap;
     }
 
     std::cout << "\n\nTotal space free = "
-	      << std::hex << std::uppercase
 	      << std::accumulate(gaps.cbegin(), gaps.cend(), 0)
 	      << " sectors\n";
     return std::cout.good();

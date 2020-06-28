@@ -279,13 +279,23 @@ namespace std
 {
   std::ostream& operator<<(std::ostream& os, const DFS::Format& f)
   {
-    return os << DFS::format_name(f);
+    std::ostream::sentry s(os);
+    if (s)
+      {
+	os << DFS::format_name(f);
+      }
+    return os;
   }
 
   std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt)
   {
-    std::ostringstream ss;
-    ss << std::dec << value(opt) << " (" << description(opt) << ")";
-    return os << ss.str();
+    std::ostream::sentry s(os);
+    if (s)
+      {
+	std::ostringstream ss;
+	ss << std::dec << value(opt) << " (" << description(opt) << ")";
+	os << ss.str();
+      }
+    return os;
   }
 }
