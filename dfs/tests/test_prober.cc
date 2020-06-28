@@ -657,7 +657,11 @@ int main(int, char *[])
     {
       DFS::verbose = verbose;
       if (!test_id_exclusive_and_exhaustive())
-	return 1;
+	{
+	  std::cerr << "At least one test failed; see above for details.\n";
+	  return 1;
+	}
     }
+  std::cout << "All tests passed.\n";
   return 0;
 }
