@@ -44,6 +44,12 @@ void dump(std::ostream& os, const DFS::SectorBuffer& data)
     }
 }
 
+DFS::SectorBuffer zeroed_sector()
+{
+  DFS::SectorBuffer result;
+  result.fill(0);
+  return result;
+}
 
 struct TestImage : public DFS::DataAccess
 {
@@ -54,12 +60,8 @@ public:
     // Verify that all sector numbers >= 0
     assert(std::all_of(content_.begin(), content_.end(),
 		       [](auto it) { return it.first >= 0; }));
-    if (!content_.empty())
-      {
-	// Verify that there are no holes.
-	auto last = content_.rbegin()->first;
-	assert(last == content_.size() - 1u);
-      }
+    // It's OK for there to be holes.  Sectors for which we have no
+    // reocorded data return all-zero.
     if (DFS::verbose)
       {
 	for (const auto& todo : data)
@@ -83,7 +85,7 @@ public:
 	    // of the device; return a zeroed secctor.
 	    if (DFS::verbose)
 	      std::cerr << "TestImage::read_block(" << sec << "): returning zeroed sector\n";
-	    return DFS::SectorBuffer();
+	    return zeroed_sector();
 	  }
 	if (DFS::verbose)
 	  std::cerr << "TestImage::read_block(" << sec << "): out of bounds, returning nothing\n";
@@ -178,12 +180,13 @@ private:
   std::map<DFS::sector_count_type, DFS::SectorBuffer> content_;
 };
 
+
 struct SectorBuilder
 {
 public:
   SectorBuilder()
   {
-    with_fill(byte(0), byte(0), byte(256));
+    data_.fill(byte(0));
   }
 
   SectorBuilder& with_fill(byte offset, byte val, byte copies)
@@ -194,25 +197,28 @@ public:
     return *this;
   }
 
-  void with_byte(byte pos, byte val)
+  SectorBuilder& with_byte(byte pos, byte val)
   {
     data_[pos] = val;
+    return *this;
   }
 
-  void with_bytes(const std::map<byte, byte> positions_and_values)
+  SectorBuilder& with_bytes(const std::map<byte, byte> positions_and_values)
   {
     for (const auto todo : positions_and_values)
       {
 	auto [where, what] = todo;
 	data_[where] = what;
       }
+    return *this;
   }
 
-  void with_u16(byte pos, uint16_t val)
+  SectorBuilder& with_u16(byte pos, uint16_t val)
   {
     data_[pos] = (val >> 8) && 0xFF;
     ++pos;
     data_[pos] = val && 0xFF;
+    return *this;
   }
 
   DFS::SectorBuffer build() const
@@ -227,18 +233,22 @@ private:
 struct CatalogBuilder
 {
 public:
-  CatalogBuilder(unsigned int total_sectors, unsigned int fragments = 1u)
+  CatalogBuilder(unsigned int orig_sectors,
+		 unsigned int fragments = 1u,
+		 DFS::sector_count_type catalog_origin = 0)
+    : catalog_origin_(catalog_origin)
   {
+    unsigned int total_sectors = orig_sectors;
     assert(fragments > 0);
     assert(fragments <= 2);
     for (unsigned int i = 0; i < fragments; ++i)
       {
-	sectors_[i*2] = DFS::SectorBuffer();
-	sectors_[i*2+1] = DFS::SectorBuffer();
+	sectors_[catalog_origin + i*2] = zeroed_sector();
+	sectors_[catalog_origin + i*2+1] = zeroed_sector();
       }
-    sectors_[1][7] = total_sectors & 0xFF;
+    sectors_[catalog_origin + 1][7] = total_sectors & 0xFF;
     total_sectors >>= 8;
-    sectors_[1][6] = total_sectors & 0x03;
+    sectors_[catalog_origin + 1][6] = total_sectors & 0x03;
     total_sectors >>= 2;
     // Ensure that the original value was representable in the fields available.
     assert(total_sectors == 0);
@@ -273,10 +283,10 @@ public:
 	   (exec_addr & 0x300) >> 2);
     metadata_bytes[7] = start_sec & 0xFF;
     unsigned int pos = slot * 8;
-    DFS::SectorBuffer& name_sec(sectors_[0]);
+    DFS::SectorBuffer& name_sec(sectors_[catalog_origin_ + 0]);
     std::copy(name_bytes.begin(), name_bytes.end(),
 	      name_sec.begin() + pos);
-    DFS::SectorBuffer& metadata_sec(sectors_[1]);
+    DFS::SectorBuffer& metadata_sec(sectors_[catalog_origin_ + 1]);
     if (metadata_sec[5] < pos)
       {
 	metadata_sec[5] = static_cast<byte>(pos);
@@ -292,6 +302,7 @@ public:
   }
 
 private:
+  DFS::sector_count_type catalog_origin_;
   std::map<unsigned int, DFS::SectorBuffer> sectors_;
 };
 
@@ -299,6 +310,70 @@ std::map<DFS::sector_count_type, DFS::SectorBuffer> acorn_catalog(DFS::sector_co
 {
   return CatalogBuilder(total_sectors, 1).build();
 }
+
+
+struct VolumeConfig
+{
+public:
+  VolumeConfig(DFS::sector_count_type start,
+	       DFS::sector_count_type track_count)
+    : start_track(start), end_track(start + track_count)
+  {
+  }
+
+  unsigned int total_sectors(const DFS::Geometry& geom) const
+  {
+    return (end_track - start_track) * geom.sectors;
+  }
+
+  const DFS::sector_count_type start_track;
+  const DFS::sector_count_type end_track;
+};
+
+ImageBuilder
+empty_opus(const DFS::Geometry& geom)
+{
+  assert(geom.sectors > 10);	// DDOS only on double density discs.
+  assert(geom.sectors <= std::numeric_limits<byte>::max());
+  return ImageBuilder()
+    .with_geometry(geom)
+    // Sector 16 contains the volume catalogue.
+    .with_sector(16,
+		 SectorBuilder()
+		 .with_byte(0, 0x20) // config/version number
+		 .with_byte(1, 0x05) // sectors on disk (0x5A0=1440), low byte
+		 .with_byte(2, 0xA0) // sectors on disk (0x5A0=1440), high byte
+		 .with_byte(3, static_cast<byte>(geom.sectors))
+		 .with_byte(4, 0xFF) // tracks on this disk (saw 0xFF)
+		 // vol A starts at track 1 and ends at the end of
+		 // track 57 (the start point of vol B).  This gives
+		 // 57 tracks, that is 0x402 available sectors.
+		 // However, the Acorn catalog format only allows 10
+		 // bits for sector count, so we can only use
+		 // 0x3FF=1023 of those sectors.
+		 .with_byte(8, 0x01)
+		 // vol B starts at track 57 = (0x39) and is the last
+		 // volume.  It extends up to track 79, giving 23
+		 // tracks, hence 414=0x19E sectors.  Of that we use
+		 // 0x18C sectors (22 tracks).
+		 .with_byte(10, 0x39)
+		 .build())
+    // The catalog of volume A occupies disc sectors 0 and 1.
+    .with_sector(1,
+		 SectorBuilder()
+		 .with_byte(6, 0x03) // b0/1: sector count bits b8,b9
+		 .with_byte(7, 0xF0) // sector count buts b0-b7
+		 .with_byte(5, 0)    // 0 entries in catalogue A
+		 .build())
+    // The catalog of volume B occupies disc sectors 2 and 3.
+    .with_sector(3,
+		 SectorBuilder()
+		 .with_byte(6, 0x01) // b0/1: sector count bits b8,b9
+		 .with_byte(7, 0x8C) // sector count buts b0-b7
+		 .with_byte(5, 0)   // 0 entries in catalogue B
+		 .build());
+}
+
 
   struct Example
   {
@@ -393,7 +468,7 @@ ImageBuilder near_watford_file_overlap()
     .with_sectors(catalog_sectors)
     // Put the recognition bytes in sector 2.
     .with_sector(file_start_sector, file_body)
-    .with_sector(file_start_sector+1, DFS::SectorBuffer());
+    .with_sector(file_start_sector+1, zeroed_sector());
 }
 
 ImageBuilder near_watford_no_recognition()
@@ -471,6 +546,16 @@ ImageBuilder empty_hdfs(int sides)
 			     ImageBuilder()
 			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
 			     .with_sectors(acorn_catalog(1)).build()));
+    // Two-sector single-density disc and the catalog says the file
+    // system has 2 sectors.  The media is not physically large enough
+    // to contain a Watford DFS extended catalog.  But this is also not
+    // a valid Acorn DFS filesystem, as there is not enough space for a
+    // 1-byte file.
+    result.push_back(Example("2_phys_sector", std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(1, 1, 2, DFS::Encoding::FM))
+			     .with_sectors(acorn_catalog(2)).build()));
+
     // 1 track single-density disc and the catalog says the file
     // system has 3 sectors (which is the minimum to feasibly contain
     // file data).
@@ -517,6 +602,10 @@ ImageBuilder empty_hdfs(int sides)
     result.push_back(Example("empty_hdfs_2s", DFS::Format::HDFS,
 			     empty_hdfs(2)
 			     .with_geometry(mfm_80t_ds)
+			     .build()));
+    result.push_back(Example("empty_opus_ddos", DFS::Format::OpusDDOS,
+			     empty_opus(mfm_80t_ss)
+			     .with_geometry(mfm_80t_ss)
 			     .build()));
 
     std::set<std::string> labels;
@@ -653,7 +742,8 @@ bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
 
 int main(int, char *[])
 {
-  for (bool verbose : {false, true})
+  // Run with verbose=true first in case we have an assertion error.
+  for (bool verbose : {true, false})
     {
       DFS::verbose = verbose;
       if (!test_id_exclusive_and_exhaustive())

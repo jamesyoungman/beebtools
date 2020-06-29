@@ -212,6 +212,19 @@ namespace DFS
       }
     for (const auto& loc : locations)
       {
+	if (loc.start_sector == 0)
+	  {
+	    if (DFS::verbose)
+	      {
+		std::cerr << "subvolume " << loc.volume << " is not present.\n";
+	      }
+	    continue;
+	  }
+	{
+	  if (DFS::verbose)
+	    std::cerr << "subvolume " << loc.volume << " starts at sector " << loc.start_sector << "\n";
+	}
+
 	DFS::Volume vol(DFS::Format::OpusDDOS, loc.catalog_location,
 			loc.start_sector, loc.len, media);
 	const DFS::Catalog& root(vol.root());
