@@ -157,6 +157,15 @@ public:
     return *this;
   }
 
+  ImageBuilder& with_be_word_change(DFS::sector_count_type sec, byte offset, unsigned short word)
+  {
+    assert(content_.find(sec) != content_.end());
+    assert(offset < 255);
+    content_[sec][offset] = byte((word >> 8) & 0xFF);
+    content_[sec][offset+1] = byte(word & 0xFF);
+    return *this;
+  }
+
   ImageBuilder with_bitmask_change(DFS::sector_count_type sec, byte offset,
 				   byte and_bits, byte or_bits)
   {
@@ -352,8 +361,8 @@ empty_opus(const DFS::Geometry& geom)
     .with_sector(16,
 		 SectorBuilder()
 		 .with_byte(0, 0x20) // config/version number
-		 .with_byte(1, 0x05) // sectors on disk (0x5A0=1440), low byte
-		 .with_byte(2, 0xA0) // sectors on disk (0x5A0=1440), high byte
+		 .with_byte(1, 0x05) // sectors on disk (0x5A0=1440), high byte
+		 .with_byte(2, 0xA0) // sectors on disk (0x5A0=1440), low byte
 		 .with_byte(3, static_cast<byte>(geom.sectors))
 		 .with_byte(4, 0xFF) // tracks on this disk (saw 0xFF)
 		 // vol A starts at track 1 and ends at the end of
@@ -680,6 +689,15 @@ ImageBuilder empty_hdfs(int sides)
 			     /* Give the file a valid load address and length */
 			     .with_le_word_change(3, 8, 0xFFFF) // load address
 			     .with_le_word_change(3, 0x0C, 1) // file len
+			     .build()));
+    result.push_back(Example("opus_1439",
+			     // Not Opus because wrong total sectors in sector 16.
+			     DFS::Format::DFS,
+			     empty_opus(mfm_80t_ss)
+			     .with_geometry(mfm_80t_ss)
+			     // No need to adjust the catalog for consistency as we are not
+			     // changing the size of any volume.
+			     .with_be_word_change(16, 1, 1439) // total sectors, not 1440
 			     .build()));
 
     std::set<std::string> labels;
