@@ -330,6 +330,8 @@ public:
   const DFS::sector_count_type end_track;
 };
 
+// empty_opus generates an Opus DDOS image with two volumes (two
+// because just one cannot extend over the whole disc) but no files.
 ImageBuilder
 empty_opus(const DFS::Geometry& geom)
 {
@@ -374,6 +376,23 @@ empty_opus(const DFS::Geometry& geom)
 		 .build());
 }
 
+//opus_with_zero_volumes generates a disc image which is structurally
+// similar to an empty Opus DDOS disc image, but contains zero volumes
+// in the disc catalog.  Hence it's not really a valid Opus DDOS image
+// (but should be a valid Acorn DFS image).
+ImageBuilder
+opus_with_zero_volumes(const DFS::Geometry& geom)
+{
+  return empty_opus(geom)
+    .with_byte_change(16, 8, 0)	// no volume A
+    .with_byte_change(16, 10, 0) // no volume B
+    .with_byte_change(16, 12, 0) // no volume C
+    .with_byte_change(16, 14, 0) // no volume D
+    .with_byte_change(16, 16, 0) // no volume E
+    .with_byte_change(16, 18, 0) // no volume F
+    .with_byte_change(16, 20, 0) // no volume G
+    .with_byte_change(16, 22, 0); // no volume H
+}
 
   struct Example
   {
@@ -605,6 +624,10 @@ ImageBuilder empty_hdfs(int sides)
 			     .build()));
     result.push_back(Example("empty_opus_ddos", DFS::Format::OpusDDOS,
 			     empty_opus(mfm_80t_ss)
+			     .with_geometry(mfm_80t_ss)
+			     .build()));
+    result.push_back(Example("opus_zero_volumes", DFS::Format::DFS,
+			     opus_with_zero_volumes(mfm_80t_ss)
 			     .with_geometry(mfm_80t_ss)
 			     .build()));
 

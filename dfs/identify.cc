@@ -212,18 +212,11 @@ namespace DFS
       }
     for (const auto& loc : locations)
       {
-	if (loc.start_sector == 0)
-	  {
-	    if (DFS::verbose)
-	      {
-		std::cerr << "subvolume " << loc.volume << " is not present.\n";
-	      }
-	    continue;
-	  }
-	{
-	  if (DFS::verbose)
-	    std::cerr << "subvolume " << loc.volume << " starts at sector " << loc.start_sector << "\n";
-	}
+	// get_volume_locations should not return any volumes which
+	// are not listed as present (start track > 0) in the catalog.
+	assert(loc.start_sector > 17);
+	if (DFS::verbose)
+	  std::cerr << "subvolume " << loc.volume << " starts at sector " << loc.start_sector << "\n";
 
 	DFS::Volume vol(DFS::Format::OpusDDOS, loc.catalog_location,
 			loc.start_sector, loc.len, media);
@@ -269,14 +262,14 @@ namespace DFS
 
     switch (total_disk_sectors)
       {
+	// 35 tracks is unusual but the Opus DDOS FORMAT command will
+	// produce it.
       case 630: // 35 tracks, 18 sectors per track
       case 720: // 40 tracks, 18 sectors per track
       case 1440: // 80 tracks, 18 sectors per track
         break;
       default:
         {
-	  // 35 tracks is unusual but the Opus DDOS FORMAT command
-	  // will produce it.
           std::ostringstream ss;
           ss << "total sectors field of sector 16 is " << total_disk_sectors
              << " but we assume only "
