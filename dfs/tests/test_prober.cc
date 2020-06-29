@@ -148,6 +148,15 @@ public:
     return *this;
   }
 
+  ImageBuilder& with_le_word_change(DFS::sector_count_type sec, byte offset, unsigned short word)
+  {
+    assert(content_.find(sec) != content_.end());
+    assert(offset < 255);
+    content_[sec][offset] = byte(word & 0xFF);
+    content_[sec][offset+1] = byte((word >> 8) & 0xFF);
+    return *this;
+  }
+
   ImageBuilder with_bitmask_change(DFS::sector_count_type sec, byte offset,
 				   byte and_bits, byte or_bits)
   {
@@ -518,10 +527,11 @@ ImageBuilder empty_hdfs(int sides)
   std::vector<Example> make_examples()
   {
     std::vector<Example> result;
-    DFS::Geometry fm_40t_ss(40, 1, 10,DFS::Encoding::FM);
-    DFS::Geometry fm_80t_ss(80, 1, 10,DFS::Encoding::FM);
-    DFS::Geometry mfm_80t_ss(80, 1, 18,DFS::Encoding::FM);
-    DFS::Geometry mfm_80t_ds(80, 2, 18,DFS::Encoding::MFM);
+    DFS::Geometry fm_40t_ss(40, 1, 10, DFS::Encoding::FM);
+    DFS::Geometry fm_80t_ss(80, 1, 10, DFS::Encoding::FM);
+    DFS::Geometry mfm_40t_ss(40, 1, 18, DFS::Encoding::FM);
+    DFS::Geometry mfm_80t_ss(80, 1, 18, DFS::Encoding::FM);
+    DFS::Geometry mfm_80t_ds(80, 2, 18, DFS::Encoding::MFM);
 
     result.push_back(Example("empty", std::nullopt,
 			     ImageBuilder()
@@ -629,6 +639,47 @@ ImageBuilder empty_hdfs(int sides)
     result.push_back(Example("opus_zero_volumes", DFS::Format::DFS,
 			     opus_with_zero_volumes(mfm_80t_ss)
 			     .with_geometry(mfm_80t_ss)
+			     .build()));
+    result.push_back(Example("empty_opus_zero_td",
+			     // Detected as Acorn as the Opus Volume catalog is invalid.
+			     DFS::Format::DFS,
+			     empty_opus(mfm_80t_ss)
+			     .with_geometry(mfm_80t_ss)
+			     .with_le_word_change(16, 1, 0) // set total sectors to 0.
+			     .build()));
+    result.push_back(Example("opus_short_720",
+			     // Detected as Acorn as the Opus volume
+			     // catalog says that there are 1440
+			     // sectors (80 tracks), but the media
+			     // only has 720 (40 tracks).
+			     DFS::Format::DFS,
+			     empty_opus(mfm_40t_ss)
+			     .with_geometry(mfm_40t_ss)
+			     // Update sector count in volume catalog.
+			     .with_le_word_change(16, 1, 1440)
+			     // Update total sectors field of catalog
+			     // (to be a reasonable value).
+			     .with_byte_change(1, 7, mfm_40t_ss.total_sectors() & 0xFF)
+			     .with_byte_change(1, 6, (mfm_40t_ss.total_sectors() >> 8) & 0x3)
+			     .build()));
+    result.push_back(Example("empty_opus_bad_cat_b",
+			     // Detected as Acorn as the catalog for volume B
+			     // is invalid.
+			     DFS::Format::DFS,
+			     empty_opus(mfm_80t_ss)
+			     .with_geometry(mfm_80t_ss)
+			     .with_string(0, 8, "FNAME") // file name
+			     .with_byte_change(0, 0x0F, '$') // dir
+			     .with_byte_change(1, 0x0F, 20) // start sector
+			     /* Opus and Acorn have different origins for file start sector,
+				so make sure the file body is reasonable for either case. */
+			     .with_sector(20, SectorBuilder().with_byte(0, 0x0D).build()) // body (Acorn)
+			     .with_sector(20+18, SectorBuilder().with_byte(0, 0x0D).build()) // body (Opus)
+			     /* It's this change that makes the catalog invalid. */
+			     .with_byte_change(3, 5, 7 /* not multiple of 8 */)
+			     /* Give the file a valid load address and length */
+			     .with_le_word_change(3, 8, 0xFFFF) // load address
+			     .with_le_word_change(3, 0x0C, 1) // file len
 			     .build()));
 
     std::set<std::string> labels;
