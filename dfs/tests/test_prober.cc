@@ -2,6 +2,7 @@
 #include "identify.h"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <iomanip>
 #include <map>
@@ -9,6 +10,7 @@
 #include <sstream>
 
 #include "abstractio.h"
+#include "cleanup.h"
 #include "dfs.h"
 #include "dfstypes.h"
 
@@ -18,9 +20,16 @@ using DFS::SectorBuffer;
 
 namespace
 {
+  bool want(const std::string& label, const std::set<std::string>& only)
+  {
+    if (only.empty())
+      return true;
+    return only.find(label) != only.end();
+  }
 
 void dump(std::ostream& os, const DFS::SectorBuffer& data)
 {
+  ostream_flag_saver flag_saver(os);
   constexpr unsigned int block_size = 8u;
   os << std::hex << std::setfill('0') << std::right;
   for (unsigned int block = 0; block < data.size(); block += block_size)
@@ -42,6 +51,11 @@ void dump(std::ostream& os, const DFS::SectorBuffer& data)
 	}
       os << '\n';
     }
+}
+
+bool match_any_probed_geom_or_none(std::optional<const DFS::Geometry>)
+{
+  return true;
 }
 
 DFS::SectorBuffer zeroed_sector()
@@ -414,14 +428,52 @@ opus_with_zero_volumes(const DFS::Geometry& geom)
 
   struct Example
   {
-    Example(std::string lbl, std::optional<DFS::Format> fmt, const TestImage& img)
-      : label(lbl), expected_id(fmt), image(img)
+    using geometry_matcher = std::function<bool(std::optional<DFS::Geometry>)>;
+
+    Example(std::string file_name, std::optional<DFS::Format> fmt,
+	    const TestImage& img,
+	    std::optional<geometry_matcher> gmatcher = std::nullopt)
+      : file_name_(file_name), expected_id(fmt), image(img), geom_matcher_(gmatcher)
     {
     }
 
-    std::string label;
+    const std::string label() const
+    {
+      return file_name_;
+    }
+
+    const std::string file_name() const
+    {
+      return file_name_;
+    }
+
+    bool matches_geometry(std::optional<const DFS::Geometry> guess)
+    {
+      // The geom_matcher_ member is itself optional, but if it is set,
+      // the function's sole argument is also optional.
+      if (geom_matcher_)
+	{
+	  return (*geom_matcher_)(guess);
+	}
+      if (!guess)
+	{
+	  // Because of the limitations of the simple sector-dump
+	  // image file formats, there is no separate format/geometry
+	  // information other than the file extension, so often when
+	  // we cannot probe the format of the file system within the
+	  // image, there is not enough information to figure out the
+	  // geometry of the imaged disc.  Hence when expected_id is
+	  // null (i.e. we could not discover the filesystem type), we
+	  // consider it OK for the geometry probe also to fail.
+	  return !expected_id;
+	}
+      return image.geometry() == guess;
+    }
+
+    std::string file_name_;
     std::optional<DFS::Format> expected_id;
     TestImage image;
+    std::optional<geometry_matcher> geom_matcher_;
   };
 
   struct Votes
@@ -538,40 +590,40 @@ ImageBuilder empty_hdfs(int sides)
     std::vector<Example> result;
     DFS::Geometry fm_40t_ss(40, 1, 10, DFS::Encoding::FM);
     DFS::Geometry fm_80t_ss(80, 1, 10, DFS::Encoding::FM);
-    DFS::Geometry mfm_40t_ss(40, 1, 18, DFS::Encoding::FM);
-    DFS::Geometry mfm_80t_ss(80, 1, 18, DFS::Encoding::FM);
+    DFS::Geometry mfm_40t_ss(40, 1, 18, DFS::Encoding::MFM);
+    DFS::Geometry mfm_80t_ss(80, 1, 18, DFS::Encoding::MFM);
     DFS::Geometry mfm_80t_ds(80, 2, 18, DFS::Encoding::MFM);
 
-    result.push_back(Example("empty", std::nullopt,
+    result.push_back(Example("empty.ssd", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_40t_ss)
 			     .build()));
-    result.push_back(Example("acorn_ss_40t", DFS::Format::DFS,
+    result.push_back(Example("acorn_ss_40t.ssd", DFS::Format::DFS,
 			     ImageBuilder()
 			     .with_geometry(fm_40t_ss)
 			     .with_sectors(acorn_catalog(40*10)).build()));
-    result.push_back(Example("acorn_ss_80t", DFS::Format::DFS,
+    result.push_back(Example("acorn_ss_80t.ssd", DFS::Format::DFS,
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
 			     .with_sectors(acorn_catalog(80*10)).build()));
     // Full size disc but the catalog says the file system has 0
     // sectors.  Not DFS because the prospective "catalog" says the
     // media too short to contain a the catalog itself.
-    result.push_back(Example("acorn_0_sectors", std::nullopt,
+    result.push_back(Example("acorn_0_sectors.ssd", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
 			     .with_sectors(acorn_catalog(0)).build()));
     // 1 track disc but the catalog says the file system has 0
     // sectors.  Not DFS because the prospective "catalog" says the
     // media too short to contain a the catalog itself.
-    result.push_back(Example("acorn_0_sectors_g1track", std::nullopt,
+    result.push_back(Example("acorn_0_sectors_g1track.ssd", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
 			     .with_sectors(acorn_catalog(0)).build()));
     // Full size disc but the catalog says the file system has 1
     // sector.  Not DFS because the prospective "catalog" says the
     // media too short to contain a the catalog itself.
-    result.push_back(Example("acorn_1_sector",
+    result.push_back(Example("acorn_1_sector.ssd",
 			     std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_80t_ss)
@@ -579,7 +631,7 @@ ImageBuilder empty_hdfs(int sides)
     // 1 track disc but the catalog says the file system has 1 sector.
     // Not DFS because the prospective "catalog" says the media too
     // short to contain a the catalog itself.
-    result.push_back(Example("acorn_1_sector_g1track",
+    result.push_back(Example("acorn_1_sector_g1track.ssd",
 			     std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
@@ -589,7 +641,7 @@ ImageBuilder empty_hdfs(int sides)
     // to contain a Watford DFS extended catalog.  But this is also not
     // a valid Acorn DFS filesystem, as there is not enough space for a
     // 1-byte file.
-    result.push_back(Example("2_phys_sector", std::nullopt,
+    result.push_back(Example("2_phys_sector.ssd", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(DFS::Geometry(1, 1, 2, DFS::Encoding::FM))
 			     .with_sectors(acorn_catalog(2)).build()));
@@ -597,15 +649,19 @@ ImageBuilder empty_hdfs(int sides)
     // 1 track single-density disc and the catalog says the file
     // system has 3 sectors (which is the minimum to feasibly contain
     // file data).
-    result.push_back(Example("acorn_3_sector_g1track", DFS::Format::DFS,
+    result.push_back(Example("acorn_3_sector_g1track.ssd", DFS::Format::DFS,
 			     ImageBuilder()
 			     .with_geometry(DFS::Geometry(1, 1, 10, DFS::Encoding::FM))
-			     .with_sectors(acorn_catalog(3)).build()));
+			     // The physical geometry of the disc is not a standard format
+			     // so for now accept any guessed geometry.
+			     .with_sectors(acorn_catalog(3)).build(),
+			     match_any_probed_geom_or_none));
+
 
     for (int last_cat_enty_offset = 1; last_cat_enty_offset < 8; ++last_cat_enty_offset)
       {
 	std::ostringstream ss;
-	ss << "acorn_bad_entry_offset_" << last_cat_enty_offset;
+	ss << "acorn_bad_entry_offset_" << last_cat_enty_offset << ".ssd";
 	result.push_back(Example(ss.str(), std::nullopt,
 				 ImageBuilder()
 				 .with_geometry(fm_80t_ss)
@@ -617,46 +673,48 @@ ImageBuilder empty_hdfs(int sides)
 				 .build()));
       }
 
-    result.push_back(Example("file_at_s2_fm", DFS::Format::DFS,
+    result.push_back(Example("file_at_s2_fm.ssd", DFS::Format::DFS,
 			     near_watford_file_overlap()
 			     .with_geometry(fm_80t_ss)
 			     .build()));
-    result.push_back(Example("file_at_s2_mfm", DFS::Format::DFS,
+    result.push_back(Example("file_at_s2_mfm.sdd", DFS::Format::DFS,
 			     near_watford_file_overlap()
 			     .with_geometry(mfm_80t_ss)
 			     .build()));
-    result.push_back(Example("watford_empty", DFS::Format::WDFS,
+    result.push_back(Example("watford_empty.ssd", DFS::Format::WDFS,
 			     actual_watford()
 			     .with_geometry(fm_80t_ss)
 			     .build()));
-    result.push_back(Example("no_wdfs_recog", DFS::Format::DFS,
+    result.push_back(Example("no_wdfs_recog.ssd", DFS::Format::DFS,
 			     near_watford_no_recognition()
 			     .with_geometry(fm_80t_ss)
 			     .build()));
-    result.push_back(Example("empty_hdfs_1s", DFS::Format::HDFS,
+    result.push_back(Example("empty_hdfs_1s.ssd", DFS::Format::HDFS,
 			     empty_hdfs(1)
 			     .with_geometry(fm_80t_ss)
 			     .build()));
-    result.push_back(Example("empty_hdfs_2s", DFS::Format::HDFS,
+    result.push_back(Example("empty_hdfs_2s.sdd", DFS::Format::HDFS,
 			     empty_hdfs(2)
 			     .with_geometry(mfm_80t_ds)
-			     .build()));
-    result.push_back(Example("empty_opus_ddos", DFS::Format::OpusDDOS,
+			     .build(),
+			     // TODO: improve support for two-sided file systems.
+			     match_any_probed_geom_or_none));
+    result.push_back(Example("empty_opus_ddos.sdd", DFS::Format::OpusDDOS,
 			     empty_opus(mfm_80t_ss)
 			     .with_geometry(mfm_80t_ss)
 			     .build()));
-    result.push_back(Example("opus_zero_volumes", DFS::Format::DFS,
+    result.push_back(Example("opus_zero_volumes.sdd", DFS::Format::DFS,
 			     opus_with_zero_volumes(mfm_80t_ss)
 			     .with_geometry(mfm_80t_ss)
 			     .build()));
-    result.push_back(Example("empty_opus_zero_td",
+    result.push_back(Example("empty_opus_zero_td.sdd",
 			     // Detected as Acorn as the Opus Volume catalog is invalid.
 			     DFS::Format::DFS,
 			     empty_opus(mfm_80t_ss)
 			     .with_geometry(mfm_80t_ss)
 			     .with_le_word_change(16, 1, 0) // set total sectors to 0.
 			     .build()));
-    result.push_back(Example("opus_short_720",
+    result.push_back(Example("opus_short_720.sdd",
 			     // Detected as Acorn as the Opus volume
 			     // catalog says that there are 1440
 			     // sectors (80 tracks), but the media
@@ -671,7 +729,7 @@ ImageBuilder empty_hdfs(int sides)
 			     .with_byte_change(1, 7, mfm_40t_ss.total_sectors() & 0xFF)
 			     .with_byte_change(1, 6, (mfm_40t_ss.total_sectors() >> 8) & 0x3)
 			     .build()));
-    result.push_back(Example("empty_opus_bad_cat_b",
+    result.push_back(Example("empty_opus_bad_cat_b.sdd",
 			     // Detected as Acorn as the catalog for volume B
 			     // is invalid.
 			     DFS::Format::DFS,
@@ -690,7 +748,7 @@ ImageBuilder empty_hdfs(int sides)
 			     .with_le_word_change(3, 8, 0xFFFF) // load address
 			     .with_le_word_change(3, 0x0C, 1) // file len
 			     .build()));
-    result.push_back(Example("opus_1439",
+    result.push_back(Example("opus_1439.sdd",
 			     // Not Opus because wrong total sectors in sector 16.
 			     DFS::Format::DFS,
 			     empty_opus(mfm_80t_ss)
@@ -703,12 +761,12 @@ ImageBuilder empty_hdfs(int sides)
     std::set<std::string> labels;
     for (const auto& ex : result)
       {
-	if (labels.find(ex.label) != labels.end())
+	if (labels.find(ex.label()) != labels.end())
 	  {
-	    std::cerr << "duplicate label " << ex.label << "\n";
+	    std::cerr << "duplicate label " << ex.label() << "\n";
 	    abort();
 	  }
-	labels.insert(ex.label);
+	labels.insert(ex.label());
       }
     return result;
   }
@@ -765,20 +823,22 @@ bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
   return true;
 }
 
-  bool test_id_exclusive_and_exhaustive()
+  bool test_id_exclusive_and_exhaustive(const std::set<std::string>& only)
   {
     bool all_ok = true;
     auto examples = make_examples();
     size_t longest_label_len = 0u;
     for (auto& ex : examples)
       {
-	longest_label_len = std::max(longest_label_len, ex.label.size());
+	if (!want(ex.label(), only)) continue;
+	longest_label_len = std::max(longest_label_len, ex.label().size());
       }
     if (longest_label_len > std::numeric_limits<int>::max())
       longest_label_len = std::numeric_limits<int>::max();
     for (auto& ex : examples)
       {
-	std::cerr << "image " << std::setw(static_cast<int>(longest_label_len)) << ex.label << ": ";
+	if (!want(ex.label(), only)) continue;
+	std::cerr << "image " << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
 
 	// Run the individual recognisers.
 	Votes v(ex.image);
@@ -830,19 +890,102 @@ bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
     return all_ok;
   }
 
+bool test_geometry_prober(const std::set<std::string>& only)
+{
+  bool all_ok = true;
+  auto examples = make_examples();
+  size_t longest_label_len = 0u;
+  size_t test_count = 0;
+  for (auto& ex : examples)
+    {
+      if (!want(ex.label(), only)) continue;
+      ++test_count;
+      longest_label_len = std::max(longest_label_len, ex.label().size());
+    }
+  if (longest_label_len > std::numeric_limits<int>::max())
+    longest_label_len = std::numeric_limits<int>::max();
+
+  std::cerr << std::setfill('=') << std::setw(60) << "" << std::setfill(' ') << "\n"
+	    << "running " << test_count << " tests:\n";
+  for (auto& ex : examples)
+    {
+      if (!want(ex.label(), only)) continue;
+      bool test_result;
+
+      auto intro = [longest_label_len, &ex]()
+		   {
+		     std::cerr << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
+		   };
+      auto describe_fs = [](std::ostream& os, std::optional<DFS::Format> f)
+		    {
+		      os << "file system is ";
+		      if (f)
+			os << *f;
+		      else
+			os << "undecided";
+		    };
+      intro();
+
+      describe_fs(std::cerr, ex.expected_id);
+      std::cerr << ", actual geometry: " << ex.image.geometry().to_str() << "\n";
+
+      std::string error;
+      std::optional<DFS::ImageFileFormat> probed = identify_image(ex.image, ex.file_name(), error);
+      if (DFS::verbose)
+	{
+	  intro();
+	  std::cerr << "actual geometry: " << ex.image.geometry().to_str();
+	}
+      intro();
+      std::optional<DFS::Geometry> probed_geometry;
+      if (probed)
+	probed_geometry = probed->geometry;
+
+      if (probed)
+	{
+	  std::cerr << "guessed " << probed_geometry->to_str();
+	}
+      else
+	{
+	  std::cerr << "unable to guess geometry (" << error << ")";
+	}
+      test_result = ex.matches_geometry(probed_geometry);
+      if (!test_result)
+	all_ok = false;
+      std::cerr << "\n";
+      intro();
+      std::cerr << (test_result ? "PASS\n\n" : "FAIL\n\n");
+    }
+  return all_ok;
+}
+
+
+
 }  // namespace
 
-int main(int, char *[])
+int main(int argc, char *argv[])
 {
+  // Specify test labels on the command line to run just those.
+  std::set<std::string> only;
+  for (int i = 1; i < argc; ++i)
+    {
+      only.insert(argv[i]);
+    }
+
+  bool all_ok = true;
   // Run with verbose=true first in case we have an assertion error.
   for (bool verbose : {true, false})
     {
       DFS::verbose = verbose;
-      if (!test_id_exclusive_and_exhaustive())
-	{
-	  std::cerr << "At least one test failed; see above for details.\n";
-	  return 1;
-	}
+      if (!test_id_exclusive_and_exhaustive(only))
+	all_ok = false;
+      if (!test_geometry_prober(only))
+	all_ok = false;
+    }
+  if (!all_ok)
+    {
+      std::cerr << "At least one test failed; see above for details.\n";
+      return 1;
     }
   std::cout << "All tests passed.\n";
   return 0;

@@ -325,17 +325,17 @@ namespace DFS
     auto large_enough =
       [total_sectors, fmt, &media](const DFS::ImageFileFormat& ff) -> bool
       {
-	// We do not use ff.geometry.total_sectors for the comparison
-	// below because it would lead us to accept a double-sided
-	// 40-track geometry (having enough sectors for the file
-	// system counting both sides) where in reality the only
-	// acceptable option is a single sided 80-track geometry
-	// (because the file system actually only reads from one side
-	// of the disc).
 	DFS::sector_count_type available_sectors;
 	std::string sides_desc;
 	if (DFS::single_sided_filesystem(fmt, media))
 	  {
+	    // We do not use ff.geometry.total_sectors for the
+	    // comparison below because it would lead us to accept a
+	    // double-sided 40-track geometry (having enough sectors
+	    // for the file system counting both sides) where in
+	    // reality the only acceptable option is a single sided
+	    // 80-track geometry (because the file system actually
+	    // only reads from one side of the disc).
 	    available_sectors = DFS::sector_count(ff.geometry.cylinders * ff.geometry.sectors);
 	    sides_desc = "single-sided";
 	  }
@@ -367,39 +367,41 @@ namespace DFS
 	return false;
       };
     std::vector<DFS::ImageFileFormat> possible = filter_formats(candidates, large_enough);
-    show_possible("probe_geometry after eliminating under-sized geometries", possible);
-
-    // other_side_has_catalog_too eliminates geometries in which the
-    // other side of the media should also have a catalog, but where we
-    // cannot find such a catalog in the implied location.  This helps
-    // us distinguish 40 track two-sided SSD files from 80 track
-    // one-sided SSD files, for example.
-    auto other_side_has_catalog_too =
-      [total_sectors, &media](const DFS::ImageFileFormat& ff) -> bool
-      {
-	// TODO: figure out how to handle two-sided formats such as HDFS
-	// which can (sometimes) occupy both sides of the disc.
-	if (ff.geometry.heads == 1)
-	  return true;
-	DFS::sector_count_type other =
-	  DFS::sector_count(ff.geometry.sectors
-			    * (ff.interleaved ? 1 : ff.geometry.cylinders));
-	std::string error;
-	if (has_valid_dfs_catalog(media, other, error))
-	  {
-	    return true;
-	  }
-
-	std::ostringstream os;
-	os << "this two-sided format should also have a catalog at sector "
-	   << other << " but the data at that location is not a valid catalog: "
-	   << error;
-	eliminated_format(ff, os.str());
-	return false;
-      };
+    show_possible("probe_geometry after eliminating "
+		  "under-sized geometries smaller than the file system",
+		  possible);
 
     if (possible.size() > 1)
       {
+	// other_side_has_catalog_too eliminates geometries in which the
+	// other side of the media should also have a catalog, but where we
+	// cannot find such a catalog in the implied location.  This helps
+	// us distinguish 40 track two-sided SSD files from 80 track
+	// one-sided SSD files, for example.
+	auto other_side_has_catalog_too =
+	  [total_sectors, &media](const DFS::ImageFileFormat& ff) -> bool
+	  {
+	    // TODO: figure out how to handle two-sided formats such as HDFS
+	    // which can (sometimes) occupy both sides of the disc.
+	    if (ff.geometry.heads == 1)
+	      return true;
+	    DFS::sector_count_type other =
+	      DFS::sector_count(ff.geometry.sectors
+				* (ff.interleaved ? 1 : ff.geometry.cylinders));
+	    std::string error;
+	    if (has_valid_dfs_catalog(media, other, error))
+	      {
+		return true;
+	      }
+
+	    std::ostringstream os;
+	    os << "this two-sided format should also have a catalog at sector "
+	       << other << " but the data at that location is not a valid catalog: "
+	       << error;
+	    eliminated_format(ff, os.str());
+	    return false;
+	  };
+
 	// The "file system" of the other side may not be valid, so
 	// this filter has some false negatives.  Therefore, only use
 	// it if we would otherwise not be able to guess the format.
@@ -411,13 +413,25 @@ namespace DFS
       {
 	show_possible("The remaining possible formats cannot be conclusively rejected", possible);
       }
-    auto compare_capacity =
+    auto compare_formats =
       [](const DFS::ImageFileFormat& left,
 	 const DFS::ImageFileFormat& right)
       {
-	return left.geometry.total_sectors() < right.geometry.total_sectors();
+	auto lg = left.geometry;
+	auto rg = right.geometry;
+	// Prefer not to guess geometries with 16 sectors per track.
+	// Hence if one option is 16 and the other is something else,
+	// pick the something else.  The caller is trying to pick the
+	// "smallest" of the two options, so to "prefer" the left
+	// candidate we must return false.
+	if (lg.sectors == 16 && rg.sectors != 16)
+	  return false;		// prefer right
+	else if (rg.sectors == 16 && lg.sectors != 16)
+	  return true;		// prefer left
+	// Otherwise, pick the smaller option.
+	return lg.total_sectors() < rg.total_sectors();
       };
-    auto it = std::min_element(possible.cbegin(), possible.cend(), compare_capacity);
+    auto it = std::min_element(possible.cbegin(), possible.cend(), compare_formats);
     if (it == possible.cend())
       {
 	throw DFS::FailedToGuessFormat("all known formats have been eliminated");
@@ -465,7 +479,7 @@ namespace DFS
 	return std::make_pair(DFS::Format::DFS, get_dfs_sector_count(buf1));
       }
 
-    error = "unable to find a match";
+    error = "unable to find a file system match";
     return std::nullopt;
   }
 
@@ -487,8 +501,18 @@ namespace DFS
 		  << " occupying " << std::dec << total_sectors
 		  << " sectors.\n";
       }
-    DFS::ImageFileFormat ff = probe_geometry(access, fmt, total_sectors, candidates);
-    return std::make_pair(fmt, ff);
+    try
+      {
+	DFS::ImageFileFormat ff = probe_geometry(access, fmt, total_sectors, candidates);
+	return std::make_pair(fmt, ff);
+      }
+    catch (std::exception& e)
+      {
+	std::ostringstream ss;
+	ss << "failed to guess geometry of disc in image file: " << e.what();
+	error = ss.str();
+	return std::nullopt;
+      }
   }
 
   std::vector<DFS::sector_count_type> sectors_per_track_options(DFS::Encoding e)
@@ -497,7 +521,7 @@ namespace DFS
       return std::vector<DFS::sector_count_type>{DFS::sector_count(10)};
     else
       return std::vector<DFS::sector_count_type>
-	{ DFS::sector_count(16), DFS::sector_count(18) };
+	{ DFS::sector_count(18), DFS::sector_count(16) };
   }
 
   std::vector<DFS::Encoding> encoding_options(std::optional<DFS::Encoding> hint)
