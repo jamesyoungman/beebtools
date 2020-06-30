@@ -20,6 +20,8 @@ using DFS::SectorBuffer;
 
 namespace
 {
+  bool dump_sectors = false;
+
   bool want(const std::string& label, const std::set<std::string>& only)
   {
     if (only.empty())
@@ -76,7 +78,7 @@ public:
 		       [](auto it) { return it.first >= 0; }));
     // It's OK for there to be holes.  Sectors for which we have no
     // reocorded data return all-zero.
-    if (DFS::verbose)
+    if (DFS::verbose && dump_sectors)
       {
 	for (const auto& todo : data)
 	  {
@@ -106,7 +108,7 @@ public:
 	return std::nullopt;
       }
     DFS::SectorBuffer result = it->second;
-    if (DFS::verbose)
+    if (DFS::verbose && dump_sectors)
       {
 	std::cerr << "TestImage::read_block(" << sec << "): returning data:\n";
 	dump(std::cerr, result);
@@ -838,7 +840,7 @@ bool check_votes(const Votes& v, std::optional<DFS::Format> expected_id)
     for (auto& ex : examples)
       {
 	if (!want(ex.label(), only)) continue;
-	std::cerr << "image " << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
+	std::cerr << "format probe: " << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
 
 	// Run the individual recognisers.
 	Votes v(ex.image);
@@ -914,7 +916,8 @@ bool test_geometry_prober(const std::set<std::string>& only)
 
       auto intro = [longest_label_len, &ex]()
 		   {
-		     std::cerr << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
+		     std::cerr << "geometry probe test: "
+			       << std::setw(static_cast<int>(longest_label_len)) << ex.label() << ": ";
 		   };
       auto describe_fs = [](std::ostream& os, std::optional<DFS::Format> f)
 		    {
@@ -970,6 +973,19 @@ int main(int argc, char *argv[])
   for (int i = 1; i < argc; ++i)
     {
       only.insert(argv[i]);
+    }
+
+  // dump_sectors is off by default because it generates so much output.
+  const std::string env_var("TEST_PROBER_DUMP_SECTORS");
+  if (getenv(env_var.c_str()))
+    {
+      dump_sectors = true;
+    }
+  else
+    {
+      std::cerr << "Environment variable " << env_var << " is not set, "
+		<< "will not dump the content of sectors we create or read\n";
+      dump_sectors = false;
     }
 
   bool all_ok = true;
