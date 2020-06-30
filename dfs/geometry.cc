@@ -123,11 +123,11 @@ namespace DFS
     os << "{chs=" << cylinders << "," << heads << "," << sectors;
     if (encoding)
       {
-	os << ", encoding=" << encoding_to_str(*encoding);
+	os << "," << encoding_to_str(*encoding);
       }
     else
       {
-	os << ", encoding unknown";
+	os << ",encoding unknown";
       }
     os << "}";
     return os.str();
