@@ -596,7 +596,16 @@ ImageBuilder empty_hdfs(int sides)
     DFS::Geometry mfm_80t_ss(80, 1, 18, DFS::Encoding::MFM);
     DFS::Geometry mfm_80t_ds(80, 2, 18, DFS::Encoding::MFM);
 
-    result.push_back(Example("empty.ssd", std::nullopt,
+    result.push_back(Example("no_sectors_at_all.ssd", std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(0, 1, 10, DFS::Encoding::FM))
+			     .build()));
+    result.push_back(Example("just_one_sector.ssd", std::nullopt,
+			     ImageBuilder()
+			     .with_geometry(DFS::Geometry(1, 1, 1, DFS::Encoding::FM))
+			     .with_sector(0, SectorBuilder().build())
+			     .build()));
+    result.push_back(Example("blank_40t.ssd", std::nullopt,
 			     ImageBuilder()
 			     .with_geometry(fm_40t_ss)
 			     .build()));
