@@ -85,3 +85,14 @@ Work file $.
 
 09 files of 31 on 80 tracks
 "
+
+check_cat \
+    acorn-dfs-sd-80t-empty.ssd \
+    acorn \
+"             (02) FM
+Drive 0             Option 2 (run)
+Dir. :0.$           Lib. :0.$
+
+
+"
+# TODO: one of the final newlines above is extraneous.

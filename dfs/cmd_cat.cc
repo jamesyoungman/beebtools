@@ -143,7 +143,7 @@ namespace
 			      std::optional<int> cycle)
   {
     std::ostringstream os;
-    int title_width = 0;
+    int title_width = 12;
     os << std::left << std::setw(title_width) << std::setfill(' ')
        << title;
     if (cycle)
