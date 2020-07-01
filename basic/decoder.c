@@ -24,7 +24,7 @@ void destroy_decoder(struct decoder* p)
 
 static bool dialect_has_leading_cr(enum Dialect d)
 {
-  return (d == mos6502_32000 || d == ARM || d == Mac);
+  return (d == mos6502_32000 || d == ARM || d == Mac || d == PDP11);
 }
 
 

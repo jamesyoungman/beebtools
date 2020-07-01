@@ -39,6 +39,40 @@ static bool is_invalid(const char *s)
   return s[0] == '_' && s[1] != 0;
 }
 
+static bool handle_pdp_quit(unsigned char intro,
+			    const char **output,
+			    const unsigned char **input,
+			    unsigned char *len)
+{
+  /* In BBC BASIC for PDP11, 0xC9 0x98 encodes QUIT.
+     0xC9 followed by any other byte encodes whatever
+     it encodes in 6502 BASIC. */
+  unsigned char uch;
+  if (!*len)
+    {
+      return premature_eol(intro);
+    }
+  /* peek ahead one byte. */
+  uch = **input;
+  ++*input;
+  --*len;
+  switch (uch)
+    {
+    case 0x98:
+      /* consume the peeked byte */
+      *output = "QUIT";
+      break;
+    default:
+      *output = "LOAD";
+      /* back up so that the peeked byte stays in the
+	 unread input. */
+      --*input;
+      ++*len;
+      break;
+    }
+  return true;
+}
+
 static bool handle_special_token(unsigned char intro,
 				 const char **output,
 				 const unsigned char **input,
@@ -52,7 +86,16 @@ static bool handle_special_token(unsigned char intro,
     {
     case 0xC6: extension_map = m->c6; break;
     case 0xC7: extension_map = m->c7; break;
-    case 0XC8: extension_map = m->c8; break;
+    case 0XC8:
+      if (*output == pdp_c8)
+	{
+	  return handle_pdp_quit(intro, output, input, len);
+	}
+      else
+	{
+	  extension_map = m->c8;
+	  break;
+	}
     default:
       fprintf(stderr, "Token 0x%02X is marked for special handling, "
 	      "but there is no defined handler.  This is a bug.\n",

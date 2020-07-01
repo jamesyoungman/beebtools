@@ -9,10 +9,12 @@ enum Dialect
    MIN_DIALECT = 0, mos6502_32000 = MIN_DIALECT,
    Z80_80x86 = 1,
    ARM = 2,
-   Windows = 3,
-   // The intiialisation of base_map
-   // relies on Mac being last.
+   Windows = 3, LAST_BASE_MAP_DIALECT = Windows,
+   // The intiialisation of base_map relies on Mac and PDP11 (which
+   // have no column in in base_map) being after
+   // LAST_BASE_MAP_DIALECT.
    Mac = 4,
+   PDP11 = 5,
    NUM_DIALECTS,
   };
 

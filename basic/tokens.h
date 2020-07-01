@@ -9,6 +9,7 @@
 extern const char invalid[];
 extern const char line_num[];
 extern const char fastvar[];
+extern const char pdp_c8[];
 bool build_mapping(unsigned dialect, struct expansion_map*);
 void destroy_mapping(struct expansion_map*);
 void build_map_c6(enum Dialect d, const char **output);

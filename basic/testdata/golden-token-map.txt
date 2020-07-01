@@ -258,6 +258,266 @@ dialect 6502:
 6502 (c6 map): dialect has no valid tokens in the c6 map
 6502 (c7 map): dialect has no valid tokens in the c7 map
 6502 (c8 map): dialect has no valid tokens in the c8 map
+dialect PDP11:
+PDP11 (base map): 0x00->__invalid__
+PDP11 (base map): 0x01->__invalid__
+PDP11 (base map): 0x02->__invalid__
+PDP11 (base map): 0x03->__invalid__
+PDP11 (base map): 0x04->__invalid__
+PDP11 (base map): 0x05->__invalid__
+PDP11 (base map): 0x06->__invalid__
+PDP11 (base map): 0x07->__invalid__
+PDP11 (base map): 0x08->__invalid__
+PDP11 (base map): 0x09->__invalid__
+PDP11 (base map): 0x0A->__invalid__
+PDP11 (base map): 0x0B->__invalid__
+PDP11 (base map): 0x0C->__invalid__
+PDP11 (base map): 0x0D->(maps to itself)
+PDP11 (base map): 0x0E->__invalid__
+PDP11 (base map): 0x0F->__invalid__
+PDP11 (base map): 0x10->__invalid__
+PDP11 (base map): 0x11->(maps to itself)
+PDP11 (base map): 0x12->(maps to itself)
+PDP11 (base map): 0x13->(maps to itself)
+PDP11 (base map): 0x14->(maps to itself)
+PDP11 (base map): 0x15->(maps to itself)
+PDP11 (base map): 0x16->(maps to itself)
+PDP11 (base map): 0x17->(maps to itself)
+PDP11 (base map): 0x18->(maps to itself)
+PDP11 (base map): 0x19->(maps to itself)
+PDP11 (base map): 0x1A->(maps to itself)
+PDP11 (base map): 0x1B->(maps to itself)
+PDP11 (base map): 0x1C->(maps to itself)
+PDP11 (base map): 0x1D->(maps to itself)
+PDP11 (base map): 0x1E->(maps to itself)
+PDP11 (base map): 0x1F->(maps to itself)
+PDP11 (base map): 0x20->(maps to itself)
+PDP11 (base map): 0x21->(maps to itself)
+PDP11 (base map): 0x22->(maps to itself)
+PDP11 (base map): 0x23->(maps to itself)
+PDP11 (base map): 0x24->(maps to itself)
+PDP11 (base map): 0x25->(maps to itself)
+PDP11 (base map): 0x26->(maps to itself)
+PDP11 (base map): 0x27->(maps to itself)
+PDP11 (base map): 0x28->(maps to itself)
+PDP11 (base map): 0x29->(maps to itself)
+PDP11 (base map): 0x2A->(maps to itself)
+PDP11 (base map): 0x2B->(maps to itself)
+PDP11 (base map): 0x2C->(maps to itself)
+PDP11 (base map): 0x2D->(maps to itself)
+PDP11 (base map): 0x2E->(maps to itself)
+PDP11 (base map): 0x2F->(maps to itself)
+PDP11 (base map): 0x30->(maps to itself)
+PDP11 (base map): 0x31->(maps to itself)
+PDP11 (base map): 0x32->(maps to itself)
+PDP11 (base map): 0x33->(maps to itself)
+PDP11 (base map): 0x34->(maps to itself)
+PDP11 (base map): 0x35->(maps to itself)
+PDP11 (base map): 0x36->(maps to itself)
+PDP11 (base map): 0x37->(maps to itself)
+PDP11 (base map): 0x38->(maps to itself)
+PDP11 (base map): 0x39->(maps to itself)
+PDP11 (base map): 0x3A->(maps to itself)
+PDP11 (base map): 0x3B->(maps to itself)
+PDP11 (base map): 0x3C->(maps to itself)
+PDP11 (base map): 0x3D->(maps to itself)
+PDP11 (base map): 0x3E->(maps to itself)
+PDP11 (base map): 0x3F->(maps to itself)
+PDP11 (base map): 0x40->(maps to itself)
+PDP11 (base map): 0x41->(maps to itself)
+PDP11 (base map): 0x42->(maps to itself)
+PDP11 (base map): 0x43->(maps to itself)
+PDP11 (base map): 0x44->(maps to itself)
+PDP11 (base map): 0x45->(maps to itself)
+PDP11 (base map): 0x46->(maps to itself)
+PDP11 (base map): 0x47->(maps to itself)
+PDP11 (base map): 0x48->(maps to itself)
+PDP11 (base map): 0x49->(maps to itself)
+PDP11 (base map): 0x4A->(maps to itself)
+PDP11 (base map): 0x4B->(maps to itself)
+PDP11 (base map): 0x4C->(maps to itself)
+PDP11 (base map): 0x4D->(maps to itself)
+PDP11 (base map): 0x4E->(maps to itself)
+PDP11 (base map): 0x4F->(maps to itself)
+PDP11 (base map): 0x50->(maps to itself)
+PDP11 (base map): 0x51->(maps to itself)
+PDP11 (base map): 0x52->(maps to itself)
+PDP11 (base map): 0x53->(maps to itself)
+PDP11 (base map): 0x54->(maps to itself)
+PDP11 (base map): 0x55->(maps to itself)
+PDP11 (base map): 0x56->(maps to itself)
+PDP11 (base map): 0x57->(maps to itself)
+PDP11 (base map): 0x58->(maps to itself)
+PDP11 (base map): 0x59->(maps to itself)
+PDP11 (base map): 0x5A->(maps to itself)
+PDP11 (base map): 0x5B->(maps to itself)
+PDP11 (base map): 0x5C->(maps to itself)
+PDP11 (base map): 0x5D->(maps to itself)
+PDP11 (base map): 0x5E->(maps to itself)
+PDP11 (base map): 0x5F->(maps to itself)
+PDP11 (base map): 0x60->(maps to itself)
+PDP11 (base map): 0x61->(maps to itself)
+PDP11 (base map): 0x62->(maps to itself)
+PDP11 (base map): 0x63->(maps to itself)
+PDP11 (base map): 0x64->(maps to itself)
+PDP11 (base map): 0x65->(maps to itself)
+PDP11 (base map): 0x66->(maps to itself)
+PDP11 (base map): 0x67->(maps to itself)
+PDP11 (base map): 0x68->(maps to itself)
+PDP11 (base map): 0x69->(maps to itself)
+PDP11 (base map): 0x6A->(maps to itself)
+PDP11 (base map): 0x6B->(maps to itself)
+PDP11 (base map): 0x6C->(maps to itself)
+PDP11 (base map): 0x6D->(maps to itself)
+PDP11 (base map): 0x6E->(maps to itself)
+PDP11 (base map): 0x6F->(maps to itself)
+PDP11 (base map): 0x70->(maps to itself)
+PDP11 (base map): 0x71->(maps to itself)
+PDP11 (base map): 0x72->(maps to itself)
+PDP11 (base map): 0x73->(maps to itself)
+PDP11 (base map): 0x74->(maps to itself)
+PDP11 (base map): 0x75->(maps to itself)
+PDP11 (base map): 0x76->(maps to itself)
+PDP11 (base map): 0x77->(maps to itself)
+PDP11 (base map): 0x78->(maps to itself)
+PDP11 (base map): 0x79->(maps to itself)
+PDP11 (base map): 0x7A->(maps to itself)
+PDP11 (base map): 0x7B->(maps to itself)
+PDP11 (base map): 0x7C->(maps to itself)
+PDP11 (base map): 0x7D->(maps to itself)
+PDP11 (base map): 0x7E->(maps to itself)
+PDP11 (base map): 0x7F->(maps to itself)
+PDP11 (base map): 0x80->AND
+PDP11 (base map): 0x81->DIV
+PDP11 (base map): 0x82->EOR
+PDP11 (base map): 0x83->MOD
+PDP11 (base map): 0x84->OR
+PDP11 (base map): 0x85->ERROR
+PDP11 (base map): 0x86->LINE
+PDP11 (base map): 0x87->OFF
+PDP11 (base map): 0x88->STEP
+PDP11 (base map): 0x89->SPC
+PDP11 (base map): 0x8A->TAB(
+PDP11 (base map): 0x8B->ELSE
+PDP11 (base map): 0x8C->THEN
+PDP11 (base map): 0x8D->__line_num__
+PDP11 (base map): 0x8E->OPENIN
+PDP11 (base map): 0x8F->PTR
+PDP11 (base map): 0x90->PAGE
+PDP11 (base map): 0x91->TIME
+PDP11 (base map): 0x92->LOMEM
+PDP11 (base map): 0x93->HIMEM
+PDP11 (base map): 0x94->ABS
+PDP11 (base map): 0x95->ACS
+PDP11 (base map): 0x96->ADVAL
+PDP11 (base map): 0x97->ASC
+PDP11 (base map): 0x98->ASN
+PDP11 (base map): 0x99->ATN
+PDP11 (base map): 0x9A->BGET
+PDP11 (base map): 0x9B->COS
+PDP11 (base map): 0x9C->COUNT
+PDP11 (base map): 0x9D->DEG
+PDP11 (base map): 0x9E->ERL
+PDP11 (base map): 0x9F->ERR
+PDP11 (base map): 0xA0->EVAL
+PDP11 (base map): 0xA1->EXP
+PDP11 (base map): 0xA2->EXT
+PDP11 (base map): 0xA3->FALSE
+PDP11 (base map): 0xA4->FN
+PDP11 (base map): 0xA5->GET
+PDP11 (base map): 0xA6->INKEY
+PDP11 (base map): 0xA7->INSTR(
+PDP11 (base map): 0xA8->INT
+PDP11 (base map): 0xA9->LEN
+PDP11 (base map): 0xAA->LN
+PDP11 (base map): 0xAB->LOG
+PDP11 (base map): 0xAC->NOT
+PDP11 (base map): 0xAD->OPENUP
+PDP11 (base map): 0xAE->OPENOUT
+PDP11 (base map): 0xAF->PI
+PDP11 (base map): 0xB0->POINT(
+PDP11 (base map): 0xB1->POS
+PDP11 (base map): 0xB2->RAD
+PDP11 (base map): 0xB3->RND
+PDP11 (base map): 0xB4->SGN
+PDP11 (base map): 0xB5->SIN
+PDP11 (base map): 0xB6->SQR
+PDP11 (base map): 0xB7->TAN
+PDP11 (base map): 0xB8->TO
+PDP11 (base map): 0xB9->TRUE
+PDP11 (base map): 0xBA->USR
+PDP11 (base map): 0xBB->VAL
+PDP11 (base map): 0xBC->VPOS
+PDP11 (base map): 0xBD->CHR$
+PDP11 (base map): 0xBE->GET$
+PDP11 (base map): 0xBF->INKEY$
+PDP11 (base map): 0xC0->LEFT$(
+PDP11 (base map): 0xC1->MID$(
+PDP11 (base map): 0xC2->RIGHT$(
+PDP11 (base map): 0xC3->STR$
+PDP11 (base map): 0xC4->STRING$(
+PDP11 (base map): 0xC5->EOF
+PDP11 (base map): 0xC6->AUTO
+PDP11 (base map): 0xC7->DELETE
+PDP11 (base map): 0xC8->__pdp__
+PDP11 (base map): 0xC9->LIST
+PDP11 (base map): 0xCA->NEW
+PDP11 (base map): 0xCB->OLD
+PDP11 (base map): 0xCC->RENUMBER
+PDP11 (base map): 0xCD->SAVE
+PDP11 (base map): 0xCE->EDIT
+PDP11 (base map): 0xCF->PTR
+PDP11 (base map): 0xD0->PAGE
+PDP11 (base map): 0xD1->TIME
+PDP11 (base map): 0xD2->LOMEM
+PDP11 (base map): 0xD3->HIMEM
+PDP11 (base map): 0xD4->SOUND
+PDP11 (base map): 0xD5->BPUT
+PDP11 (base map): 0xD6->CALL
+PDP11 (base map): 0xD7->CHAIN
+PDP11 (base map): 0xD8->CLEAR
+PDP11 (base map): 0xD9->CLOSE
+PDP11 (base map): 0xDA->CLG
+PDP11 (base map): 0xDB->CLS
+PDP11 (base map): 0xDC->DATA
+PDP11 (base map): 0xDD->DEF
+PDP11 (base map): 0xDE->DIM
+PDP11 (base map): 0xDF->DRAW
+PDP11 (base map): 0xE0->END
+PDP11 (base map): 0xE1->ENDPROC
+PDP11 (base map): 0xE2->ENVELOPE
+PDP11 (base map): 0xE3->FOR
+PDP11 (base map): 0xE4->GOSUB
+PDP11 (base map): 0xE5->GOTO
+PDP11 (base map): 0xE6->GCOL
+PDP11 (base map): 0xE7->IF
+PDP11 (base map): 0xE8->INPUT
+PDP11 (base map): 0xE9->LET
+PDP11 (base map): 0xEA->LOCAL
+PDP11 (base map): 0xEB->MODE
+PDP11 (base map): 0xEC->MOVE
+PDP11 (base map): 0xED->NEXT
+PDP11 (base map): 0xEE->ON
+PDP11 (base map): 0xEF->VDU
+PDP11 (base map): 0xF0->PLOT
+PDP11 (base map): 0xF1->PRINT
+PDP11 (base map): 0xF2->PROC
+PDP11 (base map): 0xF3->READ
+PDP11 (base map): 0xF4->REM
+PDP11 (base map): 0xF5->REPEAT
+PDP11 (base map): 0xF6->REPORT
+PDP11 (base map): 0xF7->RESTORE
+PDP11 (base map): 0xF8->RETURN
+PDP11 (base map): 0xF9->RUN
+PDP11 (base map): 0xFA->STOP
+PDP11 (base map): 0xFB->COLOUR
+PDP11 (base map): 0xFC->TRACE
+PDP11 (base map): 0xFD->UNTIL
+PDP11 (base map): 0xFE->WIDTH
+PDP11 (base map): 0xFF->OSCLI
+PDP11 (c6 map): dialect has no valid tokens in the c6 map
+PDP11 (c7 map): dialect has no valid tokens in the c7 map
+PDP11 (c8 map): dialect has no valid tokens in the c8 map
 dialect 32000=6502
 dialect Z80:
 Z80 (base map): 0x00->__invalid__

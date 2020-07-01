@@ -25,10 +25,12 @@ l l l
 l l l
 l l l
 l l l
+l l l
 l l s.
 Dialect|Line Number|Tokenisation
 6502|Big-endian|No extension codes
 32016|Identical to 6502
+PDP11|Big-endian|Follows 6502. Single extension code in 0xC8.
 ARM|Big-endian|Extension codes 0xC6, 0xC7, 0xC8
 Mac|Big-endian|Extension codes 0xC6, 0xC7, 0xC8
 Windows|Little-endian|T{
@@ -39,7 +41,8 @@ Z80|Little-endian|No extension codes
 .TE
 
 Although both ARM and Mac use extension codes, the keywords encoded
-with them are not always the same.
+with them are not always the same.  The PDP11 dialect uses 0xC8 to
+encode just two possible keywords, as described below.
 
 There are also some other implementations of BBC BASIC.  R. T
 Russell's Windows implementation and his BBC BASIC for SDL 2.0 (which
@@ -79,7 +82,11 @@ tab(|) allbox;
 lb lb lb lb
 l  l  l  l.
 Type|Dialects|Line Format|EOF marker
-Big-endian|6502, 32016, ARM, Mac|0x0D <hi> <lo> <len> data...|0x0D 0xFF
+Big-endian|T{
+6502, ARM, 32016,
+.br
+Mac, PDP11
+T}|0x0D <hi> <lo> <len> data...|0x0D 0xFF
 Little-endian|Z80, 8086, Windows|<len> <lo> <hi> data... 0x0D|0x00 0xFF
 .TE
 
@@ -96,7 +103,7 @@ following:
 Single-byte tokens
 .TP
 \(bu
-Double-byte "extension" tokens (ARM and Mac only) where the first byte
+Double-byte "extension" tokens (PDP11, ARM and Mac only) where the first byte
 is 0xC6, 0xC7 or 0xC8 and the following byte identifies the token.
 .TP
 \(bu
@@ -226,6 +233,10 @@ double-quotes in a row, since that's what it is).
 Outside strings, bytes are either tokens or part of a line number
 (see
 .BR "LINE NUMBERS" ).
+
+With one exception (byte 0xC8), the PDP11 implementation of BBC BASIC uses
+tokens identically to the 6502 implementation, and so there is no
+separate column for PDP11 in the tables below.
 
 .SS "Single-Byte Tokens 0x00 ... 0x10"
 
@@ -552,7 +563,11 @@ T}
 
 In the ARM and Mac dialects, the 0xC8 byte introduces an extension
 mechanism, while in 6502 and Z80 0xC8 is expanded by itself to
-"LOAD").  Similarly for Windows (where it expands to "CASE"):
+"LOAD").  Similarly for Windows (where it expands to "CASE").
+
+In the PDP11 dialect, the byte sequence 0xC8 0x98 expands to "QUIT"
+and the byte sequence 0xC8 NN (where NN is not 0x98) expands to "LOAD"
+followed by whatever NN would have normally epxanded to.
 
 .TS
 tab(|) allbox;

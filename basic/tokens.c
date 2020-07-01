@@ -18,6 +18,7 @@ const char line_num[] = "__line_num__";
 const char fastvar[] = "__fastvar__";
 const char identity[] = "__identity__";
 const char end_marker[] = "__end__";
+const char pdp_c8[] = "__pdp__";
 #define BAD invalid
 
 /* There are a number of other special extension tokens. */
@@ -42,7 +43,7 @@ struct multi_mapping
 {
   unsigned int token_value;
   /* -1 since Mac is missing. */
-  const char* dialect_mappings[NUM_DIALECTS-1];
+  const char* dialect_mappings[LAST_BASE_MAP_DIALECT+1];
 };
 
 static const struct multi_mapping base_map[NUM_TOKENS] = {
@@ -251,7 +252,12 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
        */
       base_dialect = ARM;
     }
-  assert(base_dialect < NUM_DIALECTS-1);
+  else if (dialect == PDP11)
+    {
+      base_dialect = mos6502_32000;
+    }
+
+  assert(base_dialect <= LAST_BASE_MAP_DIALECT);
 
   for (char i = 0; ; ++i)
     {
@@ -297,6 +303,8 @@ bool build_mapping(unsigned dialect, struct expansion_map *m)
 	break;
     }
 
+  if (PDP11 == dialect)
+    m->base[0xC8] = pdp_c8;
   m->base[0x7F] = (ARM == dialect || Mac == dialect) ? "OTHERWISE" : m->ascii[0x7F];
   m->base[0x0D] = m->ascii[0x0D];
   build_map_c6(dialect, m->c6);
@@ -419,6 +427,7 @@ struct dialect_mapping
 static struct dialect_mapping dialects[] =
   {
    { "6502", NULL, mos6502_32000},
+   { "PDP11", NULL, PDP11 },
    {"32000", "6502", mos6502_32000},
    {"Z80", NULL, Z80_80x86},
    {"8086", "Z80", Z80_80x86},
