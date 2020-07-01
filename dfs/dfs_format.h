@@ -12,7 +12,6 @@ enum class Format
    HDFS,
    DFS,
    WDFS,
-   Solidisk,
    OpusDDOS,
   };
   std::string format_name(Format f);

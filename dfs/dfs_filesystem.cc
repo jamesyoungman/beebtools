@@ -103,8 +103,6 @@ namespace DFS
 	return DFS::UiStyle::Acorn;
       case Format::WDFS:
 	return DFS::UiStyle::Watford;
-      case Format::Solidisk:
-	// TODO: are there UI differences?
 	return DFS::UiStyle::Acorn;
       case Format::OpusDDOS:
 	return DFS::UiStyle::Opus;
@@ -226,7 +224,6 @@ std::string format_name(Format f)
     case Format::HDFS: return "HDFS";
     case Format::DFS: return "Acorn DFS";
     case Format::WDFS: return "Watford DFS";
-    case Format::Solidisk: return "Solidisk DFS";
     case Format::OpusDDOS: return "Opus DDOS";
     }
   abort();
