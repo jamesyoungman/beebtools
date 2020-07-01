@@ -260,10 +260,10 @@ std::string description(const BootSetting& opt)
 {
   switch (opt)
     {
-    case BootSetting::None: return "off";
-    case BootSetting::Load: return "load";
-    case BootSetting::Run: return "run";
-    case BootSetting::Exec: return "exec";
+    case BootSetting::None: return "OFF";
+    case BootSetting::Load: return "LOAD";
+    case BootSetting::Run: return "RUN";
+    case BootSetting::Exec: return "EXEC";
     }
   return "?";
 }

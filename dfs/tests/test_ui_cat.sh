@@ -57,7 +57,7 @@ check_cat \
     acorn-dfs-ss-80t-manyfiles.ssd \
     acorn \
 "S0:ABCDEFGHI (27) FM
-Drive 0             Option 1 (load)
+Drive 0             Option 1 (LOAD)
 Dir. :0.$           Lib. :0.$
 
     S0F01    L          S0F02    L
@@ -72,7 +72,7 @@ check_cat \
     acorn-dfs-ss-80t-manyfiles.ssd \
     watford \
 "S0:ABCDEFGHI (27)   Single density
-Drive 0             Option 1 (load)
+Drive 0             Option 1 (LOAD)
 Directory :0.$      Library :0.$
 Work file $.
 
@@ -90,7 +90,7 @@ check_cat \
     acorn-dfs-sd-80t-empty.ssd \
     acorn \
 "             (02) FM
-Drive 0             Option 2 (run)
+Drive 0             Option 2 (RUN)
 Dir. :0.$           Lib. :0.$
 
 
