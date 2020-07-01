@@ -567,15 +567,29 @@ mechanism, while in 6502 and Z80 0xC8 is expanded by itself to
 
 In the PDP11 dialect, the byte sequence 0xC8 0x98 expands to "QUIT"
 and the byte sequence 0xC8 NN (where NN is not 0x98) expands to "LOAD"
-followed by whatever NN would have normally epxanded to.
+followed by whatever NN would have normally epxanded to (and this is
+what
+.I interpreted separately
+means in the table below).
 
 .TS
 tab(|) allbox;
-lb lb lb lb lb lb
-l  c s c s l
-l  c s c s l
-l  ^ s c s ^.
-Bytes|6502|Z80|ARM|Mac|Windows
+lb     lb   lb   lb   lb lb    lb
+l      c    s    c    s  s     l
+l      c    s    s    l  s     l
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      ^    s    c    l  s     ^
+l      c    s    c    s  s     ^
+l      c    s    s    l  s     ^
+l      ^    s    ^    l  s     ^.
+Bytes|6502|Z80|PDP11|ARM|Mac|Windows
 0xC8|"LOAD"|Extension|"CASE"
 0xC8 0x8E|T{
 .I interpreted
@@ -586,30 +600,38 @@ T}|"CASE"|T{
 .br
 .I separately
 T}
-0xC8 0x8F||"CIRCLE"
-0xC8 0x90||"FILL"
-0xC8 0x91||"ORIGIN"
-0xC8 0x92||"POINT"
-0xC8 0x93||"RECTANGLE"
-0xC8 0x94||"SWAP"
-0xC8 0x95||"WHILE"
-0xC8 0x96||"WAIT"
-0xC8 0x97||"MOUSE"
-0xC8 0x98||"QUIT"
-0xC8 0x99||"SYS"
-0xC8 0x9A||"INSTALL"
-0xC8 0x9B||"LIBRARY"
-0xC8 0x9C||"TINT"
-0xC8 0x9D||"ELLIPSE"
-0xC8 0x9E||"BEATS"
-0xC8 0x9F||"TEMPO"
-0xC8 0xA0||"VOICES"
-0xC8 0xA1||"VOICE"
-0xC8 0xA2||"STEREO"
-0xC8 0xA3||"OVERLAY"
-0xC8 0xA4||"MANDEL"
-0xC8 0xA5||"PRIVATE"
-0xC8 0xA6||"EXIT"
+0xC8 0x8F|||"CIRCLE"
+0xC8 0x90|||"FILL"
+0xC8 0x91|||"ORIGIN"
+0xC8 0x92|||"POINT"
+0xC8 0x93|||"RECTANGLE"
+0xC8 0x94|||"SWAP"
+0xC8 0x95|||"WHILE"
+0xC8 0x96|||"WAIT"
+0xC8 0x97|||"MOUSE"
+0xC8 0x98|T{
+.I interpreted
+.br
+.I separately
+T}|"QUIT"
+0xC8 0x99|T{
+.I interpreted
+.br
+.I separately
+T}|"SYS"
+0xC8 0x9A|||"INSTALL"
+0xC8 0x9B|||"LIBRARY"
+0xC8 0x9C|||"TINT"
+0xC8 0x9D|||"ELLIPSE"
+0xC8 0x9E|||"BEATS"
+0xC8 0x9F|||"TEMPO"
+0xC8 0xA0|||"VOICES"
+0xC8 0xA1|||"VOICE"
+0xC8 0xA2|||"STEREO"
+0xC8 0xA3|||"OVERLAY"
+0xC8 0xA4|||"MANDEL"
+0xC8 0xA5|||"PRIVATE"
+0xC8 0xA6|||"EXIT"
 .TE
 
 .SS "Single-Byte Tokens 0xC9 ... 0xCE"
