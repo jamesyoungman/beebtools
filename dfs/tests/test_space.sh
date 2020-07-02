@@ -37,6 +37,7 @@ check_space() {
 
     (
 	dfs space >"${actual}" || exit 1
+	cat "${actual}"
 	printf '%s' "${expected_stdout}" >"${expected}"
 	if ! diff -u "${expected}" "${actual}"
 	then
@@ -59,21 +60,21 @@ check_space acorn-dfs-sd-40t.ssd.gz \
 18A
 
 Total space free = 18A sectors
-"
+" || exit 1
 
 check_space watford-sd-62-with-62-files.ssd.gz \
 "Gap sizes on disc 0:
 2DE
 
 Total space free = 2DE sectors
-"
+" || exit 1
 
 check_space watford-sd-62-with-holes.ssd.gz \
 "Gap sizes on disc 0:
 001 002 009 002 002 2DE 001 002 002 00A
 
 Total space free = 2FD sectors
-"
+" || exit 1
 
 ## Check various usage errors.
 input="${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz"
