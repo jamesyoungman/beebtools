@@ -77,12 +77,12 @@ public:
 	if (!error.empty())
 	  std::cerr << "warning: " << error << "\n";
       }
-    auto mounted(storage.mount(vol, error));
+    std::optional<DFS::VolumeMountResult> mounted(storage.mount(vol, error));
     if (!mounted)
       return faild(vol);
     auto root(mounted->volume()->root());
     // TODO: For Opus DDOS there will be more than one volume per disc.
-    // Therre is a case for seeing the free space in a selected volume,
+    // There is a case for seeing the free space in a selected volume,
     // or in the whole disc.
     ostream_flag_saver restore_cerr_flags(std::cerr);
     std::cerr << "Disc total sectors = "
