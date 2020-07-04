@@ -56,13 +56,14 @@ check_cat() {
 check_cat \
     acorn-dfs-ss-80t-manyfiles.ssd \
     acorn \
-"S0:ABCDEFGHI (27) FM
+"S0:ABCDEFGHI (30) FM
 Drive 0             Option 1 (LOAD)
 Dir. :0.$           Lib. :0.$
 
-    S0F01    L          S0F02    L
-    S0F03               S0F04
-    S0F05    L
+    EMPTY               S0F01    L
+    S0F02    L          S0F03
+    S0F04               S0F05    L
+    TINY
 
   %.S0B01             B.S0B01    L
   B.S0B02    L        V.S0B01
@@ -71,19 +72,20 @@ Dir. :0.$           Lib. :0.$
 check_cat \
     acorn-dfs-ss-80t-manyfiles.ssd \
     watford \
-"S0:ABCDEFGHI (27)   Single density
+"S0:ABCDEFGHI (30)   Single density
 Drive 0             Option 1 (LOAD)
 Directory :0.$      Library :0.$
 Work file $.
 
-     S0F01    L          S0F02    L
-     S0F03               S0F04
-     S0F05    L
+     EMPTY               S0F01    L
+     S0F02    L          S0F03
+     S0F04               S0F05    L
+     TINY
 
    %.S0B01             B.S0B01    L
    B.S0B02    L        V.S0B01
 
-09 files of 31 on 80 tracks
+11 files of 31 on 80 tracks
 " || exit 1
 
 check_cat \

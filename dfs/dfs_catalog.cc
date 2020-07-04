@@ -300,6 +300,14 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 	 pos = static_cast<unsigned short>(pos + 8))
       {
 	auto entry = get_entry_at_offset(pos);
+	if (entry.file_length() == 0)
+	  {
+	    // Even though this catalog entry has a stat sector, it
+	    // actually occupies zero sectors, so it cannot overlap
+	    // with anything.
+	    continue;
+	  }
+
 	safe_name = get_safe_name(entry);
 	if (last_file_start)
 	  {
