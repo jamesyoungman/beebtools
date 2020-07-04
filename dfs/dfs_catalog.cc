@@ -43,6 +43,33 @@ namespace
       }
     return DFS::stringutil::rtrim(title);
   }
+
+  std::string get_safe_name(const DFS::CatalogEntry& entry)
+  {
+    std::string result = entry.full_name();
+    if (std::all_of(result.begin(), result.end(),
+		    [](char ch)
+		    {
+		      return isgraph(static_cast<unsigned char>(ch));
+		    }
+		    ))
+      {
+	return result;
+      }
+    std::ostringstream ss;
+    ss << "non-displayable name "
+       << std::hex << std::uppercase << std::setfill('0');
+    bool first = true;
+    for (const char ch : result)
+      {
+	if (first)
+	  first = false;
+	else
+	  ss << ' ';
+	ss << std::setw(2) << static_cast<unsigned int>(ch);
+      }
+    return ss.str();
+  }
 }
 
 
@@ -267,11 +294,13 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 	return false;
       }
     std::optional<DFS::sector_count_type> last_file_start;
+    std::string safe_name, prev_name;
     for (unsigned short pos = 8;
 	 pos <= last;
 	 pos = static_cast<unsigned short>(pos + 8))
       {
 	auto entry = get_entry_at_offset(pos);
+	safe_name = get_safe_name(entry);
 	if (last_file_start)
 	  {
 	    if (entry.last_sector() >= total_sectors())
@@ -286,13 +315,16 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 	      }
 	    if (entry.last_sector() >= *last_file_start)
 	      {
-		os << "catalog entries " << pos << " and " << (pos-8)
-		   << " indicate files overlapping at sector "
-		   << *last_file_start;
+		os << "catalog entries " << pos/8 << " (" << safe_name
+		   << ") and " << (pos/8-1) << " (" << prev_name
+		   << ") indicate files overlapping at sector "
+		   << std::hex << std::uppercase
+		   << *last_file_start << " hex";
 		error = os.str();
 		return false;
 	      }
 	  }
+	prev_name = safe_name;
 	last_file_start = entry.start_sector();
       }
     return true;

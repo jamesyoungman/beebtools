@@ -489,7 +489,8 @@ opus_with_zero_volumes(const DFS::Geometry& geom)
 	{
 	  is_hdfs = DFS::internal::smells_like_hdfs(*sec1);
 	  is_watford = DFS::internal::smells_like_watford(da, *sec1);
-	  is_acorn_dfs = DFS::internal::smells_like_acorn_dfs(da, *sec1);
+	  std::string acorn_err;
+	  is_acorn_dfs = DFS::internal::smells_like_acorn_dfs(da, *sec1, acorn_err);
 	}
       else
 	{

@@ -304,9 +304,9 @@ namespace DFS
     return true;
   }
 
-  bool smells_like_acorn_dfs(DFS::DataAccess& media, const DFS::SectorBuffer& sec1)
+  bool smells_like_acorn_dfs(DFS::DataAccess& media, const DFS::SectorBuffer& sec1,
+			     std::string& error)
   {
-    std::string error;
     if (sec1[0x06] & 8)
       {
 	// It's most likely HDFS.
@@ -491,12 +491,16 @@ namespace DFS
 	return std::make_pair(DFS::Format::OpusDDOS, opus_sectors);
       }
 
-    if (smells_like_acorn_dfs(access, buf1))
+    std::string acorn_dfs_error;
+    if (smells_like_acorn_dfs(access, buf1, acorn_dfs_error))
       {
 	return std::make_pair(DFS::Format::DFS, get_dfs_sector_count(buf1));
       }
 
-    error = "unable to find a file system match";
+    std::ostringstream ss;
+    ss << "unable to find a file system match; for example, this doesn't "
+       << "seem to be an Acorn DFS disc because: " << acorn_dfs_error;
+    error = ss.str();
     return std::nullopt;
   }
 

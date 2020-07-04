@@ -29,7 +29,7 @@ namespace DFS
   namespace internal		/* exposed for unit testing */
   {
     bool smells_like_acorn_dfs(DataAccess& access,
-			       const DFS::SectorBuffer& sec1);
+			       const DFS::SectorBuffer& sec1, std::string& error);
     bool smells_like_hdfs(const SectorBuffer& sec1);
     bool smells_like_watford(DataAccess& access,
 			     const DFS::SectorBuffer& sec1);
