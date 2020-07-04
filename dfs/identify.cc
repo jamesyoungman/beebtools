@@ -198,12 +198,28 @@ namespace DFS
     // additional catalogs in track 0.  If any appear (from sector 16)
     // to be present but are not in fact valid then this is not a
     // valid Opus DDOS image.
-    DFS::internal::OpusDiscCatalogue opus_disc_cat(sector16, std::nullopt);
-    const std::vector<DFS::internal::OpusDiscCatalogue::VolumeLocation> locations =
-      opus_disc_cat.get_volume_locations();
+    std::vector<DFS::internal::OpusDiscCatalogue::VolumeLocation> locations;
+    try
+      {
+	// The OpusDiscCatalogue constructor validates track numbers
+	// against the optional geompetry argument which we are not
+	// passing.  However, sector 16 also records the total sectors
+	// and the sectors per track, so we can cross check the data
+	// in the volume catalog for self-consistency even without
+	// knowing the geometry.
+	DFS::internal::OpusDiscCatalogue opus_disc_cat(sector16, std::nullopt);
+	locations = opus_disc_cat.get_volume_locations();
+      }
+    catch (BadFileSystem& e)
+      {
+	eliminated_format(DFS::Format::OpusDDOS, e.what());
+	return false;
+      }
+
     if (locations.empty())
       {
-	eliminated_format(DFS::Format::OpusDDOS, "Opus disc catalog would contain zero volumes");
+	eliminated_format(DFS::Format::OpusDDOS,
+			  "Opus disc catalog would contain zero volumes");
 	return false;
       }
     if (DFS::verbose)
@@ -214,24 +230,25 @@ namespace DFS
       {
 	// get_volume_locations should not return any volumes which
 	// are not listed as present (start track > 0) in the catalog.
-	assert(loc.start_sector > 17);
+	assert(loc.start_sector() > 17);
 	if (DFS::verbose)
-	  std::cerr << "subvolume " << loc.volume << " starts at sector " << loc.start_sector << "\n";
+	  std::cerr << "subvolume " << loc.volume()
+		    << " starts at sector " << loc.start_sector() << "\n";
 
-	DFS::Volume vol(DFS::Format::OpusDDOS, loc.catalog_location,
-			loc.start_sector, loc.len, media);
+	DFS::Volume vol(DFS::Format::OpusDDOS, loc.catalog_location(),
+			loc.start_sector(), loc.len(), media);
 	const DFS::Catalog& root(vol.root());
 	std::string error;
 	if (!root.valid(error))
 	  {
 	    std::ostringstream ss;
-	    ss << "catalog for volume " << loc.volume << " would be invalid: " << error;
+	    ss << "catalog for volume " << loc.volume() << " would be invalid: " << error;
 	    eliminated_format(DFS::Format::OpusDDOS, ss.str().c_str());
 	    return false;
 	  }
 	if (DFS::verbose)
 	  {
-	    std::cerr << "Opus volume " << loc.volume << " is valid.\n";
+	    std::cerr << "Opus volume " << loc.volume() << " is valid.\n";
 	  }
       }
 

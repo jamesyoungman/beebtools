@@ -56,12 +56,12 @@ check_space() {
     ( exit $rv )
 }
 
-#check_space acorn-dfs-sd-80t-empty.ssd \
-#"Gap sizes on disc 0:
-#31E
-#
-#Total space free = 31E sectors
-#" || rv=1
+check_space acorn-dfs-sd-80t-empty.ssd \
+"Gap sizes on disc 0:
+31E
+
+Total space free = 31E sectors
+" || rv=1
 
 check_space acorn-dfs-sd-40t.ssd.gz \
 "Gap sizes on disc 0:
@@ -86,12 +86,12 @@ Total space free = 2FD sectors
 
 # This image is special because all of the catalogue entries for files
 # are in the second catalogue fragment.
-#check_space watford-sd-62-first-cat-empty.ssd.gz \
-#"Gap sizes on disc 0:
-#001 002 009 002 002 2DE 001 002 002 00A
-#
-#Total space free = 2FD sectors
-#" || rv=1
+check_space watford-sd-62-first-cat-empty.ssd.gz \
+"Gap sizes on disc 0:
+001 002 009 002 002 2DE 01F
+
+Total space free = 30D sectors
+" || rv=1
 
 ## Check various usage errors.
 input="${TEST_DATA_DIR}/acorn-dfs-sd-40t.ssd.gz"
@@ -139,12 +139,49 @@ then
     rv=1
 fi
 
-# Spurious argument
-echo "test: spurious extra arg"
-if ! fails "${DFS}" --file "${input}" space 0 0
+# Additional arguments
+if ! actualm="$(mktemp --tmpdir=${TMPDIR} actual_space_outputM_XXXXXX.txt)"
 then
-    echo "FAIL: spurious success status with extra argument" >&2
-    rv=1
+    echo "failed to create temporary file" >&2
+    exit 1
 fi
+if ! expectedm="$(mktemp --tmpdir=${TMPDIR} expected_space_outputM_XXXXXX.txt)"
+then
+    echo "failed to create temporary file" >&2
+    exit 1
+fi
+(
+echo "test: extra args"
+if ! "${DFS}" --file "${input}" space 0 0 >"${actualm}"
+then
+    echo "FAIL: space command fails with extra args" >&2
+    exit 1
+fi
+output() {
+    printf '%s' \
+"Gap sizes on disc 0:
+18A
+
+Total space free = 18A sectors
+"
+}
+{
+    # We have a repeated arg "0" so we emit the space
+    # for that "volume" twice and then a summary.
+    output;
+    output;
+    printf '%s' \
+"Total space free in volume    0 = 018A sectors
+Total space free in all volumes = 018A sectors
+"
+} >"${expectedm}"
+if ! diff -u "${expectedm}" "${actualm}"
+then
+    printf 'Result of space command for %s space 0 0 is incorrect.\n' "${input}" >&2
+    exit 1
+fi
+echo "test: extra args: passed"
+) || rv=1
+rm -f "${actualm}" "${expectedm}"
 
 exit "$rv"

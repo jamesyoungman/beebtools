@@ -53,6 +53,11 @@ namespace DFS
     return f == Format::WDFS ? 4 : 2;
   }
 
+  sector_count_type data_sectors_reserved_for_catalog(const Format& f)
+  {
+    return f == Format::OpusDDOS ? 0 : catalog_sectors_for_format(f);
+  }
+
   CatalogEntry::CatalogEntry(const DFS::byte* name, const DFS::byte* metadata)
   {
     std::copy(name, name+8, raw_name_.begin());
@@ -226,10 +231,39 @@ CatalogFragment::CatalogFragment(DFS::Format format,
     // An Acorn DFS catalog takes up 2 sectors, so a catalog whose
     // total sector count is less than 3 is definitely not valid, as
     // the disc would not be able to contain any files.
-    if (total_sectors_ <= catalog_sectors_for_format(disc_format_))
+    if (data_sectors_reserved_for_catalog(disc_format_)
+	== catalog_sectors_for_format(disc_format_))
       {
-	os << "total sector count for catalog is only " << total_sectors_;
-	error = os.str();;
+	// The catalog and data sectors share the same part of the disc,
+	// and both contribute to total_sectors_.
+	if (total_sectors_ <= catalog_sectors_for_format(disc_format_))
+	  {
+	    os << "total sector count for catalog is only " << total_sectors_;
+	    error = os.str();;
+	    return false;
+	  }
+      }
+    else if (disc_format_ == DFS::Format::OpusDDOS)
+      {
+	// For Opus DDOS, the catalog is in track 0 and the data lives
+	// on other trakc.  The minimum size of a volume is 1 track.
+	if (total_sectors_ < 18)
+	  {
+	    os << "total sector count for catalog is only " << total_sectors_;
+	    error = os.str();;
+	    return false;
+	  }
+      }
+    else
+      {
+	os << "this file system format ("
+	   << disc_format_
+	   << ") is not fully supported; "
+	   << data_sectors_reserved_for_catalog(disc_format_)
+	   << " sectors are reserved for the catalog and the catalog occupies "
+	   << catalog_sectors_for_format(disc_format_)
+	   << " sectors in total";
+	error = os.str();
 	return false;
       }
     std::optional<DFS::sector_count_type> last_file_start;
@@ -375,15 +409,6 @@ CatalogFragment::CatalogFragment(DFS::Format format,
       }
     return result;
   }
-
-  std::vector<sector_count_type> Catalog::get_sectors_occupied_by_catalog() const
-  {
-    std::vector<sector_count_type> result;
-    for (DFS::sector_count_type i = 0; i < catalog_sectors(); ++i)
-      result.push_back(DFS::sector_count(i));
-    return result;
-  }
-
 
   void Catalog::map_sectors(const VolumeSelector& vol,
 			    unsigned long catalog_origin_lba,

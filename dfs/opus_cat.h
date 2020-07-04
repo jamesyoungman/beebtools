@@ -20,20 +20,51 @@ namespace DFS
       struct VolumeLocation
       {
       VolumeLocation(int catalog_sector, unsigned long start, unsigned long end, char vol)
-	: catalog_location(catalog_sector),
-	  start_sector(start), len(end - start), volume(vol)
+	: catalog_location_(catalog_sector),
+	  start_sector_(start), len_(end - start), volume_(vol)
 	{
+	  assert(end >= start);
+	  const auto max = std::numeric_limits<DFS::sector_count_type>::max();
+	  assert(start <= max);
+	  assert(end <= max);
 	}
 
 	bool operator<(const VolumeLocation& other) const
 	{
-	  return start_sector < other.start_sector;
+	  return start_sector() < other.start_sector();
 	}
 
-	int catalog_location;
-	unsigned long start_sector;
-	unsigned long len;
-	char volume;
+	int catalog_location() const
+	{
+	  return catalog_location_;
+	}
+
+	unsigned long start_sector() const
+	{
+	  return start_sector_;
+	}
+
+	unsigned long len() const
+	{
+	  return len_;
+	}
+
+	char volume() const
+	{
+	  return volume_;
+	}
+
+	void set_next_sector(unsigned long next)
+	{
+	  assert(next >= start_sector_);
+	  len_ = next - start_sector_;
+	}
+
+      private:
+	int catalog_location_;
+	unsigned long start_sector_;
+	unsigned long len_;
+	char volume_;
       };
 
       static OpusDiscCatalogue get_catalogue(DFS::DataAccess& media,

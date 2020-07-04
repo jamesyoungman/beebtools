@@ -198,6 +198,17 @@ Volume* FileSystem::mount(std::optional<char> key, std::string& error) const
   return it->second.get();
 }
 
+
+DFS::sector_count_type FileSystem::file_storage_space() const
+{
+  DFS::sector_count_type result(0);
+  for (const auto& vol : volumes_)
+    {
+      result += vol.second->file_storage_space();
+    }
+  return result;
+}
+
 std::unique_ptr<SectorMap> FileSystem::get_sector_map(const SurfaceSelector& surface) const
 {
   const bool multiple_catalogs = volumes_.size() > 1;

@@ -73,8 +73,17 @@ namespace DFS
 	   it != locations_.rend();
 	   ++it)
 	{
-	  it->len = next_sector - it->start_sector;
-	  next_sector = it->start_sector;
+	  if (next_sector < it->start_sector())
+	    {
+	      std::ostringstream os;
+	      os << "Opus DDOS volume " << label << " has starting sector "
+		 << std::dec << std::setw(0) << it->start_sector()
+		 << " but the disc itself "
+		 << "only has " << total_disc_sectors_ << " sectors";
+	      throw DFS::BadFileSystem(os.str());
+	    }
+	  it->set_next_sector(next_sector);
+	  next_sector = it->start_sector();
 	}
     }
 

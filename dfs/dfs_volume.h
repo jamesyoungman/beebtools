@@ -33,6 +33,8 @@ class Volume
   {
     return volume_tracks_.origin();
   }
+  DFS::sector_count_type file_storage_space() const;
+
 
  private:
   class Access : public DataAccess
@@ -62,6 +64,7 @@ class Volume
      DataAccess& underlying_;
    };
  sector_count_type catalog_location_;
+ sector_count_type total_sectors_;
  Access volume_tracks_;
  std::unique_ptr<Catalog> root_;
 };

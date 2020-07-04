@@ -15,6 +15,7 @@ namespace DFS
   class SectorMap;
 
   sector_count_type catalog_sectors_for_format(const Format&);
+  sector_count_type data_sectors_reserved_for_catalog(const Format&);
 
 class CatalogEntry
 {
@@ -202,8 +203,6 @@ class Catalog
 		   unsigned long catalog_origin_lba,
 		   unsigned long data_origin_lba,
 		   SectorMap* out) const;
-
-  std::vector<sector_count_type> get_sectors_occupied_by_catalog() const;
 
 private:
   DFS::Format disc_format_;

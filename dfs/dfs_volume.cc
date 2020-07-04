@@ -32,11 +32,11 @@ namespace DFS
 	  for (const auto& vol_loc : dc.get_volume_locations())
 	    {
 	      auto vol = std::make_unique<DFS::Volume>(fmt,
-						       vol_loc.catalog_location,
-						       vol_loc.start_sector,
-						       vol_loc.len,
+						       vol_loc.catalog_location(),
+						       vol_loc.start_sector(),
+						       vol_loc.len(),
 						       media);
-	      result.insert(std::make_pair(vol_loc.volume, std::move(vol)));
+	      result.insert(std::make_pair(vol_loc.volume(), std::move(vol)));
 	    }
 	}
       else
@@ -55,6 +55,7 @@ namespace DFS
 		 unsigned long total_sectors,
 		 DataAccess& media)
     : catalog_location_(catalog_location),
+      total_sectors_(DFS::sector_count(total_sectors)),
       volume_tracks_(first_sector, total_sectors, media),
       root_(std::make_unique<Catalog>(format, catalog_location, media))
   {
@@ -63,6 +64,12 @@ namespace DFS
   const Catalog& Volume::root() const
   {
     return *root_;
+  }
+
+  DFS::sector_count_type
+  Volume::file_storage_space() const
+  {
+    return total_sectors_;
   }
 
   DataAccess& Volume::data_region()

@@ -43,6 +43,7 @@ public:
   std::unique_ptr<SectorMap> get_sector_map(const SurfaceSelector& surface) const;
 
   DFS::sector_count_type disc_sector_count() const;
+  DFS::sector_count_type file_storage_space() const;
   Geometry geometry() const;
   DataAccess& whole_device() const;
 
