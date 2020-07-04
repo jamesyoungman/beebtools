@@ -10,6 +10,25 @@ namespace DFS
 
   namespace internal
   {
+    class NoIo : public DFS::DataAccess
+    {
+    public:
+      NoIo()
+      {
+      }
+
+      ~NoIo()
+      {
+      }
+
+      std::optional<DFS::SectorBuffer> read_block(unsigned long) override
+      {
+	return std::nullopt;
+      }
+    };
+
+    NoIo no_io;
+
     OsFile::OsFile(const std::string& name)
       : file_name_(name), f_(name, std::ifstream::binary)
     {
@@ -91,10 +110,8 @@ namespace DFS
 	geometry_(geometry),
 	initial_skip_(initial_skip), take_(take), leave_(leave), total_(total)
     {
-      // If take_ is 0, we could sequentially read an arbitrary amount
-      // of data from the underlying file without seeing sector 0 of
-      // the device we're presenting.  IOW, we would make no progress.
-      assert(take_ > 0);
+      // If take_ is 0, this signals that the device is unformatted.
+      // Hence that is valid.
     }
 
     FileView::~FileView()
@@ -113,6 +130,12 @@ namespace DFS
 
     std::optional<DFS::SectorBuffer> FileView::read_block(unsigned long sector)
     {
+      if (0 == take_)
+	{
+	  // Device is unformatted.
+	  return std::nullopt;
+	}
+
       if (sector >= total_)
 	{
 	  return std::nullopt;
@@ -167,6 +190,21 @@ namespace DFS
 	sector % take_;
       return media_.read_block(pos);
     }
+
+
+    bool FileView::is_formatted() const
+    {
+      return take_ != 0;
+    }
+
+    FileView FileView::unformatted_device(const std::string& file_name,
+					  const std::string& description,
+					  const DFS::Geometry& geometry)
+    {
+      // setting take=0 signals that I/O to the device is impossible.
+      return FileView(no_io, file_name, description, geometry, 0, 0, 1, 1);
+    }
+
 
   }  // namespace internal
 }  // namespace DFS

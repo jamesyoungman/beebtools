@@ -56,6 +56,10 @@ namespace DFS
 	       sector_count_type take,
 	       sector_count_type leave,
 	       sector_count_type total);
+      static FileView unformatted_device(const std::string& file_name,
+					 const std::string& description,
+					 const DFS::Geometry& geometry);
+      bool is_formatted() const;
 
       // See the comment in read_sector for an explanation of the
       // constructor parameters.

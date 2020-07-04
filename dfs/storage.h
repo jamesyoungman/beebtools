@@ -76,7 +76,7 @@ namespace DFS
   {
   public:
     StorageConfiguration();
-    bool connect_drives(const std::vector<DriveConfig>& sides,
+    bool connect_drives(const std::vector<std::optional<DriveConfig>>& sides,
 			DriveAllocation how);
 
     bool is_drive_connected(drive_number drive) const
@@ -84,7 +84,12 @@ namespace DFS
       auto it = drives_.find(drive);
       if (it == drives_.end())
 	return false;
-      assert(it->second.drive() != 0);
+      if (!it->second)
+	{
+	  // connected but unformatted
+	  return true;
+	}
+      assert(it->second->drive() != 0);
       return true;
     }
 
@@ -92,14 +97,14 @@ namespace DFS
 				    std::string& error);
     std::vector<drive_number> get_all_occupied_drive_numbers() const;
     void show_drive_configuration(std::ostream& os) const;
-    void connect_internal(const DFS::SurfaceSelector& d, const DriveConfig& drive);
+    void connect_internal(const DFS::SurfaceSelector& d, const std::optional<DriveConfig>& drive);
     std::optional<Format> drive_format(drive_number drive, std::string& error) const;
     bool select_drive(const DFS::SurfaceSelector&, AbstractDrive **pp, std::string& error) const;
     std::unique_ptr<DFS::FileSystem> mount_fs(const DFS::SurfaceSelector&, std::string& error) const;
     std::optional<VolumeMountResult> mount(const DFS::VolumeSelector& vol, std::string& error) const;
 
   private:
-    std::map<drive_number, DriveConfig> drives_;
+    std::map<drive_number, std::optional<DriveConfig>> drives_;
     std::map<drive_number, std::unique_ptr<AbstractDrive>> caches_;
   };
 }

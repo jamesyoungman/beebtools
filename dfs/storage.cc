@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -166,15 +167,22 @@ namespace DFS
     return done == to_do;
   }
 
-  void StorageConfiguration::connect_internal(const DFS::SurfaceSelector& n, const DriveConfig& cfg)
+  void StorageConfiguration::connect_internal(const DFS::SurfaceSelector& n, const std::optional<DriveConfig>& cfg)
   {
     const sector_count_type cached_sectors = 4;
     assert(!is_drive_connected(n));
     drives_.emplace(n, cfg);
-    caches_[n] = std::make_unique<CachedDevice>(cfg.drive(), cached_sectors);
+    if (cfg)
+      {
+	caches_[n] = std::make_unique<CachedDevice>(cfg->drive(), cached_sectors);
+      }
+    else
+      {
+	caches_[n] = 0;
+      }
   }
 
-  bool StorageConfiguration::connect_drives(const std::vector<DriveConfig>& drives,
+  bool StorageConfiguration::connect_drives(const std::vector<std::optional<DriveConfig>>& drives,
 					    DriveAllocation how)
   {
     const auto limit = std::numeric_limits<drive_number>::max();
@@ -229,7 +237,9 @@ namespace DFS
 	error = ss.str();
 	return std::nullopt;
       }
-    return it->second.format();
+    if (!it->second)
+      return std::nullopt;	// unformatted
+    return it->second->format();
   }
 
   bool StorageConfiguration::select_drive(const DFS::SurfaceSelector& drive, AbstractDrive **pp,
@@ -243,7 +253,13 @@ namespace DFS
 	error = ss.str();
 	return false;
       }
-    assert(it->second);
+    if (!it->second)
+      {
+	std::ostringstream ss;
+	ss << "the disc in drive " << drive << " is unformatted\n";
+	error = ss.str();
+	return false;
+      }
     *pp = it->second.get();
     return true;
   }
@@ -292,10 +308,16 @@ namespace DFS
 		  if (it != drives_.end())
 		    {
 		      assert(is_drive_connected(d));
-
-		      os << ", " << it->second.drive()->geometry().description();
-		      // TODO: consider printing the format description too, here.
-		      os << ", " << it->second.drive()->description();
+		      if (it->second)
+			{
+			  os << ", " << it->second->drive()->geometry().description();
+			  // TODO: consider printing the format description too, here.
+			  os << ", " << it->second->drive()->description();
+			}
+		      else
+			{
+			  os << ", unformatted";
+			}
 		    }
 		  os << "\n";
 		};

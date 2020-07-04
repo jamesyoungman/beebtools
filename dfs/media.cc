@@ -71,9 +71,14 @@ namespace
 
     bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how, std::string& error) override
     {
-      std::vector<DFS::DriveConfig> drives;
+      std::vector<std::optional<DFS::DriveConfig>> drives;
       for (auto& view : views_)
 	{
+	  if (!view.is_formatted())
+	    {
+	      drives.push_back(std::nullopt);
+	      continue;
+	    }
 	  std::string cause;
 	  std::optional<Format> fmt = identify_file_system(view, view.geometry(), false, cause);
 	  if (!fmt)
@@ -83,7 +88,8 @@ namespace
 	      error = ss.str();
 	      return false;
 	    }
-	  drives.emplace_back(*fmt, &view);
+	  DFS::DriveConfig dc(*fmt, &view);
+	  drives.emplace_back(dc);
 	}
       return storage->connect_drives(drives, how);
     }
@@ -221,27 +227,33 @@ namespace
 	      const unsigned char *entry = got->data() + (i * MMB_ENTRY_BYTES);
 	      const auto slot_status = entry[0x0F];
 	      std::string slot_status_desc;
+	      bool present = false;
 	      int fill = 0;
 	      switch (slot_status)
 		{
 		case 0x00:		// read-only
 		  slot_status_desc = "read-only";
+		  present = true;
 		  fill = 2;
 		  break;
 		case 0x0F:		// read-write
 		  slot_status_desc = "read-write";
+		  present = true;
 		  fill = 1;
 		  break;
 		case 0xF0:		// unformatted
 		  slot_status_desc = "unformatted";
+		  present = false;
 		  fill = 0;
 		  break;
 		case 0xFF:		// invalid, perhaps missing
 		  slot_status_desc = "missing";
+		  present = false;
 		  fill = 4;
 		  continue;
 		default:
 		  slot_status_desc = "unknown";
+		  present = false;
 		  fill = 5;
 		  // TODO: provide infrsstructure for issuing warnings
 		  std::cerr << "MMB entry " << i << " has unexpected type 0x"
@@ -255,14 +267,21 @@ namespace
 		 << (compressed ? "compressed " : "")
 		 << "MMB file " << name;
 	      const std::string disc_name = ss.str();
-	      auto initial_skip_sectors = mmb_sectors + (slot * disc_image_sectors);
-	      DFS::internal::NarrowedFileView narrow(media(), initial_skip_sectors, disc_image_sectors);
-	      add_view(FileView(media(), name, disc_name,
-				disc_image_geom,
-				initial_skip_sectors,
-				disc_image_sectors,
-				DFS::sector_count(0),
-				disc_image_sectors));
+	      if (present)
+		{
+		  auto initial_skip_sectors = mmb_sectors + (slot * disc_image_sectors);
+		  DFS::internal::NarrowedFileView narrow(media(), initial_skip_sectors, disc_image_sectors);
+		  add_view(FileView(media(), name, disc_name,
+				    disc_image_geom,
+				    initial_skip_sectors,
+				    disc_image_sectors,
+				    DFS::sector_count(0),
+				    disc_image_sectors));
+		}
+	      else
+		{
+		  add_view(FileView::unformatted_device(name, disc_name, disc_image_geom));
+		}
 	    }
 	}
     }
