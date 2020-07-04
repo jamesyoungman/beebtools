@@ -248,7 +248,8 @@ namespace DFS
     return true;
   }
 
-  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg, DFS::VolumeSelector* num,
+  bool StorageConfiguration::decode_drive_number(const std::string& drive_arg,
+						 DFS::VolumeSelector* vol,
 						 std::string& error)
   {
     error.clear();
@@ -256,7 +257,14 @@ namespace DFS
     auto got = DFS::VolumeSelector::parse(drive_arg, &end, error);
     if (!got)
       return false;
-    *num = *got;
+    if (end < drive_arg.size())
+      {
+	std::ostringstream ss;
+	ss << "invalid volume " << drive_arg;
+	error = ss.str();
+	return false;
+      }
+    *vol = *got;
     return true;
   }
 

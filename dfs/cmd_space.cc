@@ -72,8 +72,8 @@ public:
 
   const std::string usage() const override
   {
-    return "usage: " + name() + " drive\n"
-      "Displays a list of spaces between files.\n";
+    return "usage: " + name() + " drive [drive...]\n"
+      "Displays a list of spaces between files.  More than one drive can be specified.\n";
   }
 
   const std::string description() const override
@@ -92,12 +92,18 @@ public:
     std::optional<std::vector<DFS::VolumeSelector>> selected =
       select_volumes(ctx, args, error);
     if (!selected)
-      return false;
+      {
+	std::cerr << error << "\n";
+	return false;
+      }
     for (const DFS::VolumeSelector& selector : *selected)
       {
 	auto mounted = storage.mount(selector, error);
 	if (!mounted)
-	  return false;
+	  {
+	    std::cerr << error << "\n";
+	    return false;
+	  }
 	auto root(mounted->volume()->root());
 
 	// Files occur on the disk in a kind of reverse order.  The last
