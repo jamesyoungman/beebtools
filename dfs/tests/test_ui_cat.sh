@@ -66,7 +66,7 @@ Dir. :0.$           Lib. :0.$
 
   %.S0B01             B.S0B01    L
   B.S0B02    L        V.S0B01
-"
+" || exit 1
 
 check_cat \
     acorn-dfs-ss-80t-manyfiles.ssd \
@@ -84,7 +84,7 @@ Work file $.
    B.S0B02    L        V.S0B01
 
 09 files of 31 on 80 tracks
-"
+" || exit 1
 
 check_cat \
     acorn-dfs-sd-80t-empty.ssd \
@@ -94,5 +94,5 @@ Drive 0             Option 2 (RUN)
 Dir. :0.$           Lib. :0.$
 
 
-"
+" || exit 1
 # TODO: one of the final newlines above is extraneous.
