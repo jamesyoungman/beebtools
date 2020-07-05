@@ -1,5 +1,7 @@
 #include "commands.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cassert>
 #include <iomanip>
@@ -28,9 +30,22 @@ namespace
   class colstream
   {
   public:
-    colstream(std::ostream& os)
-      : col_(0u), forward_to_(os)
+    colstream(std::ostream& os, const std::string& lineprefix)
+      : col_(0u), forward_to_(os), line_prefix_(lineprefix)
     {
+      emit_prefix();
+    }
+
+    void emit_prefix()
+    {
+      // This isn't supposed to cause col_ to change.
+      for (char ch : line_prefix_)
+	forward_to_.put(ch);
+    }
+
+    void set_prefix(const std::string& s)
+    {
+      line_prefix_ = s;
     }
 
     string::size_type current_column() const
@@ -40,8 +55,7 @@ namespace
 
     colstream& advance_to_column(std::string::size_type n)
     {
-      assert(col_ <= n);
-      if (n == 0)
+      if (col_ > n)
 	put('\n');
       while (col_ < n)
 	put(' ');
@@ -54,6 +68,9 @@ namespace
       std::ostringstream ss;
       ss.copyfmt(forward_to_);
       ss << item;
+      // Implementation limitation: if the format of item contains \n,
+      // we will not emit the prefix after it, which is probably a
+      // bug.
       forward_to_ << item;
       update_col(ss.str());
       return *this;
@@ -63,6 +80,8 @@ namespace
     {
       forward_to_.put(ch);
       update_col(ch);
+      if (ch == '\n')
+	emit_prefix();
       return *this;
     }
 
@@ -137,20 +156,26 @@ namespace
 
     std::string::size_type col_;
     std::ostream& forward_to_;
+    std::string line_prefix_;
   };
 
-  std::string title_and_cycle(const std::string& title,
+  std::string title_and_cycle(DFS::UiStyle ui,
+			      const std::string& title,
 			      std::optional<int> cycle)
   {
+    const int title_width = ui == DFS::UiStyle::Opus ? 0 : 12;
     std::ostringstream os;
-    int title_width = 12;
     os << std::left << std::setw(title_width) << std::setfill(' ')
        << title;
     if (cycle)
       {
+	if (ui != DFS::UiStyle::Opus || !title.empty())
+	  {
+	    os << ' ';
+	  }
 	os << std::setbase(16);
-	os << " (" << std::setfill('0') << std::right << std::setw(2)
-	   << (*cycle) << ")";
+	os << '(' << std::setfill('0') << std::right << std::setw(2)
+	   << (*cycle) << ')';
       }
     return os.str();
   }
@@ -162,10 +187,40 @@ namespace
     switch (ui)
       {
       case DFS::UiStyle::Watford:
+      case DFS::UiStyle::Opus:
 	return double_density ? "Double density" : "Single density";
       default:
 	return double_density ? "MFM" : "FM";
       }
+  }
+
+  bool boot_setting_in_upper_case(DFS::UiStyle ui)
+  {
+    switch (ui)
+      {
+      case DFS::UiStyle::Opus:
+      case DFS::UiStyle::Watford:
+	return false;
+      case DFS::UiStyle::Acorn:
+	// also case DFS::UiStyle::HDFS:
+      case DFS::UiStyle::Default:
+      default:
+	return true;
+      }
+  }
+
+  std::string describe_boot_setting(const DFS::BootSetting& opt, DFS::UiStyle ui)
+  {
+    std::ostringstream ss;
+    std::string desc, display;
+    desc = description(opt);
+    display.resize(desc.size());
+    std::function<int(int)> uc_lc = boot_setting_in_upper_case(ui) ?
+      [](int ch) -> int { return std::toupper(static_cast<unsigned int>(ch)); } :
+      [](int ch) -> int { return std::tolower(static_cast<unsigned int>(ch)); };
+    std::transform(desc.begin(), desc.end(), display.begin(), uc_lc);
+    ss << std::dec << value(opt) << " (" << display << ")";
+    return ss.str();
   }
 
   class CommandCat : public DFS::CommandInterface
@@ -289,8 +344,6 @@ namespace
 	    std::cerr << "unknown or inapplicable";
 	  std::cerr << "\n";
 	}
-      std::cout << std::setfill(' ');
-      colstream out(std::cout);
       std::string error;
       auto fail = [&error]()
 		  {
@@ -336,6 +389,9 @@ namespace
       DFS::Geometry geom = file_system->geometry();
       const auto ui = file_system->ui_style(ctx);
 
+      std::cout << std::setfill(' ');
+      colstream out(std::cout, ui == DFS::UiStyle::Opus ? " " : "");
+
       // Produce output which is suitable for the actual width of the device
       // and the selected ui.
       constexpr int col_width = 20;
@@ -366,32 +422,82 @@ namespace
 			     }
 			 };
 
-      out << title_and_cycle(catalog.title(), catalog.sequence_number());
-      if (DFS::UiStyle::Watford == ui)
-	next_column(out);
-      else
-	out << " ";
+      out << title_and_cycle(ui, catalog.title(), catalog.sequence_number());
+
+      // In Watford DFS, the density is shown in the following column.
+      // In Opus DDOS, the density is shown on the following line.
+      // In Acorn DFS, it's just printed after a space.
+      switch (ui)
+	{
+	case DFS::UiStyle::Watford:
+	  next_column(out);
+	  break;
+	case DFS::UiStyle::Opus:
+	  next_line(out);
+	  break;
+	default:
+	  out << " ";
+	  break;
+	}
       out << density_desc(geom, ui) << std::setbase(10);
-      next_column(out);
+
+      if (ui == DFS::UiStyle::Opus)
+	{
+	  const std::string labels("ABCDEFGH");
+	  std::string subvol_summary;
+	  subvol_summary.reserve(8);
+	  std::vector<std::optional<char>> subvolumes = file_system->subvolumes();
+	  bool has_subvolumes = false;
+	  for (char ch : labels)
+	    {
+	      if (std::find(subvolumes.begin(), subvolumes.end(), ch) == subvolumes.end())
+		ch = '.';
+	      else
+		has_subvolumes = true;
+	      subvol_summary.push_back(ch);
+	    }
+	  if (has_subvolumes)
+	    {
+	      next_column(out);
+	      out << subvol_summary;
+	    }
+	}
+      next_line(out);
+
       out << "Drive "<< d;
       next_column(out);
-      out << "Option " << catalog.boot_setting();
+      out << "Option " << describe_boot_setting(catalog.boot_setting(), ui);
       next_line(out);
+
+      std::string dir_label, lib_label;
+      switch (ui)
+	{
+	case DFS::UiStyle::Acorn:
+	  // Actually the Acorn 8271 DFS ROM uses the unabbreviated
+	  // words too.  Only the Acorn 1770 DFS ROM uses the
+	  // abbreviated form, but we don't distinguish those variants
+	  // in the UI.
+	  // TODO: HDFS uses the abbreviated forms too.
+	  dir_label = "Dir.";
+	  lib_label = "Lib.";
+	  break;
+	default:
+	  dir_label = "Directory";
+	  lib_label = "Library";
+	  break;
+	}
+
+      out << dir_label << " :" << ctx.current_volume << "." << ctx.current_directory;
+      next_column(out);
+      out << lib_label << " :0.$";
 
       if (DFS::UiStyle::Watford == ui)
 	{
-	  out << "Directory :" << ctx.current_volume << "." << ctx.current_directory;
-	  next_column(out);
-	  out << "Library :0.$";
 	  next_column(out);
 	  out << "Work file $.";
 	}
-      else
-	{
-	  out << "Dir. :" << ctx.current_volume << "." << ctx.current_directory;
-	  next_column(out);
-	  out << "Lib. :0.$";
-	}
+      // In Opus DDOS, only the header itself has a leading space.
+      out.set_prefix("");
       next_line(out);
       next_line(out);
 
@@ -455,7 +561,12 @@ namespace
 	    }
 	}
       next_line(out);
-      if (DFS::UiStyle::Watford == ui)
+      if (DFS::UiStyle::Opus == ui)
+	{
+	  if (entries.empty())
+	    out << "No file\n";
+	}
+      else if (DFS::UiStyle::Watford == ui)
 	{
 	  next_line(out);
 	  out << std::setw(2) << std::setfill('0') << std::right << entries.size()

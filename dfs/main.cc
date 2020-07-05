@@ -26,6 +26,8 @@ namespace
        {"acorn",   DFS::UiStyle::Acorn},
        {"watford", DFS::UiStyle::Watford},
        {"Watford", DFS::UiStyle::Watford},
+       {"Opus",    DFS::UiStyle::Opus},
+       {"opus",    DFS::UiStyle::Opus},
       };
     auto it = styles.find(name);
     if (it != styles.end())

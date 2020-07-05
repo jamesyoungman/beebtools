@@ -11,15 +11,12 @@ shift
 # Ensure TMPDIR is set.
 : ${TMPDIR:=/tmp}
 
-check_cat() {
+check_cat_impl() {
     input="$1"
     ui="$2"
-    expected_text="$3"
-    shift 3
-
-    dfs() {
-	COLUMNS=40 "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@"
-    }
+    extras="$3"
+    expected_text="$4"
+    shift 4
 
     if ! actual="$(mktemp --tmpdir=${TMPDIR} cat_out_XXXXXX)"
     then
@@ -37,9 +34,15 @@ check_cat() {
 	rm -f "${actual}" "${fexpected}"
     }
 
+    echo running "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" cat $extras
     printf "%s" "${expected_text}" > "${fexpected}" || exit 1
-    if ! dfs cat > "${actual}"
+    COLUMNS=40
+    export COLUMNS
+    "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@" cat $extras > "${actual}"
+    rv=$?
+    if [ $rv -ne 0 ]
     then
+	echo "Exit status $rv for" "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@" cat
 	exit 1
     fi
     if ! diff -u "${fexpected}" "${actual}"
@@ -53,9 +56,25 @@ check_cat() {
     fi
 }
 
-check_cat \
-    acorn-dfs-ss-80t-manyfiles.ssd \
-    acorn \
+check_cat() {
+    check_cat_impl "$@"
+    rv=$?
+    if [ $rv -eq 0 ]
+    then
+	result=PASS
+    elif [ $rv -gt 0 ]
+    then
+	result=FAIL
+    else
+	result=OTHER
+    fi
+    printf "%20s: %8s ui: %s\n" "$1" "$2" "${result}"
+    return $rv
+}
+
+
+
+check_cat acorn-dfs-ss-80t-manyfiles.ssd acorn "" \
 "S0:ABCDEFGHI (30) FM
 Drive 0             Option 1 (LOAD)
 Dir. :0.$           Lib. :0.$
@@ -69,11 +88,9 @@ Dir. :0.$           Lib. :0.$
   B.S0B02    L        V.S0B01
 " || exit 1
 
-check_cat \
-    acorn-dfs-ss-80t-manyfiles.ssd \
-    watford \
+check_cat acorn-dfs-ss-80t-manyfiles.ssd watford "" \
 "S0:ABCDEFGHI (30)   Single density
-Drive 0             Option 1 (LOAD)
+Drive 0             Option 1 (load)
 Directory :0.$      Library :0.$
 Work file $.
 
@@ -88,9 +105,7 @@ Work file $.
 11 files of 31 on 80 tracks
 " || exit 1
 
-check_cat \
-    acorn-dfs-sd-80t-empty.ssd \
-    acorn \
+check_cat acorn-dfs-sd-80t-empty.ssd acorn "" \
 "             (02) FM
 Drive 0             Option 2 (RUN)
 Dir. :0.$           Lib. :0.$
@@ -98,3 +113,24 @@ Dir. :0.$           Lib. :0.$
 
 " || exit 1
 # TODO: one of the final newlines above is extraneous.
+
+
+check_cat opus-ddos-80t-ds-dd-vols-ABCDEFGH.sdd.gz opus "" \
+" (01)
+ Double density      ABCDEFGH
+ Drive 0             Option 0 (off)
+ Directory :0.$      Library :0.$
+
+
+  L.VOL-A
+" || exit 1
+
+check_cat opus-ddos-80t-ds-dd-vols-ABCDEFGH.sdd.gz opus 0B \
+" (01)
+ Double density      ABCDEFGH
+ Drive 0B            Option 0 (off)
+ Directory :0.$      Library :0.$
+
+
+  L.VOL-B
+" || exit 1

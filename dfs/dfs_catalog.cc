@@ -478,6 +478,18 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 
 namespace std
 {
+  std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt)
+  {
+    std::ostream::sentry s(os);
+    if (s)
+      {
+	std::ostringstream ss;
+	ss << std::dec << value(opt) << " (" << description(opt) << ")";
+	os << ss.str();
+      }
+    return os;
+  }
+
   ostream& operator<<(ostream& outer_os, const DFS::CatalogFragment& f)
   {
     std::ostream::sentry s(outer_os);

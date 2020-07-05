@@ -266,6 +266,8 @@ bool single_sided_filesystem(Format fmt, DataAccess& media)
 
 std::string description(const BootSetting& opt)
 {
+  // TODO: Opus DDOS prints these labels in lower case.
+  // HDFS is upper case.
   switch (opt)
     {
     case BootSetting::None: return "OFF";
@@ -291,18 +293,6 @@ namespace std
     if (s)
       {
 	os << DFS::format_name(f);
-      }
-    return os;
-  }
-
-  std::ostream& operator<<(std::ostream& os, const DFS::BootSetting& opt)
-  {
-    std::ostream::sentry s(os);
-    if (s)
-      {
-	std::ostringstream ss;
-	ss << std::dec << value(opt) << " (" << description(opt) << ")";
-	os << ss.str();
       }
     return os;
   }
