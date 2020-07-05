@@ -194,35 +194,6 @@ namespace
       }
   }
 
-  bool boot_setting_in_upper_case(DFS::UiStyle ui)
-  {
-    switch (ui)
-      {
-      case DFS::UiStyle::Opus:
-      case DFS::UiStyle::Watford:
-	return false;
-      case DFS::UiStyle::Acorn:
-	// also case DFS::UiStyle::HDFS:
-      case DFS::UiStyle::Default:
-      default:
-	return true;
-      }
-  }
-
-  std::string describe_boot_setting(const DFS::BootSetting& opt, DFS::UiStyle ui)
-  {
-    std::ostringstream ss;
-    std::string desc, display;
-    desc = description(opt);
-    display.resize(desc.size());
-    std::function<int(int)> uc_lc = boot_setting_in_upper_case(ui) ?
-      [](int ch) -> int { return std::toupper(static_cast<unsigned int>(ch)); } :
-      [](int ch) -> int { return std::tolower(static_cast<unsigned int>(ch)); };
-    std::transform(desc.begin(), desc.end(), display.begin(), uc_lc);
-    ss << std::dec << value(opt) << " (" << display << ")";
-    return ss.str();
-  }
-
   class CommandCat : public DFS::CommandInterface
   {
   public:
@@ -466,7 +437,7 @@ namespace
 
       out << "Drive "<< d;
       next_column(out);
-      out << "Option " << describe_boot_setting(catalog.boot_setting(), ui);
+      out << "Option " << catalog.boot_setting();
       next_line(out);
 
       std::string dir_label, lib_label;

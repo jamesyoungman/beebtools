@@ -90,7 +90,7 @@ Dir. :0.$           Lib. :0.$
 
 check_cat acorn-dfs-ss-80t-manyfiles.ssd watford "" \
 "S0:ABCDEFGHI (30)   Single density
-Drive 0             Option 1 (load)
+Drive 0             Option 1 (LOAD)
 Directory :0.$      Library :0.$
 Work file $.
 
