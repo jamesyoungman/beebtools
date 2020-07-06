@@ -110,6 +110,11 @@ is the name of their DFS directory.
 The second file is a \*(lq.inf\*(rq file.
 This file contains the DFS file's original name (with directory) and
 the DFS metadata (load address, execution address, lock status).
+The names of the generated files are not currently specified,
+but are determined by and similar to the files on the DFS disc.
+This aspect is not currently specified because I haven't decided
+under what circumstances to translate the file names for DOS
+compatibility.
 See
 .B "INF STANDARD ARCHIVE FILE FORMAT" for details.
 
@@ -615,12 +620,12 @@ Variant|Status
 Acorn DFS|Supported.
 Watford DFS|Supported.  Some differences are described below.
 Opus DDOS|T{
-Supported but only lightly tested.
+Supported.
 See
 .BR "Opus DDOS Drive Numbers" .
 T}
 Solidisk DFS|Not yet supported.
-HDFS|Not yet supported.
+HDFS|Not yet supported.  Extended disc images do not work yet.
 .TE
 
 What "not yet supported" means in practice is that such images will be
@@ -659,13 +664,8 @@ option currently results in a configuration in which several hundred
 disc images are attached.  With the
 .B \-\-drive-first
 option, the drive numbers can be allocated sequentially.
-Because the MMB file format supports marking slots as invalid, there
-is no direct correspondance between the MMB slot number and the number
-of the drive to which the relevant disc image becomes connected.
-In other words, the current drive number assignment scheme doesn't
-have great usability characteristics.
-These behaviours may need to change in the future (breaking backward
-compatibility) to become more usable.
+The way in which drive numbers are assigned may need to change in the
+future (breaking backward compatibility) to become more usable.
 
 .SS Drive Number Handling
 
