@@ -17,7 +17,7 @@ The software can be built (and tested) with cmake, like this:
 ```sh
 mkdir _build
 cd _build
-cmake .. && make && ctest -N
+cmake .. && make && ctest
 ```
 
 ## Build Options
