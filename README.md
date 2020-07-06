@@ -7,7 +7,7 @@ from computers in the BBC Microcomputer family.
 
 It includes
 
-1.  dfs: a program for extracting data from Acorn DFS format floppy discs (or more typically, floppy disc images)
+1.  dfs: a program for extracting data from Acorn DFS format floppy disc images
 2.  bbcbasic_to_text: a program which converts a saved BBC basic program to text
 
 ## How Do I Build It?
