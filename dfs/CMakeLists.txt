@@ -30,6 +30,7 @@ target_sources(dfslib
   # File format and geometry probing
   identify.cc
   # I/O machinery
+  hfe.cc
   storage.cc
   driveselector.cc
   geometry.cc

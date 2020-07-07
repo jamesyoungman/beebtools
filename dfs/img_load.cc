@@ -57,6 +57,12 @@ namespace DFS
 	error = ss.str();
 	return 0;
       }
+
+    if (extensions.back() == "hfe")
+      {
+	return make_hfe_file(name, error);
+      }
+
     std::unique_ptr<DataAccess> da;
     if (extensions.back() == "gz")
       {

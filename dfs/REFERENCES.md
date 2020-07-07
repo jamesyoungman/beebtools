@@ -91,6 +91,7 @@ Manual](http://chrisacorns.computinghistory.org.uk/docs/Solidisk/Solidisk_DiskFi
 ## ECMA Standards
 
 *  8"
+   *  [ECMA-54 - Data interchange on 200 mm flexible disk cartridges using two-frequency recording at 13 262 ftprad on one side](http://dev.ecma-international.org/publications-and-standards/standards/ecma-54/)
    *  [ECMA-58 - 200mm Flexible Disk Cartridge Labelling and File Structure for Information Interchange](http://dev.ecma-international.org/publications-and-standards/standards/ecma-58/)
    *  [ECMA-59 - Data interchange on 200 mm flexible disk cartridges using two-frequency recording at 13 262 ftprad on both sides](http://dev.ecma-international.org/publications-and-standards/standards/ecma-59/)
 * 5.25"
