@@ -162,6 +162,10 @@ const char *encoding_name(unsigned char val)
     }
 }
 
+const char * alt_encoding(unsigned char val)
+{
+  return val == 0x00 ? "yes" : "no";
+}
 
 std::ostream& operator<<(std::ostream& os, const picfileformatheader& h)
 {
@@ -182,12 +186,12 @@ std::ostream& operator<<(std::ostream& os, const picfileformatheader& h)
 	 << " = " << (h.track_list_offset * 512) << " bytes\n";
       os << "write_allowed           " << std::boolalpha << bool(h.write_allowed) << "\n";
       os << "single_step             " << step_mode(h.single_step) << "\n";
-      os << "track0s0_altencoding    " << static_cast<unsigned int>(h.track0s0_altencoding) << "\n";
+      os << "track0s0_altencoding    " << alt_encoding(h.track0s0_altencoding) << "\n";
       os << "track0s0_encoding       "
 	 << static_cast<unsigned int>(h.track0s0_encoding)
 	 << " => " << encoding_name(h.track0s0_altencoding == 0 ?
 				    h.track0s0_encoding : h.track_encoding) << "\n";
-      os << "track0s1_altencoding    " << static_cast<unsigned int>(h.track0s1_altencoding) << "\n";
+      os << "track0s1_altencoding    " << alt_encoding(h.track0s1_altencoding) << "\n";
       os << "track0s1_encoding       "
 	 << static_cast<unsigned int>(h.track0s1_encoding)
 	 << " => " << encoding_name(h.track0s1_altencoding == 0 ?
