@@ -67,7 +67,7 @@ namespace DFS
 	    std::ostringstream ss;
 	    ss << "Compressed image file " << name
 	       << " has no additional extension, "
-	       << "we cnanot tell what kind of image file it contains.\n";
+	       << "we cannot tell what kind of image file it contains.\n";
 	    error = ss.str();
 	    return 0;
 	  }
