@@ -42,7 +42,7 @@ target_sources(dfslib
   opus_cat.cc
   )
 if ( ZLIB_FOUND )
-  target_sources(dfslib PRIVATE gzmedia.cc)
+  target_sources(dfslib PRIVATE img_gzfile.cc)
 endif (ZLIB_FOUND)
 target_compile_options(dfslib PRIVATE ${EXTRA_WARNING_OPTIONS})
 
