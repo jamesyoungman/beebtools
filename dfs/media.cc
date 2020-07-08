@@ -14,6 +14,7 @@
 #include "dfstypes.h"
 #include "fileio.h"
 #include "identify.h"
+#include "img_sdf.h"
 #include "storage.h"
 #include "stringutil.h"
 
@@ -48,69 +49,7 @@ namespace
     std::string msg_;
   };
 
-
-
-  // A ViewFile is a disc image file which contains the sectors of one
-  // or more emulated devices, in order, but with regular gaps.
-  // Examples include a DSD file (which contains all the sectors from
-  // one side of a cylinder, then all the sectors of the other side of
-  // a cylinder) or MMB files (which contains a concatenation of many
-  // disc images).  An SSD file is a degenarate example, in the sense
-  // that it can be described in the same way but has no gaps.
-  class ViewFile : public DFS::AbstractImageFile
-  {
-  public:
-    ViewFile(const std::string& name, std::unique_ptr<DFS::DataAccess>&& media)
-      : name_(name), data_(std::move(media))
-      {
-      }
-
-    ~ViewFile() override
-      {
-      }
-
-    bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how, std::string& error) override
-    {
-      std::vector<std::optional<DFS::DriveConfig>> drives;
-      for (auto& view : views_)
-	{
-	  if (!view.is_formatted())
-	    {
-	      drives.push_back(std::nullopt);
-	      continue;
-	    }
-	  std::string cause;
-	  std::optional<Format> fmt = identify_file_system(view, view.geometry(), false, cause);
-	  if (!fmt)
-	    {
-	      std::ostringstream ss;
-	      ss << "unable to connect " << view.description() << ": " << cause;
-	      error = ss.str();
-	      return false;
-	    }
-	  DFS::DriveConfig dc(*fmt, &view);
-	  drives.emplace_back(dc);
-	}
-      return storage->connect_drives(drives, how);
-    }
-
-    void add_view(const FileView& v)
-    {
-      views_.push_back(v);
-    }
-
-    DFS::DataAccess& media()
-    {
-      return *data_;
-    }
-
-  private:
-    std::string name_;
-    std::vector<FileView> views_;
-    std::unique_ptr<DFS::DataAccess> data_;
-  };
-
-  class NonInterleavedFile : public ViewFile
+  class NonInterleavedFile : public DFS::ViewFile
   {
   public:
     explicit NonInterleavedFile(const std::string& name, bool compressed,
@@ -151,7 +90,7 @@ namespace
     }
   };
 
-  class InterleavedFile : public ViewFile
+  class InterleavedFile : public DFS::ViewFile
   {
   public:
     explicit InterleavedFile(const std::string& name, bool compressed,
@@ -196,96 +135,6 @@ namespace
     }
   };
 
-  class MmbFile : public ViewFile
-  {
-  public:
-    static constexpr unsigned long MMB_ENTRY_BYTES = 16;
-
-    explicit MmbFile(const std::string& name, bool compressed,
-		     std::unique_ptr<DFS::DataAccess>&& access)
-      : ViewFile(name, std::move(access))
-    {
-      const DFS::Geometry disc_image_geom = DFS::Geometry(80, 1, 10, DFS::Encoding::FM);
-      const auto disc_image_sectors = disc_image_geom.total_sectors();
-      const unsigned long mmb_sectors = 32;
-      const unsigned entries_per_sector = DFS::SECTOR_BYTES/MMB_ENTRY_BYTES;
-      for (unsigned sec = 0; sec < mmb_sectors; ++sec)
-	{
-	  auto got = media().read_block(sec);
-	  if (!got)
-	    throw DFS::BadFileSystem("MMB file is too short");
-	  for (unsigned i = 0; i < entries_per_sector; ++i)
-	    {
-	      if (sec == 0 && i == 0)
-		{
-		  // We don't actually care about the header; it specifies
-		  // which drives are loaded at boot time, but we don't
-		  // need to know that.
-		  continue;
-		}
-	      const int slot = (sec * entries_per_sector) + i - 1;
-	      const unsigned char *entry = got->data() + (i * MMB_ENTRY_BYTES);
-	      const auto slot_status = entry[0x0F];
-	      std::string slot_status_desc;
-	      bool present = false;
-	      int fill = 0;
-	      switch (slot_status)
-		{
-		case 0x00:		// read-only
-		  slot_status_desc = "read-only";
-		  present = true;
-		  fill = 2;
-		  break;
-		case 0x0F:		// read-write
-		  slot_status_desc = "read-write";
-		  present = true;
-		  fill = 1;
-		  break;
-		case 0xF0:		// unformatted
-		  slot_status_desc = "unformatted";
-		  present = false;
-		  fill = 0;
-		  break;
-		case 0xFF:		// invalid, perhaps missing
-		  slot_status_desc = "missing";
-		  present = false;
-		  fill = 4;
-		  continue;
-		default:
-		  slot_status_desc = "unknown";
-		  present = false;
-		  fill = 5;
-		  // TODO: provide infrsstructure for issuing warnings
-		  std::cerr << "MMB entry " << i << " has unexpected type 0x"
-			    << std::setw(2) << std::uppercase << std::setbase(16)
-			    << entry[0x0F] << "\n";
-		  continue;
-		}
-	      std::ostringstream ss;
-	      ss << std::setfill(' ') << std::setw(fill) << "" << slot_status_desc
-		 << " slot " << std::setw(3) << slot << " of "
-		 << (compressed ? "compressed " : "")
-		 << "MMB file " << name;
-	      const std::string disc_name = ss.str();
-	      if (present)
-		{
-		  auto initial_skip_sectors = mmb_sectors + (slot * disc_image_sectors);
-		  DFS::internal::NarrowedFileView narrow(media(), initial_skip_sectors, disc_image_sectors);
-		  add_view(FileView(media(), name, disc_name,
-				    disc_image_geom,
-				    initial_skip_sectors,
-				    disc_image_sectors,
-				    DFS::sector_count(0),
-				    disc_image_sectors));
-		}
-	      else
-		{
-		  add_view(FileView::unformatted_device(name, disc_name, disc_image_geom));
-		}
-	    }
-	}
-    }
-  };
 
   std::deque<std::string> split_extensions(const std::string& file_name)
   {
@@ -351,7 +200,7 @@ namespace DFS
 	  }
 	if (ext == "mmb")
 	  {
-	    return std::make_unique<MmbFile>(name, compressed, std::move(da));
+	    return make_mmb_file(name, compressed, std::move(da));
 	  }
 	std::ostringstream ss;
 	ss << "Image file " << name << " does not seem to be of a supported type; "
