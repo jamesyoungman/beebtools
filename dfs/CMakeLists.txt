@@ -7,19 +7,56 @@ if ( ZLIB_FOUND )
     add_definitions(-DUSE_ZLIB)
 endif( ZLIB_FOUND )
 
+set(DFSBASE_HEADERS
+  exceptions.h
+  stringutil.h
+  dfs.h
+  )
+
 add_library(dfsbase OBJECT)
 target_sources(dfsbase
   PRIVATE
   exceptions.cc
   stringutil.cc
   verbose.cc
-  exceptions.h
-  stringutil.h
-  dfs.h
+  ${DFSBASE_HEADERS}
   )
 target_compile_options(dfsbase PRIVATE ${EXTRA_WARNING_OPTIONS})
 
 add_library(dfslib OBJECT)
+
+set(DFSLIB_HEADERS
+  # base stuff
+  cleanup.h
+  dfstypes.h
+  # command infrastructure
+  commands.h
+  # Disc image file handling
+  img_fileio.h
+  img_sdf.h
+  # File format and geometry probing
+  # I/O machinery
+  abstractio.h
+  geometry.h
+  media.h
+  storage.h
+  # File System implementation
+  dfs_catalog.h
+  dfs_filesystem.h
+  dfs_format.h
+  dfs_unused.h
+  dfs_volume.h
+  opus_cat.h
+  # UI
+  dfscontext.h
+  driveselector.h
+  afsp.h
+  fsp.h
+  # Other
+  crc.h
+  regularexpression.h
+  )
+
 target_sources(dfslib
   PRIVATE
   # Disc image file handling
@@ -35,7 +72,6 @@ target_sources(dfslib
   driveselector.cc
   geometry.cc
   # File System implementation
-  crc.cc
   dfs_catalog.cc
   dfs_filesystem.cc
   dfs_unused.cc
@@ -44,6 +80,11 @@ target_sources(dfslib
   # Filename and wildcard implementation
   fsp.cc
   afsp.cc
+  # UI-ish
+  crc.cc  # used to build standard archive files.
+  # Header files.
+  ${DFSBASE_HEADERS}
+  ${DFSLIB_HEADERS}
   )
 if ( ZLIB_FOUND )
   target_sources(dfslib PRIVATE img_gzfile.cc)
@@ -55,33 +96,6 @@ install(TARGETS dfs
   RUNTIME
   DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 target_compile_options(dfs PRIVATE ${EXTRA_WARNING_OPTIONS})
-
-set(HEADERS
-  abstractio.h
-  afsp.h
-  cleanup.h
-  commands.h
-  crc.h
-  dfscontext.h
-  dfs.h
-  dfs_catalog.h
-  dfs_filesystem.h
-  dfs_format.h
-  dfs_unused.h
-  dfs_volume.h
-  dfstypes.h
-  driveselector.h
-  exceptions.h
-  fsp.h
-  geometry.h
-  img_fileio.h
-  img_sdf.h
-  media.h
-  opus_cat.h
-  regularexpression.h
-  storage.h
-  stringutil.h
-  )
 
 target_sources(dfs
   PRIVATE
@@ -102,7 +116,8 @@ target_sources(dfs
   cmd_space.cc
   # main function
   main.cc
-  ${HEADERS}
+  ${DFSBASE_HEADERS}
+  ${DFSLIB_HEADERS}
   )
 if ( ZLIB_FOUND )
   target_link_libraries(dfs ${ZLIB_LIBRARIES})
@@ -116,7 +131,7 @@ endif( ZLIB_FOUND )
 enable_testing()
 
 add_executable(test_afsp)
-target_sources(test_afsp PRIVATE tests/test_afsp.cc ${HEADERS})
+target_sources(test_afsp PRIVATE tests/test_afsp.cc ${DFSBASE_HEADERS} ${DFSLIB_HEADERS})
 if ( ZLIB_FOUND )
   target_link_libraries(test_afsp ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
@@ -132,7 +147,8 @@ target_sources(test_geometry
   PRIVATE
   tests/test_geometry.cc
   geometry.cc
-  geometry.h)
+  geometry.h
+  ${DFSBASE_HEADERS} ${DFSLIB_HEADERS})
 target_compile_options(test_geometry
   PRIVATE ${EXTRA_WARNING_OPTIONS}
   -I ${CMAKE_CURRENT_SOURCE_DIR})
@@ -142,7 +158,8 @@ set_property(TEST dfs_test_geometry_passes PROPERTY LABELS dfs unit_test)
 add_executable(test_prober)
 target_sources(test_prober
   PRIVATE
-  tests/test_prober.cc)
+  tests/test_prober.cc
+  ${DFSBASE_HEADERS} ${DFSLIB_HEADERS})
 target_compile_options(test_prober
   PRIVATE ${EXTRA_WARNING_OPTIONS}
   -I ${CMAKE_CURRENT_SOURCE_DIR})
