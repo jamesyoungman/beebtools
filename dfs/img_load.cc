@@ -71,7 +71,7 @@ namespace DFS
 	    error = ss.str();
 	    return 0;
 	  }
-	da = std::make_unique<DecompressedFile>(name);
+	da = DFS::make_decompressed_file(name);
       }
     else
       {

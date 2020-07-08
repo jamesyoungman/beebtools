@@ -14,6 +14,10 @@
 namespace
 {
   using std::numeric_limits;
+  using DFS::DataAccess;
+  using DFS::SectorBuffer;
+  using DFS::NonFileOsError;
+  using DFS::FileIOError;
 
   class FixedDecompressionError : public std::exception
   {
@@ -240,11 +244,19 @@ namespace
     return tmpfile();
   }
 
-}  // namespace
 
+  class DecompressedFile : public DataAccess
+  {
+  public:
+    explicit DecompressedFile(const std::string& name);
+    virtual ~DecompressedFile();
+    std::optional<SectorBuffer> read_block(unsigned long lba) override;
 
-namespace DFS
-{
+  private:
+    FILE *f_;
+    std::string name_;
+  };
+
   DecompressedFile::DecompressedFile(const std::string& name)
     : f_(open_temporary_file()),
       name_(std::string("decompressed version of " + name))
@@ -278,4 +290,13 @@ namespace DFS
     return buf;
   }
 
+}  // namespace
+
+
+namespace DFS
+{
+  std::unique_ptr<DataAccess> make_decompressed_file(const std::string& name)
+  {
+    return std::make_unique<DecompressedFile>(name);
+  }
 }  // namespace DFS

@@ -22,18 +22,9 @@ namespace DFS
   };
 
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name, std::string& error);
-#if USE_ZLIB
-  class DecompressedFile : public DataAccess
-  {
-  public:
-    explicit DecompressedFile(const std::string& name);
-    virtual ~DecompressedFile();
-    std::optional<SectorBuffer> read_block(unsigned long lba) override;
 
-  private:
-    FILE *f_;
-    std::string name_;
-  };
+#if USE_ZLIB
+  std::unique_ptr<DataAccess> make_decompressed_file(const std::string& name);
 #endif
 }  // namespace DFS
 #endif
