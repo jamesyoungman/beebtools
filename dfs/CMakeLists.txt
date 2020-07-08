@@ -22,24 +22,27 @@ target_compile_options(dfsbase PRIVATE ${EXTRA_WARNING_OPTIONS})
 add_library(dfslib OBJECT)
 target_sources(dfslib
   PRIVATE
-  # I/O machinery
+  # Disc image file handling
   img_fileio.cc
   img_mmb.cc
   img_sdf.cc
-  media.cc
+  img_load.cc
+  # File format and geometry probing
+  identify.cc
+  # I/O machinery
   storage.cc
   driveselector.cc
   geometry.cc
   # File System implementation
-  identify.cc
   crc.cc
   dfs_catalog.cc
   dfs_filesystem.cc
   dfs_unused.cc
   dfs_volume.cc
+  opus_cat.cc
+  # Filename and wildcard implementation
   fsp.cc
   afsp.cc
-  opus_cat.cc
   )
 if ( ZLIB_FOUND )
   target_sources(dfslib PRIVATE img_gzfile.cc)
