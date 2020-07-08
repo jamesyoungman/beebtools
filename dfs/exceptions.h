@@ -2,10 +2,35 @@
 #define INC_EXCEPTIONS_H
 
 #include <exception>
+#include <sstream>
 #include <string>
+
 #include <string.h>
 
 namespace DFS {
+
+class Unrecognized : public std::exception
+{
+public:
+  Unrecognized(const std::string& cause)
+    : msg_(make_msg(cause))
+  {
+  }
+
+  const char* what() const noexcept
+  {
+    return msg_.c_str();
+  }
+
+private:
+  static std::string make_msg(const std::string& cause)
+  {
+    std::ostringstream ss;
+    ss <<  "file format was not recognized: " << cause;
+    return ss.str();
+  }
+  std::string msg_;
+};
 
 // OpusDDOS support is incomplete.  We throw this exception when
 // encountering a case where the format makes a difference.
