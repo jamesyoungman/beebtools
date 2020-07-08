@@ -24,13 +24,13 @@ target_sources(dfslib
   PRIVATE
   # Disc image file handling
   img_fileio.cc
+  img_hfe.cc
   img_mmb.cc
   img_sdf.cc
   img_load.cc
   # File format and geometry probing
   identify.cc
   # I/O machinery
-  hfe.cc
   storage.cc
   driveselector.cc
   geometry.cc
