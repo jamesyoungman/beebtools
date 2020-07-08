@@ -151,16 +151,16 @@ namespace DFS
     return storage->connect_drives(drives, how);
   }
 
-  std::unique_ptr<ViewFile> make_noninterleaved_file(const std::string& name,
-						     bool compressed,
-						     std::unique_ptr<DataAccess>&& media)
+  std::unique_ptr<AbstractImageFile> make_noninterleaved_file(const std::string& name,
+							      bool compressed,
+							      std::unique_ptr<DataAccess>&& media)
   {
     return std::make_unique<NonInterleavedFile>(name, compressed, std::move(media));
   }
 
-  std::unique_ptr<ViewFile> make_interleaved_file(const std::string& name,
-						  bool compressed,
-						  std::unique_ptr<DataAccess>&& media)
+  std::unique_ptr<AbstractImageFile> make_interleaved_file(const std::string& name,
+							   bool compressed,
+							   std::unique_ptr<DataAccess>&& media)
   {
     return std::make_unique<InterleavedFile>(name, compressed, std::move(media));
   }
