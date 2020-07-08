@@ -7,7 +7,7 @@
 
 #include "abstractio.h"
 #include "exceptions.h"
-#include "fileio.h"
+#include "img_fileio.h"
 #include "identify.h"
 #include "storage.h"
 

@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "fileio.h"
+#include "img_fileio.h"
 #include "cleanup.h"
 
 namespace

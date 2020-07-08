@@ -23,13 +23,13 @@ add_library(dfslib OBJECT)
 target_sources(dfslib
   PRIVATE
   # I/O machinery
+  img_fileio.cc
   img_mmb.cc
   img_sdf.cc
   media.cc
   storage.cc
   driveselector.cc
   geometry.cc
-  fileio.cc
   # File System implementation
   identify.cc
   crc.cc
@@ -68,9 +68,9 @@ set(HEADERS
   dfstypes.h
   driveselector.h
   exceptions.h
-  fileio.h
   fsp.h
   geometry.h
+  img_fileio.h
   img_sdf.h
   media.h
   opus_cat.h

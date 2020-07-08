@@ -13,7 +13,7 @@
 #include "abstractio.h"
 #include "dfstypes.h"
 #include "exceptions.h"
-#include "fileio.h"
+#include "img_fileio.h"
 #include "identify.h"
 #include "img_sdf.h"
 #include "storage.h"

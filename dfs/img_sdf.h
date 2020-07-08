@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "abstractio.h"
-#include "fileio.h"
+#include "img_fileio.h"
 #include "media.h"
 #include "storage.h"
 
