@@ -7,37 +7,11 @@
 
 #include "cleanup.h"
 #include "dfstypes.h"
+#include "hexdump.h"
 
 namespace
 {
-  const long int HexdumpStride = 8;
-
-  bool hexdump_bytes(size_t pos, size_t len, const DFS::byte* data)
-  {
-    using std::cout;
-    cout << std::setw(6) << std::setfill('0') << pos;
-    for (size_t i = 0; i < HexdumpStride; ++i)
-      {
-	if (i < len)
-	  cout << ' ' << std::setw(2) << std::setfill('0') << std::uppercase << unsigned(data[pos + i]);
-	else
-	  cout << " **";
-      }
-    cout << ' ';
-    for (size_t i = 0; i < len; ++i)
-      {
-	const char ch = data[pos + i];
-	// TODO: generate a test file which verifies that all the
-	// members of the character set are correctly characterised as
-	// being printed directly or as '.'.
-	if (ch == ' ' || isgraph(ch))
-	  cout << ch;
-	else
-	  cout << '.';
-      }
-    cout << '\n';
-    return true;
-  }
+  constexpr long int Stride = 8;
 
 }  // namespace
 
@@ -72,16 +46,9 @@ public:
 			  {
 			    ostream_flag_saver restore_cout_flags(std::cout);
 			    std::cout << std::hex << std::uppercase;
-			    assert(body_end > body_start);
-			    size_t len = body_end - body_start;
-			    for (size_t pos = 0; pos < len; pos += HexdumpStride)
-			      {
-				auto avail = (pos + HexdumpStride > len) ? (len - pos) : HexdumpStride;
-
-				if (!hexdump_bytes(pos, avail, body_start))
-				  return false;
-			      }
-			    return true;
+			    assert(body_end >= body_start);
+			    const size_t len = body_end - body_start;
+			    return hexdump_bytes(std::cout, 0, len, Stride, body_start);
 			  });
     }
 };

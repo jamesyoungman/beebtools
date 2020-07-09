@@ -4,18 +4,24 @@
   Documentation: https://hxc2001.com/download/floppy_drive_emulator/SDCard_HxC_Floppy_Emulator_HFE_file_format.pdf
 */
 #include <array>
+#include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 #include "abstractio.h"
 #include "dfs.h"
 #include "exceptions.h"
+#include "hexdump.h"
 #include "identify.h"
 #include "media.h"
+#include "track.h"
 
 namespace
 {
+using byte = unsigned char;
 
 class InvalidHfeFile : public std::exception
 {
@@ -113,21 +119,26 @@ picfileformatheader decode_header(const unsigned char *d)
   picfileformatheader h;
   std::copy(d, d+sizeof(h.HEADERSIGNATURE), h.HEADERSIGNATURE);
   std::advance(d, sizeof(h.HEADERSIGNATURE));
-  h.formatrevision = nextbyte();
-  h.number_of_track = nextbyte();
-  h.number_of_side = nextbyte();
-  h.track_encoding = nextbyte();
-  h.bitRate = nextshort();
-  h.floppyRPM = nextshort();
-  h.floppyinterfacemode = nextbyte();
-  h.dnu = nextbyte();
-  h.track_list_offset = nextshort();
-  h.write_allowed = nextbyte();
-  h.single_step = nextbyte();
-  h.track0s0_altencoding = nextbyte();
-  h.track0s0_encoding = nextbyte();
-  h.track0s1_altencoding = nextbyte();
-  h.track0s1_encoding = nextbyte();
+  assert(sizeof(h.HEADERSIGNATURE) == 8);
+  /* 0x00 ... 0x07 is HEADERSIGNATURE, above. */
+  /* 0x08 */ h.formatrevision = nextbyte();
+  /* 0x09 */ h.number_of_track = nextbyte();
+  /* 0x0A */ h.number_of_side = nextbyte();
+  /* 0x0B */ h.track_encoding = nextbyte();
+  /* 0x0C */ h.bitRate = nextshort();
+  /* 0x0D - second byte of bitRate */
+  /* 0x0E */ h.floppyRPM = nextshort();
+  /* 0x0F - second byte of floppyRPM */
+  /* 0x10  */ h.floppyinterfacemode = nextbyte();
+  /* 0x11  */ h.dnu = nextbyte();
+  /* 0x12  */ h.track_list_offset = nextshort();
+  /* 0x13 - second byte of track_list_offset */
+  /* 0x14 */ h.write_allowed = nextbyte();
+  /* 0x15 */ h.single_step = nextbyte();
+  /* 0x16 */ h.track0s0_altencoding = nextbyte();
+  /* 0x17 */ h.track0s0_encoding = nextbyte();
+  /* 0x18 */ h.track0s1_altencoding = nextbyte();
+  /* 0x19 */ h.track0s1_encoding = nextbyte();
   return h;
 }
 
@@ -234,7 +245,7 @@ read_track_offset_lut(std::ifstream& f, unsigned int tracks)
 class HfeFile : public DFS::AbstractImageFile
 {
 public:
-  HfeFile(const std::string& name);
+  explicit HfeFile(const std::string& name, unsigned int side);
 
   class DataAccessAdapter : public DFS::AbstractDrive
   {
@@ -248,39 +259,13 @@ public:
     std::string description() const
     {
       std::ostringstream ss;
-      ss << "HFE file " << f_->name_;
+      ss << "side " << f_->side_ << "of HFE file " << f_->name_;
       return ss.str();
     }
 
     DFS::Geometry geometry() const
     {
-      DFS::Encoding enc = DFS::Encoding::FM;
-      int sectors;
-      switch (f_->header_.track_encoding)
-	{
-	case ISOIBM_MFM_ENCODING:
-	case AMIGA_MFM_ENCODING:
-	  enc = DFS::Encoding::MFM;
-	  sectors = 18;		// TODO: actually could be 16.
-	  break;
-
-	case ISOIBM_FM_ENCODING:
-	case EMU_FM_ENCODING:
-	  enc = DFS::Encoding::FM;
-	  sectors = 10;
-	  break;
-
-	case UNKNOWN_ENCODING:
-	default:
-	  {
-	    std::ostringstream ss;
-	    ss << "unsupported track_encoding value " << f_->header_.track_encoding;
-	    throw UnsupportedHfeFile(ss.str());
-	  }
-	}
-      return DFS::Geometry(f_->header_.number_of_track,
-			   f_->header_.number_of_side,
-			   sectors, enc);
+      return f_->geom_;
     }
 
   private:
@@ -292,16 +277,21 @@ public:
 
 private:
   std::optional<DFS::SectorBuffer> read_block(unsigned long lba);
+  SectorAddress lba_to_address(unsigned long lba);
 
+  std::vector<Sector> read_all_sectors(std::ifstream& f,
+				       const std::vector<PicTrack>& lut);
   std::string name_;
+  unsigned int side_;
   std::ifstream f;
   picfileformatheader header_;
-  std::vector<PicTrack> track_lut_;
+  DFS::Geometry geom_;
+  std::vector<Sector> sectors_;
   DataAccessAdapter acc_;
 };
 
-HfeFile::HfeFile(const std::string& name)
-  : name_(name),
+HfeFile::HfeFile(const std::string& name, unsigned int side)
+  : name_(name), side_(side),
     f(name, std::ifstream::binary),
     acc_(this)
 {
@@ -322,6 +312,15 @@ HfeFile::HfeFile(const std::string& name)
 	{
 	  throw InvalidHfeFile("invalid header signature");
 	}
+      if (side_ >= header_.number_of_side)
+	{
+	  std::ostringstream ss;
+	  ss << "attempting to read side " << side_
+	     << " from an image file having only " << header_.number_of_side
+	     << " sides";
+	  throw DFS::MediaNotPresent(ss.str());
+	}
+
       if (header_.track_encoding != ISOIBM_FM_ENCODING &&
 	  header_.track_encoding != ISOIBM_MFM_ENCODING)
 	{
@@ -329,7 +328,8 @@ HfeFile::HfeFile(const std::string& name)
 	  ss << "unsupported track_encoding value " << header_.track_encoding;
 	  throw UnsupportedHfeFile(ss.str());
 	}
-      track_lut_ = read_track_offset_lut(f, header_.number_of_track);
+      std::vector<PicTrack> track_lut = read_track_offset_lut(f, header_.number_of_track);
+      sectors_ = read_all_sectors(f, track_lut);
     }
   catch (std::ifstream::failure& e)
     {
@@ -338,12 +338,242 @@ HfeFile::HfeFile(const std::string& name)
     }
 }
 
+void copy_hfe(const byte* begin, const byte* end,
+	      std::back_insert_iterator<std::vector<byte>> dest)
+{
+  int take_this_bit = 0;
+  int got_bits = 0;
+  while (begin != end)
+    {
+      byte out, in = *begin++;
+      for (int bitnum = 0; bitnum < 8; ++bitnum)
+	{
+	  if (take_this_bit)
+	    {
+	      const int bit = in & (1 << (bitnum)) ? 1 : 0;
+	      /* the output bit might be a clock bit or it might be
+		 data, we worry about that separately. */
+	      out = static_cast<byte>((out << 1 ) | bit);
+	      ++got_bits;
+	    }
+	  take_this_bit = !take_this_bit;
+	}
+      if (8 == got_bits)
+	{
+	  *dest++ = out;
+	  got_bits = 0;
+	}
+    }
+}
+
+std::vector<Sector>
+HfeFile::read_all_sectors(std::ifstream& f,
+			  const std::vector<PicTrack>& lut)
+{
+  assert(side_ == 0 || side_ == 1);
+   // offset_unit_size is the unit size of lut[i].offset_in_blocks.
+  constexpr unsigned int offset_unit_size = 512;
+  std::vector<Sector> result;
+  std::optional<unsigned int> sectors_per_track;
+  for (unsigned int track = 0 ; track < header_.number_of_track; ++track)
+    {
+      unsigned short offset_in_blocks = lut[track].offset;
+      unsigned long track_len_in_bytes = lut[track].track_len;
+
+      constexpr unsigned int side_block_size = 256;
+      constexpr unsigned int raw_data_block_size = side_block_size * 2;
+      const auto max_offset = std::numeric_limits<std::streamoff>::max();
+      assert(max_offset / raw_data_block_size > offset_in_blocks);
+
+      std::vector<byte> raw_data;
+      raw_data.resize(track_len_in_bytes);
+      f.seekg(offset_in_blocks * static_cast<std::streampos>(offset_unit_size), f.beg);
+      f.read(reinterpret_cast<char*>(raw_data.data()), track_len_in_bytes);
+      auto track_bytes_read = static_cast<unsigned int>(f.gcount());
+      if (DFS::verbose)
+	{
+	  std::cerr << "Track " << track << " has " << track_len_in_bytes
+		    << " bytes of data; we read " << track_bytes_read
+		    << "\n";
+	}
+      // The data is in side_block_size chunks (side 0 then side 1,
+      // etc.) but we only want the data for one of the sides.
+      std::vector<byte> track_stream;
+      track_stream.reserve(track_len_in_bytes / 2);
+      auto begin_offset = side_block_size * side_;
+      while (begin_offset < track_bytes_read)
+	{
+	  const auto end_offset = std::min(begin_offset + side_block_size,
+					   track_bytes_read);
+	  assert(end_offset <= raw_data.size());
+	  if (DFS::verbose)
+	    {
+	      std::cerr << "Track " << track << ": copying "
+			<< (end_offset - begin_offset) << " bytes starting at "
+			<< "offset " << begin_offset << " to position "
+			<< track_stream.size() << " in the track stream\n";
+	      std::cerr << "Input:\n";
+	      DFS::hexdump_bytes(std::cerr, track_stream.size(),
+				 (end_offset - begin_offset),
+				 16, raw_data.data() + begin_offset);
+	    }
+	  auto oldsize = track_stream.size();
+	  copy_hfe(raw_data.data() + begin_offset,
+		   raw_data.data() + end_offset,
+		   std::back_inserter(track_stream));
+	  if (DFS::verbose)
+	    {
+	      std::cerr << "Output:\n";
+	      DFS::hexdump_bytes(std::cerr, oldsize,
+				 track_stream.size() - oldsize, 16,
+				 track_stream.data() + oldsize);
+	    }
+	  begin_offset += raw_data_block_size;
+	}
+      if (DFS::verbose)
+	{
+	  std::cerr << std::dec << std::setfill(' ')
+		    << "Track " << std::setw(2) << track << ": " << track_len_in_bytes
+		    << " bytes at position "
+		    << (offset_unit_size * offset_in_blocks)
+		    << "; " << track_stream.size()
+		    << " bytes seem to be for side " << side_ << "\n";
+	}
+
+
+      // Extract the FM-encoded sectors.
+      std::vector<Sector> track_sectors =  IbmFmDecoder(DFS::verbose).decode(track_stream);
+      if (DFS::verbose)
+	{
+	  std::cerr << "Found " << track_sectors.size() << " sectors on track "
+		    << track << "\n";
+	}
+      if (!sectors_per_track)
+	{
+	  sectors_per_track = track_sectors.size();
+	}
+      else if (track_sectors.size() != *sectors_per_track)
+	{
+	  std::ostringstream ss;
+	  ss << "track " << track << " has " << track_sectors.size()
+	     << " sectors but other tracks have " << *sectors_per_track
+	     << " sectors; this is not supported";
+	  throw UnsupportedHfeFile(ss.str());
+	}
+
+      // Sort the sectors by address.
+      std::sort(track_sectors.begin(), track_sectors.end(),
+		[](const Sector& a, const Sector& b)
+		{
+		  return a.address < b.address;
+		});
+
+      // Validate the sectors themselves.
+      std::optional<int> prev_rec_num;
+      for (const Sector& sect : track_sectors)
+	{
+	  // Many of the possible issues detected here are more likely
+	  // to be a bug in our code than something weird about the
+	  // HFE file.
+	  std::ostringstream ss;
+	  if (sect.address.head != side_)
+	    {
+	      ss << "found sector with address " << sect.address
+		 << " in the data for side " << side_;
+	      throw UnsupportedHfeFile(ss.str());
+	    }
+	  if (sect.address.cylinder != track)
+	    {
+	      ss << "found sector with address " << sect.address
+		 << " in the data for track " << track;
+	      throw UnsupportedHfeFile(ss.str());
+	    }
+	  if (prev_rec_num)
+	    {
+	      if (*prev_rec_num == sect.address.record)
+		{
+		  ss << "sector with address " << sect.address
+		     << " has a duplicate record number ";
+		  throw UnsupportedHfeFile(ss.str());
+		}
+	      else if (*prev_rec_num + 1 < sect.address.record)
+		{
+		  ss << "before sector with address " << sect.address
+		     << " there is no sector with record number "
+		     << (*prev_rec_num + 1);
+		  throw UnsupportedHfeFile(ss.str());
+		}
+	    }
+	  else
+	    {
+	      // Record 1 does not necessarily need to immediately
+	      // follow the index mark, but each track should have
+	      // record number 1 as its lowest-numbered sector, which
+	      // is what we are checking here (i.e. this check would
+	      // not be valid before the sort).
+#if 0
+	      if (sect.address.record != 1)
+		{
+		  ss << "first sector of track " << track
+		     << " has address " << sect.address
+		     << " but it should have record number 1";
+		  throw UnsupportedHfeFile(ss.str());
+		}
+#endif
+	    }
+
+	  if (sect.data.size() != DFS::SECTOR_BYTES)
+	    {
+	      ss << "track " << track
+		 << " contains a sector with address " << sect.address
+		 << " but it has unsupported size " << sect.data.size();
+	      throw UnsupportedHfeFile(ss.str());
+	    }
+
+	  *prev_rec_num = sect.address.record;
+	}
+      // TODO: check the CRC
+      std::copy(track_sectors.begin(), track_sectors.end(),
+		std::back_inserter(result));
+    }
+
+  assert(header_.number_of_track > 0);
+  assert(sectors_per_track.has_value());
+  DFS::Encoding enc;
+  switch (header_.track_encoding)
+    {
+    case ISOIBM_MFM_ENCODING:
+    case AMIGA_MFM_ENCODING:
+      enc = DFS::Encoding::MFM;
+      break;
+    case ISOIBM_FM_ENCODING:
+    case EMU_FM_ENCODING:
+      enc = DFS::Encoding::FM;
+      break;
+    default:
+      {
+	std::ostringstream ss;
+	ss << "disc has unsupported encoding "
+	   << encoding_name(header_.track_encoding);
+	throw UnsupportedHfeFile(ss.str());
+      }
+    }
+
+  geom_ = DFS::Geometry(header_.number_of_track,
+			header_.number_of_side,
+			*sectors_per_track,
+			enc);
+  return result;
+}
+
 std::optional<DFS::SectorBuffer> HfeFile::read_block(unsigned long lba)
 {
-  // This is the key thing to implement for the HFE format.
-  std::ostringstream ss;
-  ss << "read_block is not implemented yet so we can't load block " << lba;
-  throw UnsupportedHfeFile(ss.str());
+  if (lba >= sectors_.size())
+    return std::nullopt;
+  const Sector& sect(sectors_[lba]);
+  DFS::SectorBuffer buf;
+  std::copy(sect.data.begin(), sect.data.end(), buf.begin());
+  return buf;
 }
 
 bool HfeFile::connect_drives(DFS::StorageConfiguration* storage,
@@ -374,7 +604,8 @@ namespace DFS
   {
     try
       {
-	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name);
+	// TODO: support multi-side devices
+	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name, 0);
 	return result;
       }
     catch (std::exception& e)

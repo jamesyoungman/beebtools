@@ -2,35 +2,36 @@
 
 namespace
 {
+  std::string make_errno_message(int errno_value)
+  {
+    const char* s = strerror(errno_value);
+    if (s)
+      return std::string(s);
+    std::ostringstream ss;
+    ss << "unknown errno value " << errno_value;
+    return ss.str();
+  }
+
   std::string make_file_errno_message(const std::string& file_name, int errno_value)
   {
-    return file_name + ": " + std::string(strerror(errno_value));
+    return file_name + ": " + make_errno_message(errno_value);
   }
 }
 
 
 namespace DFS {
 
-FailedToGuessFormat::FailedToGuessFormat(const std::string& msg)
-  : error_message_(msg)
+std::string Unrecognized::make_msg(const std::string& cause)
 {
+  std::ostringstream ss;
+  ss <<  "file format was not recognized: " << cause;
+  return ss.str();
 }
 
-const char *
-FailedToGuessFormat::what() const noexcept
-{
-  return error_message_.c_str();
-}
 
 BadFileSystem::BadFileSystem(const std::string& msg)
-  : error_message_(std::string("bad disk image: ") + msg)
+  : BaseException(std::string("bad disk image: ") + msg)
 {
-}
-
-const char *
-BadFileSystem::what() const noexcept
-{
-  return error_message_.c_str();
 }
 
 DFS::BadFileSystem eof_in_catalog()
@@ -39,24 +40,13 @@ DFS::BadFileSystem eof_in_catalog()
 }
 
 FileIOError::FileIOError(const std::string& file_name, int errno_value)
-  : msg_(make_file_errno_message(file_name, errno_value))
+  : BaseException(make_file_errno_message(file_name, errno_value))
 {
-}
-
-const char *
-FileIOError::what() const noexcept
-{
-  return msg_.c_str();
 }
 
 NonFileOsError::NonFileOsError(int errno_value)
-  : errno_value_(errno_value)
+  : BaseException(make_errno_message(errno_value))
 {
-}
-
-const char* NonFileOsError::what() const noexcept
-{
-  return strerror(errno_value_);
 }
 
 }  // namespace DFS

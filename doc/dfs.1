@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 2020-06-23 Youngman \" -*- nroff -*-
+.TH DFS 1 2020-07-12 Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -556,15 +556,18 @@ results when the terminal is resized.
 
 .SH DISC IMAGE FILES
 
-Five disc image formats are supported.  Two (.ssd" and ".sdd") are
-non-interleaved formats, two (".dsd" and ".ddd") are interleaved
-formats, and the last one (".mmb") is a multi-disc format.
+Six disc image formats are supported.  Two (.ssd" and ".sdd") are
+non-interleaved formats.  Two (".dsd" and ".ddd") are interleaved
+formats.  The HFE format (extension ".hfe") is self-describing and
+supports a variety of types of disc.  The last one (".mmb") is a
+multi-disc format.
 
-Any of the supported disc images may be compressed with GNU
+Any of the supported disc images except ".hfe" may be compressed with
+GNU
 .B gzip
-are also accepted and should have the additional file extension.  For
-example a compressed non-interleaved double-density image file would
-have a name ending with ".sdd.gz".
+are also accepted and should have the additional file extension ".gz".
+For example a compressed non-interleaved double-density image file
+would have a name ending with ".sdd.gz".
 
 .TS
 tab(|);
@@ -575,6 +578,7 @@ ssd|No|FM, single density (10)|1 or 2
 sdd|No|MFM, double density (16 or, more usually, 18)|1 or 2
 dsd|Yes|FM, single sensity (10)|Always 2
 ddd|Yes|MFM, double density (16 or, more usually, 18)|Always 2
+hfe|(Yes)|Only FM, single density is currently supported (10)|1
 .TE
 
 .SS Non-interleaved images
@@ -605,6 +609,18 @@ section for possible changes in this regard).
 See the
 .BR mmb (5)
 manual page for a description of the MMB format.
+
+.SS HFE files
+
+The HFE file format supports a much wider range of possiblities than
+are currently implemented in
+.BR dfs (1).
+For example, the HFE file format supports double-sided and
+double-density disks but neither is currently implemented in
+.BR dfs (1).
+Support for the HFE format is new, is only lightly tested, and covers
+HFE version 1 only.
+Tthere may be some problems still to be ironed out.
 
 .SH CONFORMING TO
 

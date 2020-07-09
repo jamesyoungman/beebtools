@@ -9,11 +9,11 @@
 
 namespace DFS {
 
-class Unrecognized : public std::exception
+class BaseException : public std::exception
 {
 public:
-  Unrecognized(const std::string& cause)
-    : msg_(make_msg(cause))
+  explicit BaseException(const std::string& msg)
+    : msg_(msg)
   {
   }
 
@@ -23,69 +23,71 @@ public:
   }
 
 private:
-  static std::string make_msg(const std::string& cause)
-  {
-    std::ostringstream ss;
-    ss <<  "file format was not recognized: " << cause;
-    return ss.str();
-  }
   std::string msg_;
+};
+
+
+class Unrecognized : public BaseException
+{
+public:
+  explicit Unrecognized(const std::string& cause)
+    : BaseException(make_msg(cause))
+  {
+  }
+
+private:
+  static std::string make_msg(const std::string& cause);
 };
 
 // OpusDDOS support is incomplete.  We throw this exception when
 // encountering a case where the format makes a difference.
-class OpusUnsupported : public std::exception
+class OpusUnsupported : public BaseException
 {
 public:
-  OpusUnsupported() {};
-  const char *what() const noexcept override
+  OpusUnsupported()
+    : BaseException("Opus DDOS is not yet supported")
   {
-    return "Opus DDOS is not yet supported";
   }
 };
 
-class FailedToGuessFormat : public std::exception
+class FailedToGuessFormat : public BaseException
 {
  public:
-  FailedToGuessFormat(const std::string& msg);
-  const char *what() const noexcept override;
-
- private:
-  std::string error_message_;
+  explicit FailedToGuessFormat(const std::string& msg)
+    : BaseException(msg)
+  {
+  }
 };
 
-class BadFileSystem : public std::exception
+class MediaNotPresent : public BaseException
+{
+public:
+  explicit MediaNotPresent(const std::string& s)
+    : BaseException(s)
+  {
+  }
+};
+
+class BadFileSystem : public BaseException
 {
  public:
- BadFileSystem(const std::string& msg);
-  const char *what() const noexcept override;
-
- private:
-  std::string error_message_;
+  BadFileSystem(const std::string& msg);
 };
 
 BadFileSystem eof_in_catalog();
 
-class FileIOError : public std::exception
+class FileIOError : public BaseException
 {
 public:
   explicit FileIOError(const std::string& file_name, int errno_value);
-  const char *what() const noexcept override;
-
-private:
-  const std::string msg_;
 };
 
-class NonFileOsError : public std::exception
+class NonFileOsError : public BaseException
 {
 public:
   // NonFileOsError is only for operations which don't involve a
   // file. For operations involving a file, use FileIOError instead.
   explicit NonFileOsError(int errno_value);
-  const char *what() const noexcept override;
-
-private:
-  const int errno_value_;
 };
 
 }  // namespace DFS

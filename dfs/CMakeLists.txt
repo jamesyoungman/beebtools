@@ -34,12 +34,12 @@ set(DFSLIB_HEADERS
   # Disc image file handling
   img_fileio.h
   img_sdf.h
-  # File format and geometry probing
   # I/O machinery
   abstractio.h
   geometry.h
   media.h
   storage.h
+  track.h
   # File System implementation
   dfs_catalog.h
   dfs_filesystem.h
@@ -54,6 +54,7 @@ set(DFSLIB_HEADERS
   fsp.h
   # Other
   crc.h
+  hexdump.h
   regularexpression.h
   )
 
@@ -71,6 +72,7 @@ target_sources(dfslib
   storage.cc
   driveselector.cc
   geometry.cc
+  track.cc
   # File System implementation
   dfs_catalog.cc
   dfs_filesystem.cc
@@ -82,6 +84,7 @@ target_sources(dfslib
   afsp.cc
   # UI-ish
   crc.cc  # used to build standard archive files.
+  hexdump.cc
   # Header files.
   ${DFSBASE_HEADERS}
   ${DFSLIB_HEADERS}
