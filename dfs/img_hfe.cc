@@ -245,55 +245,71 @@ read_track_offset_lut(std::ifstream& f, unsigned int tracks)
 class HfeFile : public DFS::AbstractImageFile
 {
 public:
-  explicit HfeFile(const std::string& name, unsigned int side);
+  explicit HfeFile(const std::string& name);
 
   class DataAccessAdapter : public DFS::AbstractDrive
   {
   public:
-    DataAccessAdapter(HfeFile* f) : f_(f) {}
+    DataAccessAdapter(HfeFile* f,
+		      DFS::Geometry geom,
+		      unsigned int side,
+		      const std::vector<Sector> sectors)
+      : f_(f),
+	geom_(geom),
+	side_(side),
+	sectors_(sectors)
+    {
+    }
+
     std::optional<DFS::SectorBuffer> read_block(unsigned long lba) override
     {
-      return f_->read_block(lba);
+      if (lba >= sectors_.size())
+	return std::nullopt;
+      const Sector& sect(sectors_[lba]);
+      DFS::SectorBuffer buf;
+      std::copy(sect.data.begin(), sect.data.end(), buf.begin());
+      return buf;
     }
 
     std::string description() const
     {
       std::ostringstream ss;
-      ss << "side " << f_->side_ << "of HFE file " << f_->name_;
+      ss << "side " << side_ << " of " << f_->description();
       return ss.str();
     }
 
     DFS::Geometry geometry() const
     {
-      return f_->geom_;
+      return geom_;
     }
 
   private:
     HfeFile *f_;
+    DFS::Geometry geom_;  // geom has just one side.
+    unsigned int side_;
+    std::vector<Sector> sectors_;
   };
 
+  std::string description() const;
   bool connect_drives(DFS::StorageConfiguration* storage, DFS::DriveAllocation how,
 		      std::string& error) override;
 
 private:
-  std::optional<DFS::SectorBuffer> read_block(unsigned long lba);
   SectorAddress lba_to_address(unsigned long lba);
 
   std::vector<Sector> read_all_sectors(std::ifstream& f,
-				       const std::vector<PicTrack>& lut);
+				       const std::vector<PicTrack>& lut,
+				       unsigned int side);
   std::string name_;
-  unsigned int side_;
   std::ifstream f;
   picfileformatheader header_;
   DFS::Geometry geom_;
-  std::vector<Sector> sectors_;
-  DataAccessAdapter acc_;
+  std::vector<DataAccessAdapter> acc_;
 };
 
-HfeFile::HfeFile(const std::string& name, unsigned int side)
-  : name_(name), side_(side),
-    f(name, std::ifstream::binary),
-    acc_(this)
+HfeFile::HfeFile(const std::string& name)
+  : name_(name),
+    f(name, std::ifstream::binary)
 {
   if (!f)
     throw DFS::FileIOError(name, errno);
@@ -312,14 +328,6 @@ HfeFile::HfeFile(const std::string& name, unsigned int side)
 	{
 	  throw InvalidHfeFile("invalid header signature");
 	}
-      if (side_ >= header_.number_of_side)
-	{
-	  std::ostringstream ss;
-	  ss << "attempting to read side " << side_
-	     << " from an image file having only " << header_.number_of_side
-	     << " sides";
-	  throw DFS::MediaNotPresent(ss.str());
-	}
 
       if (header_.track_encoding != ISOIBM_FM_ENCODING &&
 	  header_.track_encoding != ISOIBM_MFM_ENCODING)
@@ -329,13 +337,27 @@ HfeFile::HfeFile(const std::string& name, unsigned int side)
 	  throw UnsupportedHfeFile(ss.str());
 	}
       std::vector<PicTrack> track_lut = read_track_offset_lut(f, header_.number_of_track);
-      sectors_ = read_all_sectors(f, track_lut);
+
+      for (unsigned int side = 0; side < header_.number_of_side; ++side)
+	{
+	  std::vector<Sector> sectors = read_all_sectors(f, track_lut, side);
+	  DFS::Geometry geom = geom_;
+	  geom.heads = 1;
+	  acc_.emplace_back(this, geom, side, sectors);
+	}
     }
   catch (std::ifstream::failure& e)
     {
       // TODO: I don't think we can get a real errno value here.
       throw DFS::FileIOError(name, EIO);
     }
+}
+
+std::string HfeFile::description() const
+{
+  std::ostringstream ss;
+  ss << "HFE file " << name_;
+  return ss.str();
 }
 
 void copy_hfe(const byte* begin, const byte* end,
@@ -368,9 +390,10 @@ void copy_hfe(const byte* begin, const byte* end,
 
 std::vector<Sector>
 HfeFile::read_all_sectors(std::ifstream& f,
-			  const std::vector<PicTrack>& lut)
+			  const std::vector<PicTrack>& lut,
+			  unsigned int side)
 {
-  assert(side_ == 0 || side_ == 1);
+  assert(side == 0 || side == 1);
    // offset_unit_size is the unit size of lut[i].offset_in_blocks.
   constexpr unsigned int offset_unit_size = 512;
   std::vector<Sector> result;
@@ -400,7 +423,7 @@ HfeFile::read_all_sectors(std::ifstream& f,
       // etc.) but we only want the data for one of the sides.
       std::vector<byte> track_stream;
       track_stream.reserve(track_len_in_bytes / 2);
-      auto begin_offset = side_block_size * side_;
+      auto begin_offset = side_block_size * side;
       while (begin_offset < track_bytes_read)
 	{
 	  const auto end_offset = std::min(begin_offset + side_block_size,
@@ -437,7 +460,7 @@ HfeFile::read_all_sectors(std::ifstream& f,
 		    << " bytes at position "
 		    << (offset_unit_size * offset_in_blocks)
 		    << "; " << track_stream.size()
-		    << " bytes seem to be for side " << side_ << "\n";
+		    << " bytes seem to be for side " << side << "\n";
 	}
 
 
@@ -476,10 +499,10 @@ HfeFile::read_all_sectors(std::ifstream& f,
 	  // to be a bug in our code than something weird about the
 	  // HFE file.
 	  std::ostringstream ss;
-	  if (sect.address.head != side_)
+	  if (sect.address.head != side)
 	    {
 	      ss << "found sector with address " << sect.address
-		 << " in the data for side " << side_;
+		 << " in the data for side " << side;
 	      throw UnsupportedHfeFile(ss.str());
 	    }
 	  if (sect.address.cylinder != track)
@@ -506,20 +529,22 @@ HfeFile::read_all_sectors(std::ifstream& f,
 	    }
 	  else
 	    {
-	      // Record 1 does not necessarily need to immediately
-	      // follow the index mark, but each track should have
-	      // record number 1 as its lowest-numbered sector, which
-	      // is what we are checking here (i.e. this check would
-	      // not be valid before the sort).
-#if 0
-	      if (sect.address.record != 1)
+	      // This is the first record (numerically, not in
+	      // physical order).  The IBM format specification
+	      // numbers records from 1, but Acorn DFS uses 0 as the
+	      // lowest sector number.
+	      if (sect.address.record != 0)
 		{
-		  ss << "first sector of track " << track
-		     << " has address " << sect.address
-		     << " but it should have record number 1";
-		  throw UnsupportedHfeFile(ss.str());
+		  if (DFS::verbose)
+		    {
+		      std::cerr << "warning: the lowest-numbered sector of "
+				<< "track " << track << " has address "
+				<< sect.address
+				<< " but it should have record number 0 "
+				<< "instead of "
+				<< unsigned(sect.address.record);
+		    }
 		}
-#endif
 	    }
 
 	  if (sect.data.size() != DFS::SECTOR_BYTES)
@@ -566,32 +591,25 @@ HfeFile::read_all_sectors(std::ifstream& f,
   return result;
 }
 
-std::optional<DFS::SectorBuffer> HfeFile::read_block(unsigned long lba)
-{
-  if (lba >= sectors_.size())
-    return std::nullopt;
-  const Sector& sect(sectors_[lba]);
-  DFS::SectorBuffer buf;
-  std::copy(sect.data.begin(), sect.data.end(), buf.begin());
-  return buf;
-}
-
 bool HfeFile::connect_drives(DFS::StorageConfiguration* storage,
 			     DFS::DriveAllocation how,
 			     std::string& error)
 {
-  const auto geom = acc_.geometry();
-  std::optional<DFS::Format> fmt = DFS::identify_file_system(acc_, geom, false, error);
-  if (!fmt)
-    return false;
-  // TODO: detect unformatted drive (relevant because side 1 may be absent).
-  //
-  // TODO: decide how many devices to present when sides=2, presumably
-  // based on the value of fmt, and bear this in mind when converting
-  // the lba value in read_block back onto a track, side and sector number.
   std::vector<std::optional<DFS::DriveConfig>> drives;
-  DFS::DriveConfig dc(*fmt, &acc_);
-  drives.push_back(dc);
+  for (auto& accessor : acc_)
+    {
+      std::optional<DFS::Format> fmt =
+	DFS::identify_file_system(accessor, accessor.geometry(), false, error);
+      if (!fmt)
+	return false;
+      // TODO: detect unformatted drive (relevant because side 1 may be absent).
+      //
+      // TODO: decide how many devices to present when sides=2, presumably
+      // based on the value of fmt, and bear this in mind when converting
+      // the lba value in read_block back onto a track, side and sector number.
+      DFS::DriveConfig dc(*fmt, &accessor);
+      drives.push_back(dc);
+    }
   return storage->connect_drives(drives, how);
 }
 
@@ -604,8 +622,7 @@ namespace DFS
   {
     try
       {
-	// TODO: support multi-side devices
-	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name, 0);
+	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name);
 	return result;
       }
     catch (std::exception& e)
