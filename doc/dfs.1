@@ -123,6 +123,11 @@ See
 Extracts a copy of the unused parts of the file system into the named
 directory.  The file names contain the number of the sector at which
 they start.
+Floppy discs can contain data which is not in normal sectors.  For
+example, records within a track can be marked deleted or faulty, and
+data can exist outside designated sectors.
+This data is currently not extracted, even with the HFE image file
+format which has support for such records.
 You can optionally use the
 .B \-\-drive
 option to specify which disc image to work with if more than one is
