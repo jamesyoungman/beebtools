@@ -721,7 +721,7 @@ command isn't useful for BBC BASIC programs because they are not
 stored as text, but you can read them like this:
 
 .EX
-dfs --file=image.ssd type -b ORIGIN | bbcbasic_to_text | less
+dfs --file=image.ssd type \-\-binary ORIGIN | bbcbasic_to_text \- | less
 .EE
 
 .SH "SEE ALSO"
