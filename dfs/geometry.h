@@ -2,6 +2,7 @@
 #define INC_GEOMETRY_H
 
 #include <optional>
+#include <string>
 
 #include "dfstypes.h"
 

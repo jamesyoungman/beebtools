@@ -1,9 +1,11 @@
 #ifndef INC_DFS_H
 #define INC_DFS_H 1
 
+#include <stdexcept>
 #include <exception>
 #include <limits>
 #include <map>
+#include <stdexcept>
 #include <string>
 
 #include "dfstypes.h"

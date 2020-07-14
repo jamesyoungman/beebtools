@@ -4,6 +4,7 @@
 #include <exception>
 #include <memory>
 #include <stdio.h>
+#include <stdexcept>
 #include <string>
 
 #include <string.h>

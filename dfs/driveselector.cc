@@ -1,5 +1,6 @@
 #include "driveselector.h"
 
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 
@@ -128,6 +129,11 @@ namespace DFS
 
   VolumeSelector::VolumeSelector(unsigned int n)
     : surface_(n)
+  {
+  }
+
+  VolumeSelector::VolumeSelector(const VolumeSelector& from)
+    : surface_(from.surface_), subvolume_(from.subvolume_)
   {
   }
 

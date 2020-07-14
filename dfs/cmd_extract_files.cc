@@ -27,6 +27,11 @@ namespace
     unsigned long load_addr = DFS::sign_extend(entry.load_address());
     unsigned long exec_addr = DFS::sign_extend(entry.exec_address());
     std::ofstream inf_file(name, std::ofstream::out);
+    if (!inf_file.good())
+      {
+	std::cerr << "unable to create file " << name << ": " << strerror(errno) << "\n";
+	return false;
+      }
     inf_file << std::hex << std::uppercase;
     // The NEXT field is missing because our source is not tape.
     using std::setw;
@@ -119,7 +124,12 @@ public:
 	const string output_body_file = dest_dir + output_basename;
 
 	std::ofstream outfile(output_body_file, std::ofstream::out);
-
+	if (!outfile.good())
+	  {
+	    std::cerr << "unable to create file " << output_body_file
+		      << ": " << strerror(errno) << "\n";
+	    return false;
+	  }
 	auto ok = entry.visit_file_body_piecewise
 	  (mounted->volume()->data_region(),
 	   [&crc, &outfile, &output_body_file]

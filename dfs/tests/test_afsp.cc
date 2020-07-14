@@ -58,6 +58,7 @@ namespace
 	throw BadTestInput("missing leading colon: " + s);
       assert(s.size() >= 6);
       assert(s[0] == ':');
+      assert(s.size() > 1);
       assert(isdigit(s[1]));
       // find the end of the drive number
       size_t i;

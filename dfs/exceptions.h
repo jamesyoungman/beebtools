@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include <string.h>

@@ -24,6 +24,7 @@
 #include <exception>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace DFS
@@ -100,6 +101,7 @@ typedef SurfaceSelector drive_number;
    explicit VolumeSelector(const DFS::SurfaceSelector& n); /* with default (unnamed) volume */
    explicit VolumeSelector(unsigned n); /* with default (unnamed) volume */
    explicit VolumeSelector(const SurfaceSelector& surface, char subvol);
+   VolumeSelector(const VolumeSelector&);
    static std::optional<VolumeSelector> parse(const std::string&, size_t*end, std::string& error);
    std::string to_string() const;
    void ostream_insert(std::ostream&) const;

@@ -159,7 +159,7 @@ std::unique_ptr<std::map<std::string, std::string>> make_option_help()
        {"drive-first", "disc images are assigned the next free drive slot"},
        {"drive-physical", "disc images are assigned drive slots as if they were physical discs "
 	"(as if they were physical floppies being inserted)"},
-       {"show-config", "show the storage configuraiton before "
+       {"show-config", "show the storage configuration before "
 	"performing the operation"},
        {"ui", "follow the user-interface of this type of DFS ROM"},
        {"help", "print a brief explanation of how to use the program"},
