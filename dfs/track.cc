@@ -134,15 +134,17 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 		      if (verbose_)
 			{
 			  std::cerr << std::dec
-				    << "copy_bytes: " << bits_avail << " bits still left in track data\n"
-				    << "copy_bytes: " << (nbytes * 16) << " bits needed to consume " << nbytes << " bytes\n";
+				    << "copy_bytes: " << bits_avail
+				    << " bits still left in track data\n"
+				    << "copy_bytes: " << (nbytes * 16)
+				    << " bits needed to consume " << nbytes << " bytes\n";
 			}
 		      if (bits_avail / 16 < nbytes)
 			{
 			  if (verbose_)
 			    {
-			      std::cerr << "copy_bytes: not enough track data left to copy " << nbytes
-					<< " bytes\n";
+			      std::cerr << "copy_bytes: not enough track data left to copy "
+					<< nbytes << " bytes\n";
 			    }
 			  return false;
 			}
@@ -195,11 +197,20 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 			  if (verbose_)
 			    {
 			      std::cerr << std::hex
-					<< "copy_bytes: got clock=" << std::setw(2) << unsigned(clock)
-					<< ", data=" << std::setw(2) << unsigned(data) << "\n";
+					<< "copy_bytes: got clock="
+					<< std::setw(2) << unsigned(clock)
+					<< ", data=" << std::setw(2)
+					<< unsigned(data) << "\n";
 			    }
 			  if (clock != 0xFF)
-			    return false;
+			    {
+			      std::cerr << std::hex
+					<< "copy_bytes: became desynchronised; got clock="
+					<< std::setw(2) << unsigned(clock)
+					<< " at track input byte " << (thisbit / 8u)
+					<< "\n";
+			      return false;
+			    }
 			  *out++ = static_cast<byte>(data);
 			}
 		      return true;

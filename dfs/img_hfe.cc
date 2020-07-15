@@ -88,11 +88,21 @@ private:
 #define S950_DD_FLOPPYMODE		     0x0C
 #define S950_HD_FLOPPYMODE		     0x0D
 #define DISABLE_FLOPPYMODE		     0xFE
+
 #define ISOIBM_MFM_ENCODING                  0x00
 #define AMIGA_MFM_ENCODING		     0x01
 #define ISOIBM_FM_ENCODING		     0x02
 #define EMU_FM_ENCODING			     0x03
 #define UNKNOWN_ENCODING		     0xFF
+
+#define OPCODE_MASK       0xF0
+
+#define NOP_OPCODE        0xF0
+#define SETINDEX_OPCODE   0xF1
+#define SETBITRATE_OPCODE 0xF2
+#define SKIPBITS_OPCODE   0xF3
+#define RAND_OPCODE       0xF4
+
 
 struct picfileformatheader
 {
@@ -104,7 +114,7 @@ struct picfileformatheader
   unsigned short bitRate;
   unsigned short floppyRPM;
   unsigned char floppyinterfacemode;
-  unsigned char dnu;
+  unsigned char v1_dnu_v3_write_protected; // in v1, unused, in v3, write_protected
   unsigned short track_list_offset;
   unsigned char write_allowed;
   unsigned char single_step;
@@ -146,7 +156,7 @@ picfileformatheader decode_header(const unsigned char *d)
   /* 0x0E */ h.floppyRPM = nextshort();
   /* 0x0F - second byte of floppyRPM */
   /* 0x10  */ h.floppyinterfacemode = nextbyte();
-  /* 0x11  */ h.dnu = nextbyte();
+  /* 0x11  */ h.v1_dnu_v3_write_protected = nextbyte();
   /* 0x12  */ h.track_list_offset = nextshort();
   /* 0x13 - second byte of track_list_offset */
   /* 0x14 */ h.write_allowed = nextbyte();
@@ -208,7 +218,7 @@ std::ostream& operator<<(std::ostream& os, const picfileformatheader& h)
       os << "bitRate                 " << static_cast<unsigned int>(h.bitRate) << "\n";
       os << "floppyRPM               " << static_cast<unsigned int>(h.floppyRPM) << "kbit/s\n";
       os << "floppyinterfacemode     " << static_cast<unsigned int>(h.floppyinterfacemode) << "\n";
-      os << "dnu                     " << static_cast<unsigned int>(h.dnu) << "\n";
+      os << "dnu/write-protected     " << static_cast<unsigned int>(h.v1_dnu_v3_write_protected) << "\n";
       os << "track_list_offset       " << h.track_list_offset
 	 << " = " << (h.track_list_offset * 512) << " bytes\n";
       os << "write_allowed           " << std::boolalpha << bool(h.write_allowed) << "\n";
@@ -231,13 +241,26 @@ struct PicTrack
 {
 public:
   PicTrack(const unsigned char* p)
-    : offset(le_word(p)),
-      track_len(le_word(p+2))
+    : offset_(le_word(p)),
+      track_len_(le_word(p+2))
   {
   }
 
-  unsigned short offset;
-  unsigned short track_len;
+  unsigned long track_len() const
+  {
+    if (track_len_ & 0x1FF)
+      return (track_len_ & (~0x1FFu))  + 0x200u;
+    else
+      return track_len_;
+  }
+
+  unsigned int offset() const
+  {
+    return offset_;
+  }
+
+  unsigned short offset_;
+  unsigned short track_len_;
 };
 
 std::vector<PicTrack>
@@ -311,13 +334,15 @@ public:
 		      std::string& error) override;
 
 private:
+  unsigned char encoding_of_track(int side, int track) const;
   SectorAddress lba_to_address(unsigned long lba);
-
+  int encoding_of_track(int track) const;
   std::vector<Sector> read_all_sectors(std::ifstream& f,
 				       const std::vector<PicTrack>& lut,
 				       unsigned int side);
   std::string name_;
   std::ifstream f;
+  int hfe_version_;
   picfileformatheader header_;
   DFS::Geometry geom_;
   std::vector<DataAccessAdapter> acc_;
@@ -325,7 +350,8 @@ private:
 
 HfeFile::HfeFile(const std::string& name)
   : name_(name),
-    f(name, std::ifstream::binary)
+    f(name, std::ifstream::binary),
+    hfe_version_(0)
 {
   if (!f)
     throw DFS::FileIOError(name, errno);
@@ -340,18 +366,26 @@ HfeFile::HfeFile(const std::string& name)
 	{
 	  std::cerr << name << ":\n" << header_ << "\n";
 	}
-      if (memcmp(header_.HEADERSIGNATURE, "HXCPICFE", 8))
+      if (0 == memcmp(header_.HEADERSIGNATURE, "HXCPICFE", 8))
 	{
-	  throw InvalidHfeFile("invalid header signature");
+	  hfe_version_ = 1;
 	}
-
-      if (header_.track_encoding != ISOIBM_FM_ENCODING &&
-	  header_.track_encoding != ISOIBM_MFM_ENCODING)
+      else if (0 == memcmp(header_.HEADERSIGNATURE, "HXCHFEV3", 8))
+	{
+	  hfe_version_ = 3;
+	}
+      else
 	{
 	  std::ostringstream ss;
-	  ss << "unsupported track_encoding value " << header_.track_encoding;
-	  throw UnsupportedHfeFile(ss.str());
+	  ss << "invalid header signature: ";
+	  DFS::hexdump_bytes(ss,
+			     0,
+			     sizeof(header_.HEADERSIGNATURE),
+			     sizeof(header_.HEADERSIGNATURE),
+			     reinterpret_cast<const unsigned char*>(&header_.HEADERSIGNATURE));
+	  throw InvalidHfeFile(ss.str());
 	}
+
       std::vector<PicTrack> track_lut = read_track_offset_lut(f, header_.number_of_track);
 
       for (unsigned int side = 0; side < header_.number_of_side; ++side)
@@ -367,6 +401,29 @@ HfeFile::HfeFile(const std::string& name)
       // TODO: I don't think we can get a real errno value here.
       throw DFS::FileIOError(name, EIO);
     }
+  if (hfe_version_ == 3)
+    {
+      // throw UnsupportedHfeFile("HFE v3 is not yet supported");
+      std::cerr << "warning: HFE v3 is not yet supported, result may be incorrect\n";
+    }
+}
+
+unsigned char HfeFile::encoding_of_track(int side, int track) const
+{
+  if (track == 0)
+    {
+      if (side == 0)
+	{
+	  if (header_.track0s0_altencoding == 0)
+	    return header_.track0s0_encoding;
+	}
+      else
+	{
+	  if (header_.track0s1_altencoding == 0)
+	    return header_.track0s1_encoding;
+	}
+    }
+  return header_.track_encoding;
 }
 
 std::string HfeFile::description() const
@@ -376,16 +433,129 @@ std::string HfeFile::description() const
   return ss.str();
 }
 
-void copy_hfe(const byte* begin, const byte* end,
+void premature_stream_end(const std::string& opcode)
+{
+  std::cerr << "warning: track data stream ends in the middle of an HFEv3 "
+	    << opcode << " instruction";
+}
+
+bool is_hfe3_opcode(byte val)
+{
+  return (val & OPCODE_MASK) == OPCODE_MASK;
+}
+
+
+void copy_hfe(bool hfe3,
+	      const byte* begin, const byte* end,
 	      std::back_insert_iterator<std::vector<byte>> dest)
 {
   int take_this_bit = 0;
   int got_bits = 0;
   while (begin != end)
     {
+      int skipbits = 0;
       byte out, in = *begin++;
+      if (hfe3 && is_hfe3_opcode(in))
+	{
+	  if (DFS::verbose)
+	    {
+	      std::cerr << "HFEv3: processing opcode "
+			<< std::hex << unsigned(in) << "\n";
+	    }
+	  switch (in)
+	    {
+	    case NOP_OPCODE:
+	      continue;		// just consume the opcode.
+
+	    case SETINDEX_OPCODE:
+	      /* For now, we ignore this (i.e. we consume the opcode
+		 but do nothing about it).
+
+		 It's not clear how we would need to use it.  In a
+		 physical floppy, detection of the index mark tells us
+		 we've seen the whole track (and e.g. allows us to
+		 know when to give up searching for a sector in the
+		 track data.  But we have a finite amount of input
+		 data anyway, so we won't loop forever even if we
+		 don't know where in the bitsteam the index mark is.
+	       */
+	      continue;
+
+	    case SETBITRATE_OPCODE:
+	      // We only care about the sector contents, so ignore the
+	      // change in bit rate.
+	      if (begin == end)
+		{
+		  premature_stream_end("SETBITRATE");
+		  continue;
+		}
+	      ++begin;		// consume the bit-rate byte
+	      continue;
+
+	    case SKIPBITS_OPCODE:
+	      {
+		if (begin == end)
+		  {
+		    premature_stream_end("SKIPBITS");
+		    continue;
+		  }
+		skipbits = *begin++;
+		if (begin == end)
+		  {
+		    premature_stream_end("SKIPBITS");
+		    continue;
+		  }
+		in = *begin++;	// the byte in which to skip some bits.
+	      }
+	      break;
+
+	    case RAND_OPCODE:
+	      /* The purpose of RAND_OPCODE is, I think, so that the
+	       * data read from the disk changes each time the data is
+	       * read, as if we were trying to read a weak bits area
+	       * from the floppy.
+	       *
+	       * Weak bits will not matter to the data-processing
+	       * layer if the affected part of the track is not within
+	       * a sector it's going to try to read.  Therefore it
+	       * would be inappropriate to unconditionally fail here;
+	       * that would mean that we'd fail on the whole track.
+	       *
+	       * In all circumstances we're going to read the track
+	       * data for each track exactly once, so returning data
+	       * from rand() will still result in a "consistent" read,
+	       * though perhaps with incorrect CRC.
+	       *
+	       * In an attempt to achieve a similar effect we simply
+	       * return zero data, so that the clock bits are missing
+	       * and we lose sync.  The HFE3 container would not
+	       * implement things this way as it would not be
+	       * convincing to a copy-protection scheme which itself
+	       * reads the track data directly, but we have the luxury
+	       * of knowing our caller isn't trying to do that (as we
+	       * know a-prori that the high-level code is not part of
+	       * a copy-protection scheme).
+	       */
+	      in = 0;		// has no clock bits, see above.
+	      break;
+
+	    default:
+	      {
+		std::ostringstream ss;
+		ss << "track contains an invalid HFE3 opcode 0x"
+		   << std::hex << unsigned(in);
+		throw InvalidHfeFile(ss.str());
+	      }
+	    }
+	}
+
       for (int bitnum = 0; bitnum < 8; ++bitnum)
 	{
+	  if (skipbits > 0)
+	    {
+	      --skipbits;
+	      continue;
+	    }
 	  if (take_this_bit)
 	    {
 	      const int bit = in & (1 << (7-bitnum)) ? 0x80 : 0;
@@ -416,8 +586,17 @@ HfeFile::read_all_sectors(std::ifstream& f,
   std::optional<unsigned int> sectors_per_track;
   for (unsigned int track = 0 ; track < header_.number_of_track; ++track)
     {
-      unsigned short offset_in_blocks = lut[track].offset;
-      unsigned long track_len_in_bytes = lut[track].track_len;
+      const unsigned char encoding = encoding_of_track(side, track);
+      if (encoding != ISOIBM_FM_ENCODING)
+	{
+	  std::ostringstream ss;
+	  ss << "track " << track << " has unsupported track encoding value "
+	     << unsigned(encoding) << " (" << encoding_name(encoding) << ")";
+	  throw UnsupportedHfeFile(ss.str());
+	}
+
+      unsigned int offset_in_blocks = lut[track].offset();
+      unsigned long track_len_in_bytes = lut[track].track_len();
 
       constexpr unsigned int side_block_size = 256;
       constexpr unsigned int raw_data_block_size = side_block_size * 2;
@@ -465,7 +644,8 @@ HfeFile::read_all_sectors(std::ifstream& f,
 				 16, raw_data.data() + begin_offset);
 	    }
 	  auto oldsize = track_stream.size();
-	  copy_hfe(raw_data.data() + begin_offset,
+	  copy_hfe(3 == hfe_version_,
+		   raw_data.data() + begin_offset,
 		   raw_data.data() + end_offset,
 		   std::back_inserter(track_stream));
 	  if (DFS::verbose)
