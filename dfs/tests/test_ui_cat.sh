@@ -34,20 +34,29 @@ check_cat_impl() {
 	rm -f "${actual}" "${fexpected}"
     }
 
-    echo running "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" cat $extras
+    case "${input}" in
+	/*)
+	    infile="${input}"
+	    ;;
+	*)
+	    infile="${TEST_DATA_DIR}/${input}"
+	    ;;
+    esac
+
+    echo running "${DFS}" --ui "${ui}" --file "${infile}" cat $extras
     printf "%s" "${expected_text}" > "${fexpected}" || exit 1
     COLUMNS=40
     export COLUMNS
-    "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@" cat $extras > "${actual}"
+    "${DFS}" --ui "${ui}" --file "${infile}" "$@" cat $extras > "${actual}"
     rv=$?
     if [ $rv -ne 0 ]
     then
-	echo "Exit status $rv for" "${DFS}" --ui "${ui}" --file "${TEST_DATA_DIR}/${input}" "$@" cat
+	echo "Exit status $rv for" "${DFS}" --ui "${ui}" --file "${infile}" "$@" cat
 	exit 1
     fi
     if ! diff -u "${fexpected}" "${actual}"
     then
-	echo "cat output for file "${input}" with ui ${ui} is incorrect" >&2
+	echo "cat output for file "${infile}" with ui ${ui} is incorrect" >&2
 	cleanup
 	return 1
     else
@@ -74,8 +83,7 @@ check_cat() {
 
 
 
-check_cat acorn-dfs-ss-80t-manyfiles.ssd acorn "" \
-"S0:ABCDEFGHI (30) FM
+manyfiles_cat="S0:ABCDEFGHI (30) FM
 Drive 0             Option 1 (LOAD)
 Dir. :0.$           Lib. :0.$
 
@@ -86,7 +94,34 @@ Dir. :0.$           Lib. :0.$
 
   %.S0B01             B.S0B01    L
   B.S0B02    L        V.S0B01
-" || exit 1
+"
+check_cat acorn-dfs-ss-80t-manyfiles.ssd acorn "" "${manyfiles_cat}" || exit 1
+if ! imgdir="$(mktemp -d --tmpdir=${TMPDIR} imgdir_XXXXXX)"
+then
+    echo "Unable to create a temporary directory" >&2
+    exit 1
+fi
+echo "imgdir is ${imgdir}"
+
+cleandir()
+{
+    rm -f "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe"
+    rmdir "${imgdir}"
+}
+compressed_test_file="${TEST_DATA_DIR}"/acorn-dfs-ss-80t-manyfiles.hfe.gz
+if ! gunzip < "${compressed_test_file}" > "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe"
+then
+    echo "Unable to decompress image file ${compressed_test_file}" >&2
+    cleandir
+    exit 1
+fi
+if ! check_cat "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe" acorn "" "${manyfiles_cat}"
+then
+    cleandir
+    exit 1
+fi
+cleandir
+
 
 check_cat acorn-dfs-ss-80t-manyfiles.ssd watford "" \
 "S0:ABCDEFGHI (30)   Single density
