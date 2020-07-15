@@ -28,7 +28,7 @@ public:
   {
     auto i = bitpos / 8;
     auto b = bitpos % 8;
-    return input_[i] & (1 << (7-b));
+    return input_[i] & (1 << b);
   }
 
   size_t size() const

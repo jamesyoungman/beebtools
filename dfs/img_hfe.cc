@@ -23,6 +23,22 @@ namespace
 {
 using byte = unsigned char;
 
+/* reverse the ordering of bits in a byte. */
+inline byte reverse_bit_order(byte in)
+{
+  int out = 0;
+  if (in & 0x80)  out |= 0x01;
+  if (in & 0x40)  out |= 0x02;
+  if (in & 0x20)  out |= 0x04;
+  if (in & 0x10)  out |= 0x08;
+  if (in & 0x08)  out |= 0x10;
+  if (in & 0x04)  out |= 0x20;
+  if (in & 0x02)  out |= 0x40;
+  if (in & 0x01)  out |= 0x80;
+  return static_cast<byte>(out);
+}
+
+
 class InvalidHfeFile : public std::exception
 {
 public:
@@ -372,10 +388,10 @@ void copy_hfe(const byte* begin, const byte* end,
 	{
 	  if (take_this_bit)
 	    {
-	      const int bit = in & (1 << (bitnum)) ? 1 : 0;
+	      const int bit = in & (1 << (7-bitnum)) ? 0x80 : 0;
 	      /* the output bit might be a clock bit or it might be
 		 data, we worry about that separately. */
-	      out = static_cast<byte>((out << 1 ) | bit);
+	      out = static_cast<byte>((out >> 1 ) | bit);
 	      ++got_bits;
 	    }
 	  take_this_bit = !take_this_bit;
@@ -419,6 +435,14 @@ HfeFile::read_all_sectors(std::ifstream& f,
 		    << " bytes of data; we read " << track_bytes_read
 		    << "\n";
 	}
+      // While we could simply deal with the bit ordering in the input file when
+      // dealing with subsequent stages, that will make it harder to interpret
+      // nuumeric arguments to HFEv3 opcodes.
+      assert(reverse_bit_order(0x43) == 0xC2);
+      std::transform(raw_data.begin(), raw_data.end(),
+		     raw_data.begin(), // transform in-place.
+		     reverse_bit_order);
+
       // The data is in side_block_size chunks (side 0 then side 1,
       // etc.) but we only want the data for one of the sides.
       std::vector<byte> track_stream;
