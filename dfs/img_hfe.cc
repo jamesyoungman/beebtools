@@ -616,7 +616,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
       auto track_bytes_read = raw_data.size();
       if (DFS::verbose)
 	{
-	  std::cerr << "Track " << track << " has " << track_len_in_bytes
+	  std::cerr << "Track " << std::dec << track << " has " << track_len_in_bytes
 		    << " bytes of data; we read " << track_bytes_read
 		    << "\n";
 	}

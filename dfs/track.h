@@ -25,7 +25,7 @@ struct Sector
   SectorAddress address;
   // We don't yield control sectors.
   std::vector<unsigned char> data;
-  unsigned short crc;
+  unsigned char crc[2];
 };
 
 // IbmFmDecoder decodes an FM track into sectors.

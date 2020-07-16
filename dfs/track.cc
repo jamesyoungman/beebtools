@@ -6,6 +6,11 @@
 #include <functional>
 #include <sstream>
 
+#include "crc.h"
+#include "hexdump.h"
+
+#undef ULTRA_VERBOSE
+
 namespace
 {
 constexpr int normal_clock = 0xFF;
@@ -15,6 +20,39 @@ constexpr int data_address_mark = 0xFB;
 
 using std::optional;
 using byte = unsigned char;
+
+
+void self_test_crc()
+{
+  DFS::CCIT_CRC16 crc;
+  uint8_t input[2];
+  input[0] = uint8_t('T');
+  input[1] = uint8_t('Q');
+
+  crc.update(input, input+1);
+  assert(crc.get() == 0xFB81);
+  crc.update(input+1, input+2);
+  assert(crc.get() == 0x95A0);
+
+  DFS::CCIT_CRC16 crc2;
+  crc2.update(input, input+2);
+  assert(crc.get() == 0x95A0);
+
+
+  const uint8_t id[7] = {
+			 0xFE,
+			 0x4F,	// cylinder
+			 0,	// side
+			 6,	// sector
+			 1,	// size code
+			 0xE1,	// CRC byte 1
+			 0x07   // CRC byte 1
+  };
+  DFS::CCIT_CRC16 crc3;
+  crc3.update(id, id+sizeof(id));
+  assert(crc3.get() == 0);
+}
+
 
 class BitStream
 {
@@ -109,6 +147,8 @@ std::pair<unsigned char, unsigned char> declock(unsigned int word)
 // sectors.
 std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 {
+  self_test_crc();
+
   std::vector<Sector> result;
   // The initial value of shifter has no particular significance
   // except for the fact that we won't mistake it for part of the sync
@@ -131,14 +171,18 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   // byte.
   auto copy_bytes = [&bits_avail, &thisbit, &bits, this](size_t nbytes, byte* out) -> bool
 		    {
+		      DFS::CCIT_CRC16 other_crc;
 		      if (verbose_)
 			{
 			  std::cerr << std::dec
 				    << "copy_bytes: " << bits_avail
-				    << " bits still left in track data\n"
-				    << "copy_bytes: " << (nbytes * 16)
+				    << " bits still left in track data; "
+				    << (nbytes * 16)
 				    << " bits needed to consume " << nbytes << " bytes\n";
+			  std::cerr << "copy_bytes: " << (nbytes*2)
+				    << " bytes of data to consume:\n";
 			}
+
 		      if (bits_avail / 16 < nbytes)
 			{
 			  if (verbose_)
@@ -194,14 +238,17 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 			      data  = (data  << 1) | bits.getbit(thisbit++);
 			      bits_avail -= 2;
 			    }
+#if ULTRA_VERBOSE
 			  if (verbose_)
 			    {
 			      std::cerr << std::hex
 					<< "copy_bytes: got clock="
 					<< std::setw(2) << unsigned(clock)
 					<< ", data=" << std::setw(2)
-					<< unsigned(data) << "\n";
+					<< unsigned(data)
+					<< "\n";
 			    }
+#endif
 			  if (clock != 0xFF)
 			    {
 			      std::cerr << std::hex
@@ -229,6 +276,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
       if (countdown)
 	--countdown;
 
+#if ULTRA_VERBOSE
       if (verbose_)
 	{
 	  auto [clock, data] = declock(shifter);
@@ -252,6 +300,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 			  "unknown")))
 		    << "\n";
 	}
+#endif
       if (state == Desynced)
 	{
 	  // Gap 1 is lots of 0xFF data (with 0xFF clocks too)
@@ -280,8 +329,16 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      std::cerr << "Found AM1, reading sector address\n";
 	    }
 	  /* clock=0xC7, data=0xFE - this is the index address mark */
-	  byte addr[6];
-	  if (!copy_bytes(sizeof(addr), addr))
+	  byte id[7] = {byte(0xFE)};
+	  // Contents of the address
+	  // byte 0 - mark (data, 0xFE)
+	  // byte 1 - cylinder
+	  // byte 2 - head (side)
+	  // byte 3 - record (sector, starts from 0 in Acorn)
+	  // byte 4 - size code (see switch below)
+	  // byte 5 - CRC byte 1
+	  // byte 6 - CRC byte 2
+	  if (!copy_bytes(6u, &id[1]))
 	    {
 	      if (verbose_)
 		{
@@ -290,10 +347,30 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      state = Desynced;
 	      continue;
 	    }
-	  sec.address.cylinder = addr[0];
-	  sec.address.head = addr[1];
-	  sec.address.record = addr[2];
-	  switch (addr[3])
+	  DFS::CCIT_CRC16 crc;
+	  crc.update(id, id + sizeof(id));
+	  const auto addr_crc = crc.get();
+	  if (verbose_)
+	    {
+	      std::cerr << "Sector address CRC is: 0x"
+			<< std::hex << addr_crc << " and should be 0\n";
+	    }
+	  if (addr_crc)
+	    {
+	      if (verbose_)
+		{
+		  std::cerr << "Sector address CRC mismatch: 0x"
+			    << std::hex << addr_crc << " should be 0\n";
+		}
+	      state = Desynced;
+	      continue;
+	    }
+
+	  const byte* addr = &id[1];
+	  sec.address.cylinder = id[1];
+	  sec.address.head = id[2];
+	  sec.address.record = id[3];
+	  switch (id[4])
 	    {
 	    case 0x00: sec_size = 128; break;
 	    case 0x01: sec_size = 256; break;
@@ -308,13 +385,14 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      state = Desynced;
 	      continue;
 	    }
+	  // id[5] and id[6] are the CRC bytes, and these already got
+	  // included in our evaluation of addr_crc.
 	  if (verbose_)
 	    {
 	      std::cerr << "The address field is " << sec.address
 			<< " and the data record should contain "
 			<< std::dec << sec_size << " bytes\n";
 	    }
-	  // TODO: verify the CRC.
 	  state = LookingForRecord;
 	}
       else if (state == LookingForRecord)
@@ -347,8 +425,10 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	    {
 	      std::cerr << "Accepting " << std::dec << sec_size << " bytes of sector data\n";
 	    }
-	  sec.data.resize(sec_size);
-	  if (!copy_bytes(sec_size, sec.data.data()))
+	  auto size_with_crc = sec_size + 2;  // add two bytes for the CRC
+	  sec.data.resize(size_with_crc);
+	  byte data_mark[1] = { byte(discard_record ? 0xF8 : 0xFB) };
+	  if (!copy_bytes(size_with_crc, sec.data.data()))
 	    {
 	      if (verbose_)
 		{
@@ -357,25 +437,33 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      state = Desynced;
 	      continue;
 	    }
-	  if (verbose_)
-	    {
-	      std::cerr << "Got the sector data\n";
-	    }
-	  byte data_crc[2];
-	  if (!copy_bytes(sizeof(data_crc), data_crc))
+	  DFS::CCIT_CRC16 crc;
+	  crc.update(data_mark, data_mark+1);
+	  crc.update(sec.data.data(), sec.data.data() + size_with_crc);
+	  // If we already know the record is a control record
+	  // (deleted / faulty) then we might expect the CRC to be
+	  // incorrect (for example, because this part of the disc
+	  // doesn't provide reliable reads).
+	  auto data_crc = crc.get();
+	  if (data_crc != 0 && !discard_record)
 	    {
 	      if (verbose_)
 		{
-		  std::cerr << "Lost sync in CRC\n";
+		  std::cerr << "Sector data CRC mismatch: 0x"
+			    << std::hex << data_crc << " should be 0\n";
 		}
 	      state = Desynced;
 	      continue;
 	    }
+	  sec.crc[0] = sec.data[sec_size + 0];
+	  sec.crc[1] = sec.data[sec_size + 1];
+	  // Resize the sector data downward to drop the CRC.
+	  sec.data.resize(sec_size);
+
 	  if (verbose_)
 	    {
-	      std::cerr << "Got the CRC\n";
+	      std::cerr << "Got the sector data\n";
 	    }
-	  // TODO: verify the data CRC.
 	  if (!discard_record)
 	    {
 	      if (verbose_)

@@ -73,6 +73,7 @@ target_sources(dfslib
   driveselector.cc
   geometry.cc
   track.cc
+  crc16.cc # used in HFE reading and INF file writing.
   # File System implementation
   dfs_catalog.cc
   dfs_filesystem.cc
@@ -83,7 +84,6 @@ target_sources(dfslib
   fsp.cc
   afsp.cc
   # UI-ish
-  crc.cc  # used to build standard archive files.
   hexdump.cc
   # Header files.
   ${DFSBASE_HEADERS}

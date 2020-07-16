@@ -16,23 +16,41 @@
 #ifndef INC_CRC_H
 #define INC_CRC_H 1
 
-#include "dfstypes.h"
+#include <cstdint>		// for uint2_t, uint32_t.
+#include <stddef.h>		// for size_t
 
 namespace DFS
 {
-  // TapeCRC appears to be the same as the XMODEM CRC, but the
-  // authoritative reference is page 348 of the BBC Microcmputer
-  // Advanced User Guide.
-  class TapeCRC
+  class CRC16Base
   {
   public:
-    TapeCRC();
-    void update(const byte* start, const byte *end);
+    explicit CRC16Base(uint16_t init);
+    void update(const uint8_t* start, const uint8_t *end);
+    void update_bit(bool bitval);
     unsigned long get() const;
   private:
     unsigned long crc_;
   };
 
+
+  class CCIT_CRC16 : public CRC16Base
+  {
+    static constexpr unsigned long init = 0xFFFFuL;
+  public:
+    CCIT_CRC16();
+  };
+
+  // TapeCRC appears to be the same as the XMODEM CRC, but the
+  // authoritative reference is page 348 of the BBC Microcmputer
+  // Advanced User Guide.
+  class TapeCRC : public CRC16Base
+  {
+    static constexpr unsigned long init = 0uL;
+  public:
+    TapeCRC();
+  };
+
 }  // namespace DFS
+
 
 #endif
