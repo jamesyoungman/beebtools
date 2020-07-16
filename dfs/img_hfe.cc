@@ -124,13 +124,19 @@ struct picfileformatheader
   unsigned char track0s1_encoding;
 };
 
-unsigned short le_word(const unsigned char* p)
+unsigned short le_word(std::vector<byte>::const_iterator d)
 {
-  return static_cast<unsigned short>(p[0] | (p[1] << 8u));
+  return static_cast<unsigned short>(d[0] | (d[1] << 8u));
 }
 
-picfileformatheader decode_header(const unsigned char *d)
+unsigned short le_word(const byte *d)
 {
+  return static_cast<unsigned short>(d[0] | (d[1] << 8u));
+}
+
+  picfileformatheader decode_header(const std::vector<byte>& header)
+{
+  std::vector<byte>::const_iterator d = header.begin();
   auto nextbyte = [&d]() -> unsigned char
 		  {
 		    return *d++;
@@ -264,13 +270,18 @@ public:
 };
 
 std::vector<PicTrack>
-read_track_offset_lut(std::ifstream& f, unsigned int tracks)
+read_track_offset_lut(DFS::FileAccess* f, unsigned int tracks)
 {
-  std::vector<unsigned char> buf;
   std::vector<PicTrack> result;
-  buf.resize(tracks * 4u);
-  f.seekg(512);
-  f.read(reinterpret_cast<char*>(buf.data()), buf.size());
+  std::vector<unsigned char> buf = f->read(512, tracks * 4u);
+  if (buf.size() != tracks * 4u)
+    {
+      std::ostringstream ss;
+      ss << "file is too short to contain a LUT for "
+	 << tracks << " tracks, but that's the number of tracks "
+	 << "indicated in the HFE file header";
+      throw InvalidHfeFile(ss.str());
+    }
   const unsigned char *pos = buf.data();
   for (unsigned  i = 0; i < tracks; ++i)
     {
@@ -284,7 +295,7 @@ read_track_offset_lut(std::ifstream& f, unsigned int tracks)
 class HfeFile : public DFS::AbstractImageFile
 {
 public:
-  explicit HfeFile(const std::string& name);
+  explicit HfeFile(const std::string& name, bool compressed, std::unique_ptr<DFS::FileAccess>&& file);
 
   class DataAccessAdapter : public DFS::AbstractDrive
   {
@@ -337,29 +348,30 @@ private:
   unsigned char encoding_of_track(int side, int track) const;
   SectorAddress lba_to_address(unsigned long lba);
   int encoding_of_track(int track) const;
-  std::vector<Sector> read_all_sectors(std::ifstream& f,
-				       const std::vector<PicTrack>& lut,
+  std::vector<Sector> read_all_sectors(const std::vector<PicTrack>& lut,
 				       unsigned int side);
   std::string name_;
-  std::ifstream f;
+  std::unique_ptr<DFS::FileAccess> file_;
+  const bool compressed_;
   int hfe_version_;
   picfileformatheader header_;
   DFS::Geometry geom_;
   std::vector<DataAccessAdapter> acc_;
 };
 
-HfeFile::HfeFile(const std::string& name)
+HfeFile::HfeFile(const std::string& name, bool compressed, std::unique_ptr<DFS::FileAccess>&& file)
   : name_(name),
-    f(name, std::ifstream::binary),
+    file_(std::move(file)),
+    compressed_(compressed),
     hfe_version_(0)
 {
-  if (!f)
-    throw DFS::FileIOError(name, errno);
-  f.exceptions(std::ios::badbit);
   try
     {
-      unsigned char header_data[512];
-      f.read(reinterpret_cast<char*>(header_data), sizeof(header_data));
+      std::vector<byte> header_data = file_->read(0, 512);
+      if (header_data.size() < 512)
+	{
+	  throw InvalidHfeFile("file is too short to contain the HFE file header");
+	}
       header_ = decode_header(header_data);
 
       if (DFS::verbose)
@@ -386,11 +398,11 @@ HfeFile::HfeFile(const std::string& name)
 	  throw InvalidHfeFile(ss.str());
 	}
 
-      std::vector<PicTrack> track_lut = read_track_offset_lut(f, header_.number_of_track);
+      std::vector<PicTrack> track_lut = read_track_offset_lut(file_.get(), header_.number_of_track);
 
       for (unsigned int side = 0; side < header_.number_of_side; ++side)
 	{
-	  std::vector<Sector> sectors = read_all_sectors(f, track_lut, side);
+	  std::vector<Sector> sectors = read_all_sectors(track_lut, side);
 	  DFS::Geometry geom = geom_;
 	  geom.heads = 1;
 	  acc_.emplace_back(this, geom, side, sectors);
@@ -429,6 +441,8 @@ unsigned char HfeFile::encoding_of_track(int side, int track) const
 std::string HfeFile::description() const
 {
   std::ostringstream ss;
+  if (compressed_)
+    ss << "compressed ";
   ss << "HFE file " << name_;
   return ss.str();
 }
@@ -575,8 +589,7 @@ void copy_hfe(bool hfe3,
 }
 
 std::vector<Sector>
-HfeFile::read_all_sectors(std::ifstream& f,
-			  const std::vector<PicTrack>& lut,
+HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 			  unsigned int side)
 {
   assert(side == 0 || side == 1);
@@ -598,16 +611,14 @@ HfeFile::read_all_sectors(std::ifstream& f,
       unsigned int offset_in_blocks = lut[track].offset();
       unsigned long track_len_in_bytes = lut[track].track_len();
 
-      constexpr unsigned int side_block_size = 256;
+      constexpr std::vector<byte>::size_type side_block_size = 256u;
       constexpr unsigned int raw_data_block_size = side_block_size * 2;
       const auto max_offset = std::numeric_limits<std::streamoff>::max();
       assert(max_offset / raw_data_block_size > offset_in_blocks);
 
-      std::vector<byte> raw_data;
-      raw_data.resize(track_len_in_bytes);
-      f.seekg(offset_in_blocks * static_cast<std::streampos>(offset_unit_size), f.beg);
-      f.read(reinterpret_cast<char*>(raw_data.data()), track_len_in_bytes);
-      auto track_bytes_read = static_cast<unsigned int>(f.gcount());
+      std::vector<byte> raw_data = file_->read(offset_in_blocks * offset_unit_size,
+					       track_len_in_bytes);
+      auto track_bytes_read = raw_data.size();
       if (DFS::verbose)
 	{
 	  std::cerr << "Track " << track << " has " << track_len_in_bytes
@@ -822,11 +833,11 @@ bool HfeFile::connect_drives(DFS::StorageConfiguration* storage,
 namespace DFS
 {
   std::unique_ptr<DFS::AbstractImageFile>
-  make_hfe_file(const std::string& name, std::string& error)
+  make_hfe_file(const std::string& name, bool compressed, std::unique_ptr<FileAccess> file, std::string& error)
   {
     try
       {
-	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name);
+	std::unique_ptr<HfeFile> result = std::make_unique<HfeFile>(name, compressed, std::move(file));
 	return result;
       }
     catch (std::exception& e)

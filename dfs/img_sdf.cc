@@ -19,14 +19,14 @@ namespace
   {
   public:
     explicit NonInterleavedFile(const std::string& name, bool compressed,
-				std::unique_ptr<DFS::DataAccess>&& access)
-      : ViewFile(name, std::move(access))
+				std::unique_ptr<DFS::FileAccess>&& file)
+      : ViewFile(name, std::move(file))
     {
       // TODO: name != the file inside media for the case where the
       // input file was foo.ssd.gz.  It might be better to keep the
       // original name.
       std::string error;
-      auto probe_result = identify_image(media(), name, error);
+      auto probe_result = identify_image(block_access(), name, error);
       if (!probe_result)
 	throw DFS::Unrecognized(error);
 
@@ -48,7 +48,7 @@ namespace
 	      os << " side " << surface_num;
 	    }
 	  std::string desc = os.str();
-	  FileView v(media(), name, desc, single_side_geom,
+	  FileView v(block_access(), name, desc, single_side_geom,
 		     skip, side_len, 0, side_len);
 	  skip = DFS::sector_count(skip + side_len);
 	  add_view(v);
@@ -60,8 +60,8 @@ namespace
   {
   public:
     explicit InterleavedFile(const std::string& name, bool compressed,
-			     std::unique_ptr<DFS::DataAccess>&& access)
-      : ViewFile(name, std::move(access))
+			     std::unique_ptr<DFS::FileAccess>&& file)
+      : ViewFile(name, std::move(file))
     {
       auto make_desc = [compressed, &name](int side) -> std::string
 		       {
@@ -75,7 +75,7 @@ namespace
 		       };
 
       std::string error;
-      auto probe_result = identify_image(media(), name, error);
+      auto probe_result = identify_image(block_access(), name, error);
       if (!probe_result)
 	throw DFS::Unrecognized(error);
       const DFS::Geometry geometry = probe_result->geometry;
@@ -84,14 +84,14 @@ namespace
 							   geometry.sectors,
 							   geometry.encoding);
       const DFS::sector_count_type track_len = single_side_geom.sectors;
-      FileView side0(media(), name, make_desc(0),
+      FileView side0(block_access(), name, make_desc(0),
 		     single_side_geom,
 		     0,		/* side 0 begins immediately */
 		     track_len, /* read the whole of the track */
 		     track_len, /* ignore track data for side 1 */
 		     single_side_geom.total_sectors());
       add_view(side0);
-      FileView side1(media(), name, make_desc(1),
+      FileView side1(block_access(), name, make_desc(1),
 		     single_side_geom,
 		     track_len, /* side 1 begins after the first track of side 0 */
 		     track_len, /* read the whole of the track */
@@ -105,8 +105,25 @@ namespace
 
 namespace DFS
 {
-  ViewFile::ViewFile(const std::string& name, std::unique_ptr<DFS::DataAccess>&& media)
-    : name_(name), data_(std::move(media))
+  FilePresentedBlockwise::FilePresentedBlockwise(FileAccess& f)
+    : f_(f)
+  {
+  }
+
+  std::optional<SectorBuffer> FilePresentedBlockwise::read_block(unsigned long lba)
+  {
+    const unsigned long pos = lba * DFS::SECTOR_BYTES;
+    std::vector<byte> got = f_.read(pos, DFS::SECTOR_BYTES);
+    assert(got.size() <= DFS::SECTOR_BYTES);
+    if (got.size() < DFS::SECTOR_BYTES)
+      return std::nullopt;
+    SectorBuffer buf;
+    std::copy(got.begin(), got.end(), buf.begin());
+    return buf;
+  }
+
+  ViewFile::ViewFile(const std::string& name, std::unique_ptr<DFS::FileAccess>&& file)
+    : name_(name), data_(std::move(file)), blocks_(*data_)
   {
   }
 
@@ -119,9 +136,9 @@ namespace DFS
     views_.push_back(v);
   }
 
-  DFS::DataAccess& ViewFile::media()
+  DFS::DataAccess& ViewFile::block_access()
   {
-    return *data_;
+    return blocks_;
   }
 
   bool ViewFile::connect_drives(DFS::StorageConfiguration* storage,
@@ -153,16 +170,16 @@ namespace DFS
 
   std::unique_ptr<AbstractImageFile> make_noninterleaved_file(const std::string& name,
 							      bool compressed,
-							      std::unique_ptr<DataAccess>&& media)
+							      std::unique_ptr<FileAccess>&& file)
   {
-    return std::make_unique<NonInterleavedFile>(name, compressed, std::move(media));
+    return std::make_unique<NonInterleavedFile>(name, compressed, std::move(file));
   }
 
   std::unique_ptr<AbstractImageFile> make_interleaved_file(const std::string& name,
 							   bool compressed,
-							   std::unique_ptr<DataAccess>&& media)
+							   std::unique_ptr<FileAccess>&& file)
   {
-    return std::make_unique<InterleavedFile>(name, compressed, std::move(media));
+    return std::make_unique<InterleavedFile>(name, compressed, std::move(file));
   }
 
 }  // namespace DFS

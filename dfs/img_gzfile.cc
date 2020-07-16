@@ -245,12 +245,12 @@ namespace
   }
 
 
-  class DecompressedFile : public DataAccess
+  class DecompressedFile : public DFS::FileAccess
   {
   public:
     explicit DecompressedFile(const std::string& name);
     virtual ~DecompressedFile();
-    std::optional<SectorBuffer> read_block(unsigned long lba) override;
+    std::vector<DFS::byte> read(unsigned long pos, unsigned long len) override;
 
   private:
     FILE *f_;
@@ -270,23 +270,24 @@ namespace
   {
   }
 
-  std::optional<SectorBuffer> DecompressedFile::read_block(unsigned long lba)
+  std::vector<DFS::byte> DecompressedFile::read(unsigned long pos, unsigned long len)
   {
-    auto fail = [this]() -> std::optional<SectorBuffer>
+    auto fail = [this]() -> std::vector<DFS::byte>
       {
        if (errno)
 	 throw FileIOError(name_, errno);
        else
-	 return std::nullopt;
+	 return std::vector<DFS::byte>();
       };
-    long offset = lba * DFS::SECTOR_BYTES;
     errno = 0;
-    if (0 != fseek(f_, offset, SEEK_SET))
+    if (0 != fseek(f_, pos, SEEK_SET))
       return fail();
-    DFS::SectorBuffer buf;
-    const size_t bytes_read = fread(buf.data(), 1, sizeof(DFS::SectorBuffer), f_);
-    if (bytes_read != sizeof(DFS::SectorBuffer))
+    std::vector<DFS::byte> buf;
+    buf.resize(len);
+    const size_t bytes_read = fread(buf.data(), 1, buf.size(), f_);
+    if (bytes_read == 0)
       return fail();
+    buf.resize(bytes_read);
     return buf;
   }
 
@@ -295,7 +296,7 @@ namespace
 
 namespace DFS
 {
-  std::unique_ptr<DataAccess> make_decompressed_file(const std::string& name)
+  std::unique_ptr<FileAccess> make_decompressed_file(const std::string& name)
   {
     return std::make_unique<DecompressedFile>(name);
   }

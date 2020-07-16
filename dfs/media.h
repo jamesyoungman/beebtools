@@ -25,10 +25,12 @@ namespace DFS
   std::unique_ptr<AbstractImageFile> make_image_file(const std::string& file_name, std::string& error);
 
 #if USE_ZLIB
-  std::unique_ptr<DataAccess> make_decompressed_file(const std::string& name);
+  std::unique_ptr<FileAccess> make_decompressed_file(const std::string& name);
 #endif
 
   std::unique_ptr<AbstractImageFile> make_hfe_file(const std::string& name,
+						   bool compressed,
+						   std::unique_ptr<DFS::FileAccess> file,
 						   std::string& error);
 
 }  // namespace DFS

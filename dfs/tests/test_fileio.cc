@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "img_fileio.h"
+#include "img_sdf.h"
 #include "cleanup.h"
 
 namespace
@@ -49,9 +50,32 @@ namespace
 
   }
 
+  bool block_is(DFS::FileAccess& acc, int sec, int val)
+  {
+    unsigned long pos = sec * DFS::SECTOR_BYTES;
+    std::vector<DFS::byte> got = acc.read(pos, DFS::SECTOR_BYTES);
+    if (got.size() != DFS::SECTOR_BYTES)
+      {
+	std::cerr << "failed to read block " << sec << "\n";
+	return false;
+      }
+    auto is_correct_val = [sec, val](DFS::byte b) -> bool {
+			    if (b == val) return true;
+			    std::cerr << "wrong data in block " << sec
+				      << "; expected " << int(val)
+				      << ", got " << int(b) << "\n";
+			    return false;
+			  };
+    if (!std::all_of(got.cbegin(), got.cend(), is_correct_val))
+      {
+	return false;
+      }
+    return true;
+  }
+
   bool block_is(DFS::DataAccess& acc, int sec, int val)
   {
-    auto got = acc.read_block(sec);
+    std::optional<DFS::SectorBuffer> got = acc.read_block(sec);
     if (!got)
       {
 	std::cerr << "failed to read block " << sec << "\n";
@@ -79,8 +103,9 @@ namespace
 	if (!block_is(f, i, i))
 	  return false;
       }
-    auto can_read_beyond_eof = f.read_block(test_blocks);
-    if (can_read_beyond_eof)
+
+    std::vector<DFS::byte> beyond_eof = f.read(test_blocks * DFS::SECTOR_BYTES, 1);
+    if (!beyond_eof.empty())
       {
 	std::cerr << "read beyond EOF succeeded\n";
 	return false;
@@ -89,50 +114,14 @@ namespace
     return true;
   }
 
-  bool test_narrowedfileview(const std::string& file_name, int test_blocks)
-  {
-    DFS::internal::OsFile underlying(file_name);
-    DFS::internal::NarrowedFileView same(underlying, 0, DFS::sector_count(test_blocks));
-    for (int i = 0; i < test_blocks; ++i)
-      {
-	if (!block_is(same, i, i))
-	  return false;
-      }
-
-    DFS::internal::NarrowedFileView short_view(underlying, 0, DFS::sector_count(2));
-    for (int i = 0; i < 2; ++i)
-      {
-	if (!block_is(short_view, i, i))
-	  return false;
-      }
-    if (short_view.read_block(2))
-      {
-	std::cerr << "read beyond EOF in short_view NarrowedFileView\n";
-	return false;
-      }
-
-    DFS::internal::NarrowedFileView middle(underlying, 3, DFS::sector_count(2));
-    for (int i = 0; i < 2; ++i)
-      {
-	if (!block_is(middle, i, i+3))
-	  return false;
-      }
-    if (middle.read_block(2))
-      {
-	std::cerr << "read beyond EOF in middle NarrowedFileView\n";
-	return false;
-      }
-
-    std::cerr << "PASS: test_narrowedfileview\n";
-    return true;
-  }
 
   bool test_fileview(const std::string& name, DFS::sector_count_type maxblocks)
   {
     DFS::internal::OsFile underlying(name);
+    DFS::FilePresentedBlockwise block_io(underlying);
     const DFS::Geometry geom(3, 2, 2, DFS::Encoding::FM);
     assert(geom.total_sectors() <= maxblocks);
-    DFS::internal::FileView v(underlying, name,
+    DFS::internal::FileView v(block_io, name,
 			      "test file", geom,
 			      1, // initial skip
 			      2, // take
@@ -180,7 +169,6 @@ namespace
 
     return
       test_osfile(file_name, TEST_FILE_BLOCKS) &&
-      test_narrowedfileview(file_name, TEST_FILE_BLOCKS) &&
       test_fileview(file_name, TEST_FILE_BLOCKS);
   }
 }

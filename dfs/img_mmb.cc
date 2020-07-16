@@ -19,8 +19,8 @@ namespace
     static constexpr unsigned long MMB_ENTRY_BYTES = 16;
 
     explicit MmbFile(const std::string& name, bool compressed,
-		     std::unique_ptr<DFS::DataAccess>&& access)
-      : ViewFile(name, std::move(access))
+		     std::unique_ptr<DFS::FileAccess>&& file)
+      : ViewFile(name, std::move(file))
     {
       const DFS::Geometry disc_image_geom = DFS::Geometry(80, 1, 10, DFS::Encoding::FM);
       const auto disc_image_sectors = disc_image_geom.total_sectors();
@@ -28,7 +28,7 @@ namespace
       const unsigned entries_per_sector = DFS::SECTOR_BYTES/MMB_ENTRY_BYTES;
       for (unsigned sec = 0; sec < mmb_sectors; ++sec)
 	{
-	  auto got = media().read_block(sec);
+	  auto got = block_access().read_block(sec);
 	  if (!got)
 	    throw DFS::BadFileSystem("MMB file is too short");
 	  for (unsigned i = 0; i < entries_per_sector; ++i)
@@ -87,8 +87,7 @@ namespace
 	      if (present)
 		{
 		  auto initial_skip_sectors = mmb_sectors + (slot * disc_image_sectors);
-		  DFS::internal::NarrowedFileView narrow(media(), initial_skip_sectors, disc_image_sectors);
-		  add_view(FileView(media(), name, disc_name,
+		  add_view(FileView(block_access(), name, disc_name,
 				    disc_image_geom,
 				    initial_skip_sectors,
 				    disc_image_sectors,
@@ -109,8 +108,8 @@ namespace DFS
 {
   std::unique_ptr<AbstractImageFile> make_mmb_file(const std::string& name,
 						   bool compressed,
-						   std::unique_ptr<DFS::DataAccess>&& da)
+						   std::unique_ptr<DFS::FileAccess>&& fa)
   {
-    return std::make_unique<MmbFile>(name, compressed, std::move(da));
+    return std::make_unique<MmbFile>(name, compressed, std::move(fa));
   }
 }  // namespace DFS

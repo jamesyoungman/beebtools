@@ -5,6 +5,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "abstractio.h"
 #include "dfs.h"
@@ -16,29 +17,15 @@ namespace DFS
 {
   namespace internal
   {
-    class OsFile : public DFS::DataAccess
+    class OsFile : public DFS::FileAccess
     {
     public:
       OsFile(const std::string& name);
-      std::optional<DFS::SectorBuffer> read_block(unsigned long lba) override;
+      std::vector<byte> read(unsigned long offset, unsigned long len) override;
 
     private:
       std::string file_name_;
       std::ifstream f_;
-    };
-
-    class NarrowedFileView : public DFS::DataAccess
-    {
-    public:
-      NarrowedFileView(DataAccess& underlying,
-		       unsigned long offset_sectors,
-		       DFS::sector_count_type limit);
-    std::optional<DFS::SectorBuffer> read_block(unsigned long lba) override;
-
-    private:
-      DataAccess& underlying_;
-      unsigned long offset_;
-      DFS::sector_count_type limit_;
     };
 
     class FileView : public DFS::AbstractDrive

@@ -58,12 +58,7 @@ namespace DFS
 	return 0;
       }
 
-    if (extensions.back() == "hfe")
-      {
-	return make_hfe_file(name, error);
-      }
-
-    std::unique_ptr<DataAccess> da;
+    std::unique_ptr<FileAccess> fa;
     if (extensions.back() == "gz")
       {
 	compressed = true;
@@ -77,27 +72,31 @@ namespace DFS
 	    error = ss.str();
 	    return 0;
 	  }
-	da = DFS::make_decompressed_file(name);
+	fa = DFS::make_decompressed_file(name);
       }
     else
       {
-	da = std::make_unique<DFS::internal::OsFile>(name);
+	fa = std::make_unique<DFS::internal::OsFile>(name);
       }
 
     const std::string ext(extensions.back());
     try
       {
+	if (extensions.back() == "hfe")
+	  {
+	    return make_hfe_file(name, compressed, std::move(fa), error);
+	  }
 	if (ext == "ssd" || ext == "sdd")
 	  {
-	    return make_noninterleaved_file(name, compressed, std::move(da));
+	    return make_noninterleaved_file(name, compressed, std::move(fa));
 	  }
 	if (ext == "dsd" || ext == "ddd")
 	  {
-	    return make_interleaved_file(name, compressed, std::move(da));
+	    return make_interleaved_file(name, compressed, std::move(fa));
 	  }
 	if (ext == "mmb")
 	  {
-	    return make_mmb_file(name, compressed, std::move(da));
+	    return make_mmb_file(name, compressed, std::move(fa));
 	  }
 	std::ostringstream ss;
 	ss << "Image file " << name << " does not seem to be of a supported type; "

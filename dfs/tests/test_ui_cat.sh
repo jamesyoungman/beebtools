@@ -95,32 +95,8 @@ Dir. :0.$           Lib. :0.$
   %.S0B01             B.S0B01    L
   B.S0B02    L        V.S0B01
 "
-check_cat acorn-dfs-ss-80t-manyfiles.ssd acorn "" "${manyfiles_cat}" || exit 1
-if ! imgdir="$(mktemp -d --tmpdir=${TMPDIR} imgdir_XXXXXX)"
-then
-    echo "Unable to create a temporary directory" >&2
-    exit 1
-fi
-echo "imgdir is ${imgdir}"
-
-cleandir()
-{
-    rm -f "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe"
-    rmdir "${imgdir}"
-}
-compressed_test_file="${TEST_DATA_DIR}"/acorn-dfs-ss-80t-manyfiles.hfe.gz
-if ! gunzip < "${compressed_test_file}" > "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe"
-then
-    echo "Unable to decompress image file ${compressed_test_file}" >&2
-    cleandir
-    exit 1
-fi
-if ! check_cat "${imgdir}/acorn-dfs-ss-80t-manyfiles.hfe" acorn "" "${manyfiles_cat}"
-then
-    cleandir
-    exit 1
-fi
-cleandir
+check_cat 'acorn-dfs-ss-80t-manyfiles.ssd'    acorn "" "${manyfiles_cat}" || exit 1
+check_cat 'acorn-dfs-ss-80t-manyfiles.hfe.gz' acorn "" "${manyfiles_cat}" || exit 1
 
 
 check_cat acorn-dfs-ss-80t-manyfiles.ssd watford "" \

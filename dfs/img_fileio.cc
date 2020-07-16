@@ -8,6 +8,10 @@ namespace DFS
   {
   }
 
+  FileAccess::~FileAccess()
+  {
+  }
+
   namespace internal
   {
     class NoIo : public DFS::DataAccess
@@ -40,30 +44,31 @@ namespace DFS
       f_.exceptions(std::ifstream::badbit);
     }
 
-    std::optional<DFS::SectorBuffer> OsFile::read_block(unsigned long lba)
+    std::vector<byte> OsFile::read(unsigned long pos, unsigned long len)
     {
       if (!f_)
 	{
-	  std::cerr << "OsFile::read_block: BUG? called on failed/bad file "
+	  std::cerr << "OsFile::read: BUG? called on failed/bad file "
 		    << file_name_ << "\n";
 	}
       errno = 0;
-      // TODO: use safe_unsigned_multiply here
-      const unsigned long pos = lba * DFS::SECTOR_BYTES;
+      std::vector<byte> buf;
       if (!f_.seekg(pos, f_.beg))
 	{
 	  int saved_errno = errno;
-	  std::cerr << "OsFile::read_block: failed to seek to position "
+	  std::cerr << "OsFile::read: failed to seek to position "
 		    << pos << " in file " << file_name_ << "; errno="
 		    << saved_errno << "\n";
 	  f_.clear();
 	  if (saved_errno)
 	    throw DFS::FileIOError(file_name_, errno);
 	  else
-	    return std::nullopt;
+	    return buf;
 	}
-      DFS::SectorBuffer buf;
-      if (!f_.read(reinterpret_cast<char*>(buf.data()), DFS::SECTOR_BYTES).good())
+      buf.resize(len);
+      f_.read(reinterpret_cast<char*>(buf.data()), len);
+      buf.resize(f_.gcount());
+      if (!f_.good())
 	{
 	  const int saved_errno = errno;
 	  // POSIX permits a seek beyond end-of-file (at least for
@@ -75,23 +80,9 @@ namespace DFS
 	  if (errno)
 	    throw DFS::FileIOError(file_name_, saved_errno); // a real error
 	  else
-	    return std::nullopt;
+	    return buf;		// short read
 	}
       return buf;
-    }
-
-    NarrowedFileView::NarrowedFileView(DataAccess& underlying,
-				       unsigned long offset_sectors,
-				       DFS::sector_count_type limit)
-      : underlying_(underlying), offset_(offset_sectors), limit_(limit)
-    {
-    }
-
-    std::optional<DFS::SectorBuffer> NarrowedFileView::read_block(unsigned long lba)
-    {
-      if (lba >= limit_)
-	return std::nullopt;
-      return underlying_.read_block(lba + offset_);
     }
 
     FileView::FileView(DataAccess& media,
