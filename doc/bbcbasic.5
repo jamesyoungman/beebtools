@@ -155,7 +155,7 @@ that, the following byte must be the 0x0D marking the end of the line.
 The line
 
 .EX
-0x05 0x00 0x0A 0xF5 0x0D
+0x05 0x0A 0x00 0xF5 0x0D
 .EE
 
 has a line number of 10 and includes just the token 0xF5 representing "REPEAT":
@@ -316,7 +316,7 @@ These bytes just represent themselves.
 
 .SS "Bytes 0x7f ... 0x8C"
 
-The token 0x7F is valid only on ARM and Mac, where if expands to
+The token 0x7F is valid only on ARM and Mac, where it expands to
 "OTHERWISE".
 
 .TS
@@ -845,9 +845,9 @@ implementation.
 .SH "OTHER DIALECTS"
 
 This document describes all the formats I have been able to find
-documentation for or find a usable implementation of.  There are also
-BBC BASIC implementations for the PDP-11 and the 6809 CPU which I have
-not obtainted, and so these are not documented here.
+documentation for or find a usable implementation of.  There is also a
+BBC BASIC implementation for the 6809 CPU which I have not obtainted,
+and so it is not documented here.
 
 If you have additional information or corrections, please use the
 contact information given in the
