@@ -110,7 +110,7 @@ public:
     for (const auto& entry : catalog.entries())
       {
 	file_body.clear();
-	DFS::CRC crc;
+	DFS::TapeCRC crc;
 	const string output_origname(string(1, entry.directory()) + "." + rtrim(entry.name()));
 	string output_basename;
 	if (entry.directory() == ctx.current_directory)
