@@ -413,11 +413,6 @@ HfeFile::HfeFile(const std::string& name, bool compressed, std::unique_ptr<DFS::
       // TODO: I don't think we can get a real errno value here.
       throw DFS::FileIOError(name, EIO);
     }
-  if (hfe_version_ == 3)
-    {
-      // throw UnsupportedHfeFile("HFE v3 is not yet supported");
-      std::cerr << "warning: HFE v3 is not yet supported, result may be incorrect\n";
-    }
 }
 
 unsigned char HfeFile::encoding_of_track(int side, int track) const
