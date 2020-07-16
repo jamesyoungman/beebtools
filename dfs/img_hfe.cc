@@ -19,6 +19,8 @@
 #include "media.h"
 #include "track.h"
 
+#undef ULTRA_VERBOSE
+
 namespace
 {
 using byte = unsigned char;
@@ -644,25 +646,32 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 			<< (end_offset - begin_offset) << " bytes starting at "
 			<< "offset " << begin_offset << " to position "
 			<< track_stream.size() << " in the track stream\n";
+#if ULTRA_VERBOSE
 	      std::cerr << "Input:\n";
 	      DFS::hexdump_bytes(std::cerr, track_stream.size(),
 				 (end_offset - begin_offset),
 				 16, raw_data.data() + begin_offset);
+#endif
 	    }
+#if ULTRA_VERBOSE
 	  auto oldsize = track_stream.size();
+#endif
 	  copy_hfe(3 == hfe_version_,
 		   raw_data.data() + begin_offset,
 		   raw_data.data() + end_offset,
 		   std::back_inserter(track_stream));
 	  if (DFS::verbose)
 	    {
+#if ULTRA_VERBOSE
 	      std::cerr << "Output:\n";
 	      DFS::hexdump_bytes(std::cerr, oldsize,
 				 track_stream.size() - oldsize, 16,
 				 track_stream.data() + oldsize);
+#endif
 	    }
 	  begin_offset += raw_data_block_size;
 	}
+#if ULTRA_VERBOSE
       if (DFS::verbose)
 	{
 	  std::cerr << std::dec << std::setfill(' ')
@@ -672,7 +681,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 		    << "; " << track_stream.size()
 		    << " bytes seem to be for side " << side << "\n";
 	}
-
+#endif
 
       // Extract the FM-encoded sectors.
       std::vector<Sector> track_sectors =  IbmFmDecoder(DFS::verbose).decode(track_stream);
@@ -752,7 +761,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 				<< sect.address
 				<< " but it should have record number 0 "
 				<< "instead of "
-				<< unsigned(sect.address.record);
+				<< unsigned(sect.address.record) << "\n";
 		    }
 		}
 	    }
@@ -765,7 +774,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	      throw UnsupportedHfeFile(ss.str());
 	    }
 
-	  *prev_rec_num = sect.address.record;
+	  prev_rec_num = sect.address.record;
 	}
       // TODO: check the CRC
       std::copy(track_sectors.begin(), track_sectors.end(),
