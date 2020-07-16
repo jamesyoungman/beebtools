@@ -642,11 +642,11 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	  assert(end_offset <= raw_data.size());
 	  if (DFS::verbose)
 	    {
+#if ULTRA_VERBOSE
 	      std::cerr << "Track " << track << ": copying "
 			<< (end_offset - begin_offset) << " bytes starting at "
 			<< "offset " << begin_offset << " to position "
 			<< track_stream.size() << " in the track stream\n";
-#if ULTRA_VERBOSE
 	      std::cerr << "Input:\n";
 	      DFS::hexdump_bytes(std::cerr, track_stream.size(),
 				 (end_offset - begin_offset),

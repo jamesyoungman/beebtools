@@ -174,13 +174,15 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 		      DFS::CCIT_CRC16 other_crc;
 		      if (verbose_)
 			{
+#if ULTRA_VERBOSE
 			  std::cerr << std::dec
 				    << "copy_bytes: " << bits_avail
 				    << " bits still left in track data; "
 				    << (nbytes * 16)
-				    << " bits needed to consume " << nbytes << " bytes\n";
-			  std::cerr << "copy_bytes: " << (nbytes*2)
-				    << " bytes of data to consume:\n";
+				    << " bits needed to consume " << nbytes*2 << " clocked bytes "
+				    << "and yield " << nbytes
+				    << " bytes of actual data\n";
+#endif
 			}
 
 		      if (bits_avail / 16 < nbytes)
@@ -326,7 +328,9 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	    }
 	  if (verbose_)
 	    {
+#if ULTRA_VERBOSE
 	      std::cerr << "Found AM1, reading sector address\n";
+#endif
 	    }
 	  /* clock=0xC7, data=0xFE - this is the index address mark */
 	  byte id[7] = {byte(0xFE)};
@@ -350,11 +354,6 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  DFS::CCIT_CRC16 crc;
 	  crc.update(id, id + sizeof(id));
 	  const auto addr_crc = crc.get();
-	  if (verbose_)
-	    {
-	      std::cerr << "Sector address CRC is: 0x"
-			<< std::hex << addr_crc << " and should be 0\n";
-	    }
 	  if (addr_crc)
 	    {
 	      if (verbose_)
@@ -387,12 +386,6 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	    }
 	  // id[5] and id[6] are the CRC bytes, and these already got
 	  // included in our evaluation of addr_crc.
-	  if (verbose_)
-	    {
-	      std::cerr << "The address field is " << sec.address
-			<< " and the data record should contain "
-			<< std::dec << sec_size << " bytes\n";
-	    }
 	  state = LookingForRecord;
 	}
       else if (state == LookingForRecord)
@@ -403,28 +396,26 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      // A deleted (initial byte of record is 'D' or defective
 	      // (initial byte 'F') non-data record.
 	      discard_record = true;  // control record (data = 0xF8).
-	      if (verbose_)
-		{
-		  std::cerr << "This is a control record, we will discard it.\n";
-		}
 	    }
 	  else if (shifter == 0xF56F)
 	    {
 	      discard_record = false;  // AM2 for a data record (data = 0xFB).
-	      if (verbose_)
-		{
-		  std::cerr << "This is a data record, we will use it.\n";
-		}
 	    }
 	  else
 	    {
 	      continue;
 	    }
-	  // Read the sector itself.
 	  if (verbose_)
 	    {
-	      std::cerr << "Accepting " << std::dec << sec_size << " bytes of sector data\n";
+	      std::cerr << "This record has address " << sec.address
+			<< " and should contain "
+			<< std::dec << sec_size << " bytes.  It is a "
+			<< (discard_record ? "control" : "data")
+			<< " record so we will "
+			<< (discard_record ? "discard" : "keep")
+			<< " it.\n";
 	    }
+	  // Read the sector itself.
 	  auto size_with_crc = sec_size + 2;  // add two bytes for the CRC
 	  sec.data.resize(size_with_crc);
 	  byte data_mark[1] = { byte(discard_record ? 0xF8 : 0xFB) };
@@ -450,7 +441,8 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      if (verbose_)
 		{
 		  std::cerr << "Sector data CRC mismatch: 0x"
-			    << std::hex << data_crc << " should be 0\n";
+			    << std::hex << data_crc << " should be 0; "
+			    << "dropping the sector\n";
 		}
 	      state = Desynced;
 	      continue;
@@ -460,17 +452,13 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // Resize the sector data downward to drop the CRC.
 	  sec.data.resize(sec_size);
 
-	  if (verbose_)
-	    {
-	      std::cerr << "Got the sector data\n";
-	    }
 	  if (!discard_record)
 	    {
 	      if (verbose_)
 		{
-		  std::cerr << "Accepting the record/sector; "
-			    << "it has " << sec.data.size()
-			    << " bytes of data.\n";
+		  std::cerr << "Accepting record/sector with address "
+			    << sec.address << "; " << "it has "
+			    << sec.data.size() << " bytes of data.\n";
 		}
 	      result.push_back(sec);
 	    }
