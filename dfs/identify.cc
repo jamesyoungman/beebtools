@@ -58,7 +58,8 @@ namespace
       return;
     int i = 1;
     ostream_flag_saver restore_cerr_flags(std::cerr);
-    std::cerr << intro << "\n";
+    std::cerr << intro << " (total number of possibilities is "
+	      << candidates.size() << ")\n";
     for (const auto& cand : candidates)
       {
 	std::cerr << std::setfill(' ') << std::setw(2) << std::dec << std::right
@@ -384,8 +385,7 @@ namespace DFS
 	return false;
       };
     std::vector<DFS::ImageFileFormat> possible = filter_formats(candidates, large_enough);
-    show_possible("probe_geometry after eliminating "
-		  "under-sized geometries smaller than the file system",
+    show_possible("probe_geometry after eliminating under-sized geometries smaller than the file system",
 		  possible);
 
     if (possible.size() > 1)
@@ -423,10 +423,11 @@ namespace DFS
 	// this filter has some false negatives.  Therefore, only use
 	// it if we would otherwise not be able to guess the format.
 	possible = filter_formats(possible, other_side_has_catalog_too);
-	show_possible("probe_geometry after removing two-sided geometries lacking a catalog on the other side", possible);
+	show_possible("probe_geometry after removing two-sided geometries lacking a catalog on the other side",
+		      possible);
       }
 
-    if (possible.size() > 1 && DFS::verbose)
+    if (possible.size() > 1)
       {
 	show_possible("The remaining possible formats cannot be conclusively rejected", possible);
       }
@@ -434,19 +435,19 @@ namespace DFS
       [](const DFS::ImageFileFormat& left,
 	 const DFS::ImageFileFormat& right)
       {
-	auto lg = left.geometry;
-	auto rg = right.geometry;
-	// Prefer not to guess geometries with 16 sectors per track.
-	// Hence if one option is 16 and the other is something else,
-	// pick the something else.  The caller is trying to pick the
-	// "smallest" of the two options, so to "prefer" the left
-	// candidate we must return false.
-	if (lg.sectors == 16 && rg.sectors != 16)
-	  return false;		// prefer right
-	else if (rg.sectors == 16 && lg.sectors != 16)
-	  return true;		// prefer left
+	// Prefer not to guess geometries with 16 sectors per track,
+	// because they are less common in use as DFS file systems
+	// (ADFS would be a different matter).  Hence if one option is
+	// 16 and the other is something else, pick the something
+	// else.  The caller is trying to pick the "smallest" of the
+	// two options, so to "prefer" the left candidate we must
+	// return false.
+	if (left.geometry.sectors == 16 && right.geometry.sectors != 16)
+	  return false;		// prefer right since not 16-sector
+	else if (right.geometry.sectors == 16 && left.geometry.sectors != 16)
+	  return true;		// prefer left since not 16-sector
 	// Otherwise, pick the smaller option.
-	return lg.total_sectors() < rg.total_sectors();
+	return left.geometry.total_sectors() < right.geometry.total_sectors();
       };
     auto it = std::min_element(possible.cbegin(), possible.cend(), compare_formats);
     if (it == possible.cend())
