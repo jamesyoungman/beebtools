@@ -1,4 +1,4 @@
-.TH "BBC BASIC" 5 2020-07-17 Youngman \" -*- nroff -*-
+.TH "BBC BASIC" 5 "2020-07-17 17:05 UTC" Youngman \" -*- nroff -*-
 
 .SH SYNOPSIS
 Some implementations of BBC BASIC store saved programs in a tokenised
@@ -477,12 +477,13 @@ Byte|All Dialects Identical
 0xC5|"EOF"
 .TE
 
-.SS "Byte 0xC6: Extension Tokens"
+.SS "Byte 0xC6: Extension Tokens for Extended Functions"
 
 In the ARM and Mac dialects the 0xC6 byte introduces an extension
-mechanism and the following byte identifies the expansion.  In other
-dialects, the 0xC6 by itself is interpreted as a token, and the
-following byte is some other token.
+mechanism and the following byte identifies the expansion.  The tokens
+represent functions.  In other dialects, the 0xC6 by itself is
+interpreted as a token, and the following byte is some other token.
+
 
 .TS
 tab(|) allbox;
@@ -517,10 +518,11 @@ T}|"ASK"
 0xC6 0x96||||"MENU"
 .TE
 
-.SS "Byte 0xC7: Extension Tokens"
+.SS "Byte 0xC7: Extension Tokens for Immediate Commands"
 
 In the ARM and Mac dialects, the 0xC7 byte introduces an extension
-mechanism, and the next byte identifies the expansion:
+mechanism, and the next byte identifies the expansion (each of which
+is an immediate command):
 
 .TS
 tab(|) allbox;
@@ -572,7 +574,7 @@ T}
 0xC7 0x9f|||"INSTALL"
 .TE
 
-.SS "Byte 0xC8: Extension Tokens"
+.SS "Byte 0xC8: Extension Tokens for Extended Commands"
 
 In the ARM and Mac dialects, the 0xC8 byte introduces an extension
 mechanism, while in 6502 and Z80 0xC8 is expanded by itself to
@@ -584,6 +586,9 @@ followed by whatever NN would have normally epxanded to (and this is
 what
 .I interpreted separately
 means in the table below).
+
+In dialects where 0xC8 is used as an extension, the resulting tokens
+represent BBC BASIC commands.
 
 .TS
 tab(|) allbox;
@@ -950,3 +955,5 @@ BBC BASIC versions, collected by J. G. Harston
 BBC BASIC binary line number format, by Matt Godbolt
 .UE
 .br
+\" Local Variables:
+\" End:
