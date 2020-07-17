@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-17 23:09 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-07-17 23:25 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -13,7 +13,7 @@ dfs \- read Acorn DFS disc images
 The
 .B dfs
 program reads data from an Acorn DFS disc image file.
-Only single-sided disc images are currently suported.
+Only single-sided disc images are currently supported.
 
 The command line consists of global options (for example
 .BR "\-\-file" )
@@ -116,7 +116,8 @@ This aspect is not currently specified because I haven't decided
 under what circumstances to translate the file names for DOS
 compatibility.
 See
-.B "INF STANDARD ARCHIVE FILE FORMAT" for details.
+.B "INF STANDARD ARCHIVE FILE FORMAT"
+for details.
 
 .SS "extract-unused directory"
 
@@ -525,9 +526,10 @@ This field is not mandatory in the file format, but
 .BR dfs (1)
 always generates it (there is no CRC in the disc image).
 
-The CRC algorithm appears to be identical to the XModem CRC.  This is
-like the CCITT CRC-16, except that the CRC computation is initialised
-with 0x0000 instead of 0xFFFF, so the CRC of an empty file is 0000.
+The CRC algorithm appears to be identical to the XModem CRC.
+This is like the CCITT CRC-16, except that the CRC computation is
+initialised with zero instead of FFFF, so the CRC of an empty file is
+0000.
 The CRC is printed most-significant byte first.
 
 .SH "EXIT STATUS"
