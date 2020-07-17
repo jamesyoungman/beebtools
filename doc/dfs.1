@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-17 22:45 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-07-17 22:58 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -587,15 +587,20 @@ would have a name ending with ".sdd.gz".
 
 .TS
 tab(|);
-lb lb lb lb
-lb l  l l.
-File extension|Interleaved|Density (sectors-per-track)|Number of sides
-ssd|No|FM, single density (10)|1 or 2
-sdd|No|MFM, double density (16 or, more usually, 18)|1 or 2
-dsd|Yes|FM, single sensity (10)|Always 2
-ddd|Yes|MFM, double density (16 or, more usually, 18)|Always 2
-hfe|(Yes)|Only FM, single density is currently supported (10)|1
+lb lb lb lb lb
+lb l  l  l  l.
+File extension|Interleaved|Density|Sectors per track|Sides
+ssd|No|Single|10|1 or 2
+sdd|No|Double|16 or 18|1 or 2
+dsd|Yes|Single|10|Always 2
+ddd|Yes|Double|16 or 18|Always 2
+hfe|(Yes)|Single|10|1 or 2
 .TE
+
+The
+.BR dfs (1
+program currently only supports single-density HFE files, though this
+will likely change in the future.
 
 .SS Non-interleaved images
 
