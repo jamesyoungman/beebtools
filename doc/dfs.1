@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-17 23:25 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-07-17 23:39 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -21,19 +21,10 @@ followed by a command name (for example
 .BR cat ).
 
 .SH OPTIONS
-
+The most commonly-used option is
+.BR \-\-file .
+Other options will likely not be much used.
 The following options are undersood:
-
-.IP "\-\-file \fINAME\fR"
-Specifies the name of the disc image to read.
-If this option is specified more than once, each image file is
-"inserted" into the next free "drive".
-See
-.B DISC IMAGE FILES
-for a description of the supported image files.
-See
-.B NOTES
-for some caveats on the backward-compatibility of future versions.
 
 .IP "\-\-dir \fID\fR"
 Specifies the current directory to assume when reading the disc image,
@@ -59,6 +50,44 @@ command in Opus DDOS.  See
 .B "Opus DDOS Drive Numbers"
 below.
 
+.IP "\-\-drive\-first"
+Allow single-sided disc images to be "inserted" as
+if they were the reverse of an already-inserted disc.
+This allows drives 0 and 2 to be set up from separate
+image files.
+
+.IP "\-\-drive\-physical"
+Avoid using the drive number corresponding to the opposite side of a
+drive which is already populated.
+In other words, behave like a BBC Micro does, considering single-sided
+image files as if they were physical floppy disks.  This is the
+default.
+
+.IP "\-\-file \fINAME\fR"
+Specifies the name of the disc image to read.
+If this option is specified more than once, each image file is
+"inserted" into the next free "drive".
+See
+.B DISC IMAGE FILES
+for a description of the supported image files.
+See the options
+.B \-\-drive\-first
+and
+.B \-\-drive\-physical
+for control over how "free drive" is interpreted.
+See
+.B NOTES
+for some caveats on the backward-compatibility of future versions.
+
+.IP \-\-show\-config
+After option processsing and probing image files but before processing
+the user's command, show the configuration of the simulated storage
+system.
+For example, explain which image file is associated with which drive
+number, and what
+.BR dfs (1)
+believes is in the image file.
+
 .IP "\-\-ui \fISTYLE\fR"
 Follow the user-interface conventions of DFS ROMs of type
 .IR STYLE .
@@ -72,6 +101,13 @@ There are variations between ROM behaviours of which
 takes no acount.  For example the directory and library part of the
 .B *CAT
 output differs between the Acorn 8271 and 1770 ROMs.
+
+.IP \-\-verbose
+Print on the standard error stream detailed information about what is
+happening.  This can be useful when you're trying to work out how
+.BR dfs (1)
+is figuring out what's in an image file and which DFS variant is in
+it.
 
 .SH "COMMANDS"
 
