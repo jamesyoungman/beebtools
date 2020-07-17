@@ -282,9 +282,22 @@ Byte|6502|Z80|ARM|Mac|Windows
 0x10|\fIall invalid\fP|"EXIT"
 .TE
 
+The byte 0x0F represents they keyword
+.B BY
+in the Windows dialect.
+This keyword exists also in BBC BASIC V (as used for example on
+ARM-based systems).
+In that version
+.B BY
+is represented as 0x42 0x59 (being the ASCII codes for the letters B
+and Y).
+
 .SS "Bytes 0x11 ... 0x17"
 
-These bytes represent themselves (within a string or not).
+These bytes are currently unused as tokens by any implementation.
+They are currently passed through unchanged (within a string or not)
+and so could be said to represent themselves.
+Perhaps these may be used as tokens in the future.
 
 .SS "Bytes 0x18 ... 0x1f: Windows/SDL Fast Variables"
 
@@ -765,7 +778,7 @@ Byte:6502:Z80:ARM:Mac:Windows
 
 The byte value 0xFB encodes the keyword
 .BR COLOUR .
-Some dialects (for example Mac) also accept
+A number of dialects (for example Mac, ARM and Windows) also accept
 .B COLOR
 when a program is being entered but this is "corrected" to
 .BR COLOUR .
@@ -853,6 +866,19 @@ If you have additional information or corrections, please use the
 contact information given in the
 .B BUGS
 section.
+
+.SH "FUTURE DIRECTIONS"
+
+Some BBC BASIC implementations (for example R. T. Russell's
+Windows/SDL implementations and the Brandy BASIC implementations) are
+still under active development and so could introduce new tokens in
+the future.
+
+For the R. T. Russell implementations, the byte range 0x11 to 0x17 is
+the most obvious place for this to happen. Since Brandy and Matrix
+Brandy BASIC load programs from text files, it seems likely that the
+details of their BASIC dialects could change without need for a
+change to the tokenisation scheme.
 
 .SH "CORNER CASES"
 
