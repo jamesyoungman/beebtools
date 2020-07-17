@@ -29,10 +29,10 @@ namespace
     // required for CRC16-CCIT.
     //
     // When computing CRCs for the INF files (i.e. TapeCRC), we
-    // initialise the crc_ state to 0, as for the XMODEM CRC.
+    // initialise the crc_ state to 0, as for the XModem CRC.
     //
-    // In the context of tape storage in the BBC Micro, the high byte
-    // of the result is presented first.
+    // The high byte of the result is presented first (in both the
+    // XModem and our case).
     if (crc & 32768)
       return  (((crc ^ 0x0810) & 32767) << 1) + 1;
     else

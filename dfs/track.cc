@@ -186,7 +186,6 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   // byte.
   auto copy_bytes = [&bits_avail, &thisbit, &bits, this](size_t nbytes, byte* out) -> bool
 		    {
-		      DFS::CCIT_CRC16 other_crc;
 		      if (verbose_)
 			{
 #if ULTRA_VERBOSE

@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-17 18:35 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-07-17 22:45 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -490,12 +490,9 @@ See
 .BR "DFS FILE METADATA" .
 T}
 CRC=EA69|CRC|T{
-Cyclic Redunancy Check code for the file body, computed by the
-algorithm given in section 16.10 "The Cassette filing system" of
-.IR "The Advanced User Guide For The BBC Micro" .
-This field is not mandatory in the file format, but
-.BR dfs (1)
-always generates it (there is no CRC in the disc image).
+Cyclic Redunancy Check code for the file body, see
+.B "CRC computation"
+below.
 T}
 (blank)|Next file|T{
 For files extracted from the Cassette filing system, this
@@ -518,6 +515,20 @@ The
 program terminates the single line of the ".inf" file with a newline
 character (ASCII 10 decimal) but if you're writing a program consuming
 such files you should probably accept any reasonable line separator.
+
+.SS "CRC computation"
+
+The CRC is computed by the algorithm given in section 16.10 "The
+Cassette filing system" of
+.IR "The Advanced User Guide For The BBC Micro" .
+This field is not mandatory in the file format, but
+.BR dfs (1)
+always generates it (there is no CRC in the disc image).
+
+The CRC algorithm appears to be identical to the XModem CRC.  This is
+like the CCITT CRC-16, except that the CRC computation is initialised
+with 0x0000 instead of 0xFFFF, so the CRC of an empty file is 0000.
+The CRC is printed most-significant byte first.
 
 .SH "EXIT STATUS"
 
