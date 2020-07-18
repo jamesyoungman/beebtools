@@ -1,7 +1,8 @@
 # Contributing to beebtools
 
 Thanks for your help.  Please read on for an explanation of how we can
-work effectively together to resolve your problem.
+work effectively together to resolve your problem (or to get your code
+change into beebtools).
 
 ## Contributing Bug Reports
 
@@ -14,9 +15,9 @@ image, please include the file in your bug report.  Please also give a
 clear description of use of this image file with one of these
 emulators:
 
- - MAME
- - beebjit
- - b-em
+ - [MAME](https://www.mamedev.org/)
+ - [beebjit](https://github.com/scarybeasts/beebjit)
+ - [b-em](http://b-em.bbcmicro.com/)
 
 The idea is that, armed only with your description, I can use the disc
 image you supply with one of those emulators.
@@ -28,7 +29,12 @@ are using, and so on.
 
 If the problem is that the dfs program didn't produce the correct
 output, but it worked a bit, please include an exact copy of the
-output you expected (see "Capturing Output").
+output you expected (see "Capturing Output") and explain what's
+different.
+
+It is probably helpful to include the output of `dfs` with the
+`--verbose` option, which produces a lot more explanation of what is
+going on.
 
 ### Reporting bugs in bbcbasic_to_text
 
