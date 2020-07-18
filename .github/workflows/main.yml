@@ -1,6 +1,8 @@
 # based on cmake swiss army knife
 name: CI
 on: [push, pull_request]
+with:
+  dependencies_debian: [zlib1-dev, gzip, groff, diffutils]
 jobs:
   build_using_compiler_in_cmakeflags:
     strategy:
