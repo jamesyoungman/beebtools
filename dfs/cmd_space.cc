@@ -13,27 +13,28 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>            // for assert
+#include <ext/alloc_traits.h>  // for __alloc_traits<>::value_type
+#include <iomanip>             // for operator<<, setfill, setw
+#include <iostream>            // for operator<<, basic_ostream, ostream, cout
+#include <limits>              // for numeric_limits
+#include <map>                 // for map
+#include <memory>              // for allocator, allocator_traits<>::value_type
+#include <numeric>             // for accumulate
+#include <optional>            // for optional, nullopt
+#include <string>              // for string, operator<<, operator+, char_tr...
+#include <utility>             // for pair, make_pair
+#include <vector>              // for vector, vector<>::const_iterator
 
-#include <string.h>
-
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <limits>
-#include <memory>
-#include <numeric>
-#include <string>
-#include <vector>
-
-#include "afsp.h"
-#include "cleanup.h"
-#include "dfs.h"
-#include "dfscontext.h"
-#include "dfs_catalog.h"
-#include "dfs_volume.h"
-#include "driveselector.h"
-#include "storage.h"
+#include "cleanup.h"           // for ostream_flag_saver
+#include "commands.h"          // for CommandInterface, REGISTER_COMMAND
+#include "dfs_catalog.h"       // for Catalog, data_sectors_reserved_for_cat...
+#include "dfs_volume.h"        // for Volume
+#include "dfscontext.h"        // for DFSContext
+#include "dfstypes.h"          // for sector_count_type
+#include "driveselector.h"     // for VolumeSelector, operator<<
+#include "exceptions.h"	       // for BadFileSystem
+#include "storage.h"           // for StorageConfiguration, VolumeMountResult
 
 using std::cerr;
 using std::cout;

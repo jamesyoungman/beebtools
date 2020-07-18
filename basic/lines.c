@@ -13,14 +13,14 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include <assert.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>   // for assert
+#include <limits.h>   // for UCHAR_MAX
+#include <stdbool.h>  // for false, bool, true
+#include <stdio.h>    // for fprintf, ftell, fgetc, stderr, EOF, getc, perror
 
-#include "tokens.h"
+#include "decoder.h"  // for expansion_map
+#include "tokens.h"   // for please_submit_bug_report, etc...
+
 
 #define STATIC_ASSERT(condition) \
 do { static char assertion_arr[(condition)?1:-1]; (void)assertion_arr; } while(0)

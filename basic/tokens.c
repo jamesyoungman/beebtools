@@ -15,12 +15,10 @@
 //
 #include "tokens.h"
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>   // for assert
+#include <stdbool.h>  // for false, bool, true
+#include <stdio.h>    // for fprintf, NULL, fputs, perror, FILE, fclose, fopen
+#include <string.h>   // for strcmp
 
 #define ARRAYSIZE(arr) (sizeof(arr)/sizeof(arr[0]))
 

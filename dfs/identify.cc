@@ -15,22 +15,30 @@
 //
 #include "identify.h"
 
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
+#include <assert.h>          // for assert
+#include <algorithm>         // for all_of, copy_if, min_element
+#include <array>             // for array<>::const_iterator, array
+#include <exception>	     // for exception
+#include <functional>        // for function
+#include <initializer_list>  // for initializer_list
+#include <iomanip>           // for operator<<, setfill, setw
+#include <iostream>          // for operator<<, basic_ostream, ostringstream
+#include <iterator>          // for back_insert_iterator, back_inserter
+#include <string>            // for operator<<, char_traits, allocator, string
+#include <tuple>             // for tie, tuple
+#include <utility>           // for pair, make_pair
+#include <vector>            // for vector, vector<>::const_iterator
 
-#include "abstractio.h"
-#include "cleanup.h"
-#include "dfs.h"
-#include "dfs_catalog.h"
-#include "dfs_format.h"
-#include "dfs_volume.h"
-#include "exceptions.h"
-#include "opus_cat.h"
-#include "stringutil.h"
+#include "abstractio.h"      // for SectorBuffer, DataAccess
+#include "cleanup.h"         // for ostream_flag_saver
+#include "dfs.h"             // for verbose
+#include "dfs_catalog.h"     // for operator<<, CatalogFragment, Catalog
+#include "dfs_format.h"      // for Format, Format::OpusDDOS, Format::DFS
+#include "dfs_volume.h"      // for Volume
+#include "exceptions.h"      // for BadFileSystem, FailedToGuessFormat
+#include "fsp.h"	     // for ParsedFileName
+#include "opus_cat.h"        // for OpusDiscCatalogue::VolumeLocation, ...
+#include "stringutil.h"      // for ends_with
 
 namespace
 {
@@ -419,7 +427,7 @@ namespace DFS
 	      return true;
 	    DFS::sector_count_type other =
 	      DFS::sector_count(ff.geometry.sectors
-				* (ff.interleaved ? 1 : ff.geometry.cylinders));
+				* (ff.interleaved ? 1u : ff.geometry.cylinders));
 	    std::string error;
 	    if (has_valid_dfs_catalog(media, other, error))
 	      {

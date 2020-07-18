@@ -15,14 +15,16 @@
 //
 #include "track.h"
 
-#include <cassert>
-#include <iomanip>
-#include <iostream>
-#include <functional>
-#include <sstream>
+#include <stdint.h>	        // for uint8_t
+#include <stddef.h>             // for size_t
+#include <cassert>              // for assert
+#include <iomanip>              // for operator<<, setw
+#include <iostream>             // for operator<<, basic_ostream, ostream
+#include <optional>             // for optional
+#include <string>               // for operator<<
+#include <utility>              // for make_pair, pair
 
-#include "crc.h"
-#include "hexdump.h"
+#include "crc.h"                // for CCIT_CRC16
 
 #undef ULTRA_VERBOSE
 

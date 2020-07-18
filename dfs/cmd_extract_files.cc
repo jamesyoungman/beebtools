@@ -13,21 +13,24 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <errno.h>          // for errno
+#include <string.h>         // for strerror
+#include <iomanip>          // for operator<<, setw, setfill, hex, uppercase
+#include <iostream>         // for operator<<, basic_ostream, ofstream, ostream
+#include <optional>         // for optional
+#include <string>           // for allocator, string, operator+, char_traits
+#include <vector>           // for vector
 
-#include <string.h>
-
-#include <fstream>
-#include <iomanip>
-#include <string>
-#include <vector>
-
-#include "crc.h"
-#include "dfs.h"
-#include "dfs_volume.h"
-#include "media.h"
-#include "storage.h"
-#include "stringutil.h"
+#include "commands.h"       // for CommandInterface, REGISTER_COMMAND
+#include "crc.h"            // for TapeCRC
+#include "dfs.h"            // for sign_extend
+#include "dfs_catalog.h"    // for CatalogEntry, Catalog
+#include "dfs_volume.h"     // for Volume
+#include "dfscontext.h"     // for DFSContext
+#include "dfstypes.h"       // for byte
+#include "driveselector.h"  // for operator<<
+#include "storage.h"        // for VolumeMountResult, StorageConfiguration
+#include "stringutil.h"     // for rtrim
 
 using std::cerr;
 using std::string;

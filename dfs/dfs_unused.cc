@@ -15,12 +15,11 @@
 //
 #include "dfs_unused.h"
 
-#include <sstream>
+#include <sstream>          // for operator<<, basic_ostream, ostringstream
+#include <utility>          // for pair, make_pair
 
-#include "abstractio.h"
-#include "dfs_filesystem.h"
-#include "dfs_volume.h"
-#include "opus_cat.h"
+#include "driveselector.h"  // for operator<<, VolumeSelector
+#include "fsp.h"            // for ParsedFileName
 
 namespace
 {

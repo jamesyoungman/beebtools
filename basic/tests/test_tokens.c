@@ -13,12 +13,13 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "tokens.h"
+#include <assert.h>   // for assert
+#include <stdbool.h>  // for bool, false
+#include <stdio.h>    // for fprintf, NULL, stderr
+#include <stdlib.h>   // for abort
 
-#include <assert.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "decoder.h"  // for destroy_decoder, new_decoder, Dialect, MIN_DIALECT
+
 
 void verify_mapping(enum Dialect d, const struct expansion_map *m)
 {

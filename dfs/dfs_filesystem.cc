@@ -15,21 +15,26 @@
 //
 #include "dfs_filesystem.h"
 
-#include <assert.h>
+#include <assert.h>         // for assert
+#include <stdlib.h>         // for abort
+#include <algorithm>        // for max, transform
+#include <array>            // for array
+#include <iterator>         // for back_inserter
+#include <map>              // for map, _Rb_tree_const_iterator
+#include <sstream>	    // for ostringstream
+#include <ostream>          // for operator<<, ostream, basic_ostream, ...
+#include <utility>          // for pair
+#include <vector>           // for vector
 
-#include <algorithm>
-#include <exception>
-#include <iomanip>
-#include <map>
-#include <stdexcept>
-#include <utility>
-#include <vector>
-
-#include "dfs_format.h"
-#include "dfs_volume.h"
-#include "fsp.h"
-#include "opus_cat.h"
-#include "stringutil.h"
+#include "abstractio.h"     // for SectorBuffer, DataAccess, SECTOR_BYTES
+#include "dfs_catalog.h"    // for BootSetting, BootSetting::Exec, ...
+#include "dfs_format.h"     // for Format, Format::HDFS, Format::OpusDDOS
+#include "dfs_unused.h"     // for SectorMap
+#include "dfs_volume.h"     // for Volume, init_volumes
+#include "driveselector.h"  // for VolumeSelector
+#include "exceptions.h"     // for eof_in_catalog, BadFileSystem
+#include "opus_cat.h"       // for OpusDiscCatalogue
+#include "stringutil.h"     // for byte_to_ascii7
 
 using std::string;
 

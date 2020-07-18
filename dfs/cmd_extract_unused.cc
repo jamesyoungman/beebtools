@@ -13,20 +13,26 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>          // for assert
+#include <errno.h>           // for errno
+#include <string.h>          // for strerror
+#include <array>             // for array
+#include <iomanip>           // for operator<<, operator|, setfill, setw, dec
+#include <iostream>          // for operator<<, basic_ostream, ofstream, ...
+#include <memory>            // for allocator, unique_ptr
+#include <optional>          // for optional
+#include <string>            // for operator<<, string, char_traits, operator+
+#include <vector>            // for vector
 
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-
-#include <string.h>
-
-#include "cleanup.h"
-#include "dfscontext.h"
-#include "dfs_volume.h"
-#include "dfs_unused.h"
-#include "dfstypes.h"
-#include "media.h"
+#include "cleanup.h"         // for ostream_flag_saver
+#include "commands.h"        // for CommandInterface, REGISTER_COMMAND
+#include "dfs_filesystem.h"  // for FileSystem
+#include "dfs_unused.h"      // for SectorMap
+#include "dfscontext.h"      // for DFSContext
+#include "dfstypes.h"        // for sector_count_type, sector_count
+#include "driveselector.h"   // for operator<<, VolumeSelector, SurfaceSelector
+#include "geometry.h"        // for Geometry
+#include "storage.h"         // for AbstractDrive, StorageConfiguration
 
 namespace
 {

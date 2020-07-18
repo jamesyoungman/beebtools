@@ -13,15 +13,22 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <stddef.h>         // for size_t
+#include <iostream>         // for operator<<, basic_ostream, ostream, cerr
+#include <memory>           // for make_unique, unique_ptr
+#include <optional>         // for optional
+#include <string>           // for string, operator<<, char_traits, allocator
+#include <vector>           // for vector
 
-#include <sstream>
-#include <string>
-#include <vector>
+#include "commands.h"       // for CommandInterface, REGISTER_COMMAND
+#include "dfs_catalog.h"    // for Catalog
+#include "dfs_volume.h"     // for Volume
+#include "driveselector.h"  // for SurfaceSelector, VolumeSelector, operator<<
+#include "storage.h"        // for StorageConfiguration
 
-#include "dfscontext.h"
-#include "dfs_volume.h"
-#include "driveselector.h"
+namespace DFS { class FileSystem; }
+namespace DFS { class StorageConfiguration; }
+namespace DFS { struct DFSContext; }
 
 namespace
 {

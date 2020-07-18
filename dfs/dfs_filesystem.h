@@ -16,31 +16,22 @@
 #ifndef INC_DFS_FILESYSTEM_H
 #define INC_DFS_FILESYSTEM_H 1
 
-#include <assert.h>
-
-#include <algorithm>
-#include <exception>
-#include <functional>
-#include <optional>
-#include <vector>
-#include <stdexcept>
-#include <string>
-#include <utility>
-
-#include "abstractio.h"
-#include "dfs_catalog.h"
-#include "dfscontext.h"
-#include "dfstypes.h"
-#include "exceptions.h"
-#include "fsp.h"
-#include "media.h"
-#include "storage.h"
-#include "stringutil.h"
+#include <map>           // for map
+#include <memory>        // for unique_ptr
+#include <optional>      // for optional
+#include <string>        // for string
+#include <vector>        // for vector
+#include "dfs_format.h"  // for Format
+#include "dfscontext.h"  // for UiStyle
+#include "dfstypes.h"    // for sector_count_type, byte
+#include "geometry.h"    // for Geometry
 
 namespace DFS
 {
-  class Volume;
-  class SectorMap;
+class DataAccess;
+class SectorMap;
+class SurfaceSelector;
+class Volume;
 
 // FileSystem is an image of a single file system (as opposed to a
 // wrapper around a disk image file, which might for example contain a

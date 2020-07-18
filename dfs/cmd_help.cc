@@ -13,14 +13,18 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>    // for assert
+#include <algorithm>   // for max
+#include <iomanip>     // for operator<<, setw
+#include <iostream>    // for operator<<, basic_ostream, ostream, cout, left
+#include <limits>      // for numeric_limits
+#include <map>         // for map
+#include <string>      // for operator<<, char_traits, string, allocator
+#include <utility>     // for pair
+#include <vector>      // for vector
 
-#include <iomanip>
-#include <iostream>
-#include <set>
-#include <string>
-
-#include "dfs.h"
+#include "commands.h"  // for CommandHelp, CommandInterface, CIReg, REGISTER...
+#include "dfs.h"       // for get_option_help
 
 // CommandHelp is in the DFS namespace rather than in the unnamed
 // namespace, because we need to directly instantiate it.
@@ -29,6 +33,9 @@ using std::cout;
 
 namespace DFS
 {
+  class StorageConfiguration;
+  struct DFSContext;
+
   const std::string CommandHelp::name() const
   {
     return "help";

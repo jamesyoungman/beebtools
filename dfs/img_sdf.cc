@@ -15,16 +15,18 @@
 //
 #include "img_sdf.h"
 
-#include <optional>
-#include <string>
-#include <sstream>
+#include <assert.h>      // for assert
+#include <algorithm>     // for copy
+#include <array>         // for array<>::iterator
+#include <ostream>       // for operator<<, basic_ostream, ostringstream
+#include <sstream>       // for ostringstream
+#include <utility>       // for move
 
-
-#include "abstractio.h"
-#include "exceptions.h"
-#include "img_fileio.h"
-#include "identify.h"
-#include "storage.h"
+#include "dfs_format.h"  // for Format
+#include "dfstypes.h"    // for sector_count, sector_count_type, byte
+#include "exceptions.h"  // for Unrecognized
+#include "geometry.h"    // for Geometry
+#include "identify.h"	 // for DFS::identify_image
 
 namespace
 {
@@ -41,7 +43,7 @@ namespace
       // input file was foo.ssd.gz.  It might be better to keep the
       // original name.
       std::string error;
-      auto probe_result = identify_image(block_access(), name, error);
+      auto probe_result = DFS::identify_image(block_access(), name, error);
       if (!probe_result)
 	throw DFS::Unrecognized(error);
 

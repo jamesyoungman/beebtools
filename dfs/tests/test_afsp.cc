@@ -13,16 +13,23 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "afsp.h"
+#include <assert.h>          // for assert
+#include <exception>	     // for exception
+#include <ctype.h>           // for isdigit
+#include <stddef.h>          // for size_t
+#include <algorithm>         // for equal, find
+#include <functional>        // for function
+#include <iostream>          // for operator<<, basic_ostream, ostream, cerr
+#include <memory>            // for unique_ptr
+#include <optional>          // for optional
+#include <set>               // for set, operator==, _Rb_tree_const_iterator
+#include <sstream>	     // for ostringstream
+#include <string>            // for allocator, operator<<, string, char_traits
+#include <vector>            // for vector<>::const_iterator, vector, operator-
 
-#include <assert.h>
-
-#include <functional>
-#include <iostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "afsp.h"            // for AFSPMatcher, extend_wildcard, qualify
+#include "dfscontext.h"      // for DFSContext
+#include "driveselector.h"   // for VolumeSelector, operator<<, SurfaceSelector
 
 using std::string;
 using std::vector;

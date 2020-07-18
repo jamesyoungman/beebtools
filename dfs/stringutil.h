@@ -16,11 +16,10 @@
 #ifndef INC_STRINGUTIL_H
 #define INC_STRINGUTIL_H 1
 
-#include <deque>
-#include <string>
-#include <vector>
+#include <deque>       // for deque
+#include <string>      // for string
 
-#include "dfstypes.h"
+#include "dfstypes.h"  // for byte
 
 namespace DFS {
 

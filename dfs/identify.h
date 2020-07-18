@@ -16,12 +16,13 @@
 #ifndef INC_IDENTFY_H
 #define INC_IDENTFY_H 1
 
-#include <optional>
-#include <utility>
+#include <optional>      // for optional
+#include <string>        // for string
 
-#include "abstractio.h"
-#include "geometry.h"
-#include "dfs_format.h"
+#include "abstractio.h"  // for SectorBuffer
+#include "dfs_format.h"  // for Format
+#include "dfstypes.h"    // for sector_count_type
+#include "geometry.h"    // for Geometry
 
 namespace DFS
 {

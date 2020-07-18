@@ -13,24 +13,25 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <iostream>         // for operator<<, basic_ostream, ostream, cerr
+#include <memory>           // for allocator, unique_ptr
+#include <optional>         // for optional
+#include <string>           // for string, operator<<, char_traits, operator+
+#include <vector>           // for vector
 
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
+#include "afsp.h"           // for AFSPMatcher
+#include "commands.h"       // for CommandInterface, REGISTER_COMMAND
+#include "dfs_catalog.h"    // for CatalogEntry, operator<<, Catalog
+#include "dfs_volume.h"     // for Volume
+#include "driveselector.h"  // for operator<<, VolumeSelector
+#include "storage.h"        // for StorageConfiguration, VolumeMountResult
 
-#include "afsp.h"
-#include "dfs.h"
-#include "dfscontext.h"
-#include "dfs_catalog.h"
-#include "dfs_volume.h"
-#include "storage.h"
+namespace DFS { struct DFSContext; }
 
 using std::cerr;
 using std::cout;
 
+// TODO: wrap in anonymous namespace?
 
 class CommandInfo : public DFS::CommandInterface // *INFO
 {

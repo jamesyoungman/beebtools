@@ -13,16 +13,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>    // for assert
+#include <stddef.h>    // for size_t
+#include <iostream>    // for cout, hex, uppercase, basic_ostream<>::__ostre...
+#include <string>      // for string, allocator
+#include <vector>      // for vector
 
-#include <iomanip>
-#include <iostream>
-#include <string>
-#include <vector>
-
-#include "cleanup.h"
-#include "dfstypes.h"
-#include "hexdump.h"
+#include "cleanup.h"   // for ostream_flag_saver
+#include "commands.h"  // for body_command, CommandInterface, REGISTER_COMMAND
+#include "dfstypes.h"  // for byte
+#include "hexdump.h"   // for hexdump_bytes
 
 namespace
 {
@@ -32,6 +32,9 @@ namespace
 
 namespace DFS
 {
+class StorageConfiguration;
+struct DFSContext;
+
 class CommandDump : public CommandInterface // *DUMP
 {
 public:

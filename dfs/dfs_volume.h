@@ -16,18 +16,21 @@
 #ifndef INC_DFS_VOLUME_H
 #define INC_DFS_VOLUME_H 1
 
-#include <map>
-#include <memory>
-#include <optional>
+#include <map>            // for map
+#include <memory>         // for unique_ptr
+#include <optional>       // for optional, nullopt
 
-#include "abstractio.h"
-#include "dfs_catalog.h"
-#include "dfs_format.h"
-#include "dfs_unused.h"
-#include "geometry.h"
+#include "abstractio.h"   // for DataAccess, SectorBuffer
+#include "dfs_catalog.h"  // for Catalog
+#include "dfs_format.h"   // for Format
+#include "dfstypes.h"     // for sector_count_type
 
 namespace DFS
 {
+class SectorMap;
+class VolumeSelector;
+struct Geometry;
+
 
 // Opus DDOS divides a disc into up to 8 volumes (identified by a
 // letter, A-H).  In our object model, the file system is divided into

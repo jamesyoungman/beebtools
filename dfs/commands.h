@@ -16,20 +16,20 @@
 #ifndef INC_COMMANDS_H
 #define INC_COMMANDS_H 1
 
-#include <cassert>
-#include <functional>
-#include <map>
-#include <unordered_map>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "dfscontext.h"
-#include "dfs_filesystem.h"
-#include "storage.h"
+#include <cassert>      // for assert
+#include <functional>   // for function
+#include <map>          // for map
+#include <memory>       // for unique_ptr, operator!=
+#include <string>       // for basic_string, string
+#include <type_traits>  // for remove_reference<>::type
+#include <utility>      // for pair, make_pair, move
+#include <vector>       // for vector
 
 namespace DFS
 {
+  class StorageConfiguration;
+  struct DFSContext;
+
   class CommandInterface
   {
   public:

@@ -12,14 +12,22 @@ cmake .. && make && ctest
 
 The following options exist:
 
-### PDF
-
-Generate PDF documentation.   Turn this on with `cmake -DPDF=ON`.
-
 ### COVERAGE
 
 Generate code coverage statistics.  Turn this on with `cmake
 -DCOVERAGE=ON`.  For instructions on how to use this option, see below.
+
+### IWYU
+
+Run the include-what-you-use static analyzer when building the code.
+Turn this on with `cmake -DIWYU=ON`.
+
+NOTE: the iwyu checks are not all correct, so this is not recommended
+as a default.
+
+### PDF
+
+Generate PDF documentation.   Turn this on with `cmake -DPDF=ON`.
 
 ## Code Coverage
 

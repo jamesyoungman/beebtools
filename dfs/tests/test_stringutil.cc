@@ -13,12 +13,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "stringutil.h"
+#include <algorithm>     // for mismatch
+#include <deque>         // for deque<>::const_iterator, deque, operator!=
+#include <iostream>      // for operator<<, basic_ostream, ostream, cerr
+#include <string>        // for string, allocator, operator<<, basic_string
+#include <type_traits>   // for __decay_and_strip<>::__type
+#include <utility>       // for make_pair, pair
+#include <vector>        // for vector, vector<>::const_iterator
 
-#include <iostream>
-#include <string>
-#include <utility>
-#include <vector>
+#include "stringutil.h"  // for case_insensitive_equal, case_insensitive_less
 
 using std::cerr;
 using std::make_pair;

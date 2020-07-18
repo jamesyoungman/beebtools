@@ -15,16 +15,26 @@
 //
 #include "dfs_catalog.h"
 
-#include <algorithm>
-#include <iomanip>
-#include <string>
-#include <sstream>
-#include <vector>
+#include <assert.h>         // for assert
+#include <ctype.h>          // for isgraph
+#include <stdlib.h>         // for ldiv_t, ldiv
+#include <algorithm>        // for copy, all_of, find_if
+#include <iomanip>          // for operator<<, setw, setfill
+#include <iterator>         // for back_insert_iterator, back_inserter
+#include <limits>           // for numeric_limits
+#include <memory>           // for allocator_traits<>::value_type
+#include <sstream>          // for operator<<, basic_ostream, ostringstream
+#include <string>           // for basic_string<>::iterator, string, operator<<
+#include <vector>           // for vector, vector<>::const_iterator, ...
 
-#include "abstractio.h"
-#include "dfs.h"
-#include "dfs_unused.h"
-#include "stringutil.h"
+#include "abstractio.h"     // for SectorBuffer, DataAccess, SECTOR_BYTES
+#include "dfs.h"            // for sign_extend
+#include "dfs_unused.h"     // for SectorMap
+#include "driveselector.h"  // for VolumeSelector
+#include "exceptions.h"     // for BadFileSystem
+#include "fsp.h"            // for ParsedFileName
+#include "stringutil.h"     // for byte_to_ascii7, rtrim, ...
+
 
 namespace
 {

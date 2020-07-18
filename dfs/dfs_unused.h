@@ -16,15 +16,17 @@
 #ifndef INC_DFS_UNUSED_H
 #define INC_DFS_UNUSED_H 1
 
-#include "dfs_catalog.h"
-#include "abstractio.h"
-#include "fsp.h"
+#include <map>         // for map
+#include <optional>    // for optional
+#include <string>      // for string
 
-#include <optional>
-#include <map>
+#include "dfstypes.h"  // for sector_count_type
 
 namespace DFS
 {
+  class VolumeSelector;
+  struct ParsedFileName;
+
   class SectorMap
   {
   public:

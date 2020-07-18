@@ -13,18 +13,25 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "media.h"
+#include "media.h"           // for make_decompressed_file
 
-#include <fstream>
-#include <iterator>
-#include <limits>
-#include <string>
-#include <vector>
+#include <exception>         // for exception
+#include <errno.h>           // for errno
+#include <stdio.h>           // for fread, FILE, fclose, ferror, fopen, fseek
+#include <stdlib.h>          // for free
+#include <string.h>          // for memset, strdup
+#include <zconf.h>           // for MAX_WBITS
+#include <zlib.h>            // for z_stream, Z_NULL, Z_STREAM_END, gz_header
+#include <functional>        // for function
+#include <limits>            // for numeric_limits
+#include <memory>            // for make_unique, unique_ptr
+#include <string>            // for string, allocator, operator+
+#include <vector>            // for vector
 
-#include <zlib.h>
-
-#include "cleanup.h"
-#include "exceptions.h"
+#include "abstractio.h"      // for FileAccess, SectorBuffer
+#include "cleanup.h"         // for cleanup
+#include "dfstypes.h"        // for byte
+#include "exceptions.h"      // for FileIOError, NonFileOsError
 
 namespace
 {

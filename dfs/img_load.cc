@@ -13,32 +13,28 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "media.h"
+#include <deque>               // for deque
+#include <fstream>             // for operator<<, basic_ostream, ostringstream
+#include <memory>              // for unique_ptr, make_unique
+#include <sstream>             // ostringstream
+#include <string>              // for string, operator==, operator<<, ...
+#include <utility>             // for move
 
-#include <string.h>
+#include "abstractio.h"        // for FileAccess
+#include "dfs_format.h"        // for Format
+#include "dfstypes.h"          // for sector_count_type
+#include "exceptions.h"        // for Unrecognized
+#include "img_fileio.h"        // for OsFile
+#include "img_sdf.h"           // for make_interleaved_file, make_mmb_file
+#include "media.h"             // for AbstractImageFile, make_decompressed_file
+#include "stringutil.h"        // for split
 
-#include <fstream>
-#include <iomanip>
-#include <limits>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "abstractio.h"
-#include "dfstypes.h"
-#include "exceptions.h"
-#include "img_fileio.h"
-#include "identify.h"
-#include "img_sdf.h"
-#include "storage.h"
-#include "stringutil.h"
+namespace DFS { struct Geometry; }
 
 namespace
 {
   using DFS::Format;
   using DFS::Geometry;
-  using DFS::ImageFileFormat;
   using DFS::internal::FileView;
   using DFS::sector_count_type;
 

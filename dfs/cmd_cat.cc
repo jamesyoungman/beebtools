@@ -13,24 +13,32 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <unistd.h>          // for isatty, STDOUT_FILENO
+#include <algorithm>         // for find, sort
+#include <cassert>           // for assert
+#include <cctype>            // for tolower
+#include <cstdlib>           // for getenv, strtol, size_t
+#include <iomanip>           // for operator<<, setfill, setw
+#include <iostream>          // for operator<<, basic_ostream, ostream, ...
+#include <limits>            // for numeric_limits
+#include <memory>            // for allocator_traits<>::value_type
+#include <optional>          // for optional, operator==, nullopt
+#include <sstream>           // for basic_ostringstream<>::__string_type
+#include <string>            // for string, operator<<, allocator, char_traits
+#include <vector>            // for vector<>::iterator, vector
 
-#include <algorithm>
-#include <cctype>
-#include <cstdlib>
-#include <cassert>
-#include <iomanip>
-#include <iostream>
-#include <string>
-#include <vector>
-#include <unistd.h>
-
-#include "cleanup.h"
-#include "commands.h"
-#include "dfs.h"
-#include "dfs_volume.h"
-#include "driveselector.h"
-#include "stringutil.h"
+#include "commands.h"        // for CommandInterface, REGISTER_COMMAND
+#include "dfs.h"             // for verbose
+#include "dfs_catalog.h"     // for CatalogEntry, Catalog, operator<<
+#include "dfs_filesystem.h"  // for FileSystem
+#include "dfs_format.h"      // for Format
+#include "dfs_volume.h"      // for Volume
+#include "dfscontext.h"      // for UiStyle, UiStyle::Opus, DFSContext
+#include "dfstypes.h"        // for byte
+#include "driveselector.h"   // for operator<<, VolumeSelector
+#include "geometry.h"        // for Geometry, Encoding, Encoding::MFM
+#include "storage.h"         // for VolumeMountResult, StorageConfiguration
+#include "stringutil.h"      // for case_insensitive_less
 
 using std::string;
 using std::vector;

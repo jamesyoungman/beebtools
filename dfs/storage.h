@@ -16,25 +16,24 @@
 #ifndef INC_STORAGE_H
 #define INC_STORAGE_H 1
 
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <optional>
-#include <string>
-#include <vector>
+#include <assert.h>         // for assert
+#include <fstream>          // for ostream
+#include <map>              // for map, _Rb_tree_const_iterator
+#include <memory>           // for unique_ptr
+#include <optional>         // for optional
+#include <string>           // for string
+#include <utility>          // for pair
+#include <vector>           // for vector
 
-#include "abstractio.h"
-#include "dfs_format.h"
-#include "dfstypes.h"
-#include "driveselector.h"
-#include "geometry.h"
+#include "abstractio.h"     // for DataAccess
+#include "dfs_filesystem.h" // for FileSystem
+#include "dfs_format.h"     // for Format
+#include "dfs_volume.h"     // for Volume
+#include "driveselector.h"  // for drive_number
+#include "geometry.h"       // for Geometry
 
 namespace DFS
 {
-  class FileSystem;
-  class Volume;
-
   // DriveAllocation represents a choice of how to assign image
   // files to drive slots.
   //

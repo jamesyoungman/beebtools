@@ -16,8 +16,8 @@
 #ifndef INC_TRACK_H /* -*- Mode: C++ -*- */
 #define INC_TRACK_H 1
 
-#include <optional>
-#include <functional>
+#include <iosfwd>  // for ostream
+#include <vector>  // for vector
 
 struct SectorAddress
 {

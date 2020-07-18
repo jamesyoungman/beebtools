@@ -13,15 +13,15 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-// Acord DFS ambiguous file specification matcher
-#include <memory>
+// Acorn DFS ambiguous file specification matcher
+#include <memory>           // for unique_ptr
+#include <string>           // for string
 
-#include "dfscontext.h"
-#include "dfstypes.h"
-#include "driveselector.h"
+#include "driveselector.h"  // for VolumeSelector
 
 namespace DFS
 {
+struct DFSContext;
 
 class AFSPMatcher
 {

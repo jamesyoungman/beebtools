@@ -16,14 +16,14 @@
 #ifndef INC_FSP_H
 #define INC_FSP_H 1
 
-#include <string>
-#include <utility>
+#include <string>           // for string, basic_string
 
-#include "driveselector.h"
-#include "dfscontext.h"
+#include "driveselector.h"  // for VolumeSelector
 
 namespace DFS
 {
+  struct DFSContext;
+
   struct ParsedFileName
   {
     ParsedFileName();

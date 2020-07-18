@@ -16,17 +16,15 @@
 #ifndef INC_FILEIO_H
 #define INC_FILEIO_H 1
 
-#include <fstream>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <vector>
+#include <fstream>       // for ifstream
+#include <optional>      // for optional
+#include <string>        // for string
+#include <vector>        // for vector
 
-#include "abstractio.h"
-#include "dfs.h"
-#include "dfs_format.h"
-#include "geometry.h"
-#include "storage.h"
+#include "abstractio.h"  // for FileAccess, SectorBuffer
+#include "dfstypes.h"    // for sector_count_type, byte
+#include "geometry.h"    // for Geometry
+#include "storage.h"     // for AbstractDrive
 
 namespace DFS
 {

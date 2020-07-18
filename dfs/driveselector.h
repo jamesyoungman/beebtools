@@ -36,11 +36,11 @@
 #ifndef INC_DRIVESELECTOR_H
 #define INC_DRIVESELECTOR_H 1
 
-#include <exception>
-#include <limits>
-#include <optional>
-#include <stdexcept>
-#include <string>
+#include <stddef.h>  // for size_t
+#include <iosfwd>    // for ostream
+#include <limits>    // for numeric_limits, numeric_limits<>::digits, numeri...
+#include <optional>  // for optional
+#include <string>    // for string
 
 namespace DFS
 {

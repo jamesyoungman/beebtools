@@ -15,8 +15,10 @@
 //
 #include "stringutil.h"
 
-#include <algorithm>
-#include <string>
+#include <ctype.h>    // for tolower
+#include <algorithm>  // for equal, find, mismatch
+#include <string>     // for string, basic_string, basic_string<>::const_ite...
+#include <utility>    // for pair
 
 namespace DFS
 {

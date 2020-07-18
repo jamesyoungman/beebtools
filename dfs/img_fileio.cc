@@ -15,7 +15,10 @@
 //
 #include "img_fileio.h"
 
-#include "exceptions.h"
+#include <errno.h>       // for errno
+#include <iostream>      // for cerr
+#include "dfs.h"         // for safe_unsigned_multiply
+#include "exceptions.h"  // for FileIOError
 
 namespace DFS
 {

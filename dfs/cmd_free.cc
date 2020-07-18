@@ -13,16 +13,24 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>         // for assert
+#include <stdlib.h>         // for div, div_t
+#include <iomanip>          // for operator<<, setfill, setw
+#include <iostream>         // for operator<<, basic_ostream, ostream, ...
+#include <limits>           // for numeric_limits
+#include <locale>           // for numpunct, locale
+#include <optional>         // for optional
+#include <string>           // for string, operator<<, allocator, char_traits
+#include <vector>           // for vector
 
-#include <iomanip>
-#include <iostream>
-#include <locale>
-#include <string>
-
-#include "cleanup.h"
-#include "dfs_volume.h"
-#include "driveselector.h"
+#include "abstractio.h"     // for SECTOR_BYTES
+#include "cleanup.h"        // for ostream_flag_saver
+#include "commands.h"       // for CommandInterface, REGISTER_COMMAND
+#include "dfs_catalog.h"    // for CatalogEntry, Catalog
+#include "dfs_volume.h"     // for Volume
+#include "dfscontext.h"     // for DFSContext
+#include "driveselector.h"  // for operator<<, VolumeSelector
+#include "storage.h"        // for StorageConfiguration, VolumeMountResult
 
 namespace
 {

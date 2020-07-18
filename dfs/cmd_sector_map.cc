@@ -13,26 +13,29 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <assert.h>          // for assert
+#include <string.h>          // for strlen, size_t
+#include <algorithm>         // for max
+#include <iomanip>           // for operator<<, setw, setfill
+#include <iostream>          // for operator<<, basic_ostream, ostream, cout
+#include <limits>            // for numeric_limits
+#include <memory>            // for allocator, unique_ptr, ...
+#include <optional>          // for optional
+#include <string>            // for operator<<, string, char_traits, operator+
+#include <vector>            // for vector
 
-#include <string.h>
-
-#include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "afsp.h"
-#include "cleanup.h"
-#include "dfs.h"
-#include "dfs_volume.h"
-#include "driveselector.h"
+#include "cleanup.h"         // for ostream_flag_saver
+#include "commands.h"        // for CommandInterface, REGISTER_COMMAND
+#include "dfs_filesystem.h"  // for FileSystem
+#include "dfs_unused.h"	     // for SectorMap
+#include "dfscontext.h"      // for DFSContext
+#include "dfstypes.h"        // for sector_count_type
+#include "driveselector.h"   // for SurfaceSelector, operator<<, VolumeSelector
+#include "geometry.h"        // for Geometry
+#include "storage.h"         // for StorageConfiguration
 
 using std::cerr;
 using std::cout;
-
 
 class CommandSectorMap : public DFS::CommandInterface
 {

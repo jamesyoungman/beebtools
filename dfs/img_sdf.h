@@ -19,14 +19,14 @@
 #ifndef INC_IMG_SDF_H
 #define INC_IMG_SDF_H 1
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "abstractio.h"
-#include "img_fileio.h"
-#include "media.h"
-#include "storage.h"
+#include <memory>        // for unique_ptr
+#include <optional>      // for optional
+#include <string>        // for string
+#include <vector>        // for vector
+#include "abstractio.h"  // for DataAccess, SectorBuffer
+#include "img_fileio.h"  // for FileView
+#include "media.h"       // for AbstractImageFile
+#include "storage.h"     // for DriveAllocation
 
 namespace DFS
 {

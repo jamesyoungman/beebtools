@@ -16,18 +16,24 @@
 #ifndef INC_DFS_CATALOG_H
 #define INC_DFS_CATALOG_H
 
-#include <functional>
+#include <array>         // for array
+#include <functional>    // for function
+#include <iosfwd>        // for ostream
+#include <optional>      // for optional
+#include <string>        // for string
+#include <utility>       // for pair
+#include <vector>        // for vector
 
-#include "abstractio.h"
-#include "dfstypes.h"
-#include "dfs_format.h"
-#include "exceptions.h"
-#include "fsp.h"
-#include "storage.h"
+#include "abstractio.h"  // for SectorBuffer
+#include "dfs_format.h"  // for Format
+#include "dfstypes.h"    // for byte, sector_count_type
+#include "fsp.h"	 // for ParsedFileName
 
 namespace DFS
 {
+  struct ParsedFileName;
   class SectorMap;
+  class VolumeSelector;
 
   sector_count_type catalog_sectors_for_format(const Format&);
   sector_count_type data_sectors_reserved_for_catalog(const Format&);
@@ -86,7 +92,7 @@ public:
   unsigned long load_address() const
   {
     unsigned long address = metadata_word(0);
-    address |= ((metadata_byte(6) >> 2) & 3) << 16;
+    address |= ((metadata_byte(6) >> 2) & 3uL) << 16;
     // On Solidisk there is apparently a second copy of bits 16 and 17
     // of the load address, but we only need one copy.
     return address;
@@ -94,12 +100,12 @@ public:
 
   unsigned long exec_address() const
   {
-    return metadata_word(0x02) | ((metadata_byte(0x06) >> 6) & 3) << 16;
+    return metadata_word(0x02) | ((metadata_byte(0x06) >> 6) & 3uL) << 16;
   }
 
   unsigned long file_length() const
   {
-    return metadata_word(4) | ((metadata_byte(6) >> 4) & 3) << 16;
+    return metadata_word(4) | ((metadata_byte(6) >> 4) & 3uL) << 16;
   }
 
   sector_count_type start_sector() const

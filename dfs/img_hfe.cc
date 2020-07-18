@@ -18,21 +18,32 @@
   Based on Rev.1.1 - 06/20/2012 of the format specification.
   Documentation: https://hxc2001.com/download/floppy_drive_emulator/SDCard_HxC_Floppy_Emulator_HFE_file_format.pdf
 */
-#include <array>
-#include <iomanip>
-#include <iostream>
-#include <iterator>
-#include <sstream>
-#include <string>
-#include <type_traits>
+#include <assert.h>          // for assert
+#include <bits/exception.h>  // for exception
+#include <errno.h>           // for EIO
+#include <string.h>          // for memcmp
+#include <algorithm>         // for copy, min, sort, transform
+#include <array>             // for array<>::iterator
+#include <iostream>          // for operator<<, basic_ostream, ostringstream
+#include <iterator>          // for back_insert_iterator, back_inserter, adv...
+#include <limits>            // for numeric_limits
+#include <memory>            // for unique_ptr, make_unique, allocator_trait...
+#include <optional>          // for optional, nullopt
+#include <sstream>           // for ostringstream
+#include <string>            // for char_traits, string, operator<<, allocator
+#include <utility>           // for move
+#include <vector>            // for vector, vector<>::iterator, ...
 
-#include "abstractio.h"
-#include "dfs.h"
-#include "exceptions.h"
-#include "hexdump.h"
-#include "identify.h"
-#include "media.h"
-#include "track.h"
+#include "abstractio.h"      // for SectorBuffer, FileAccess, SECTOR_BYTES
+#include "dfs.h"             // for verbose
+#include "dfs_format.h"      // for Format
+#include "exceptions.h"      // for FileIOError
+#include "geometry.h"        // for Geometry, Encoding, Encoding::FM, ...
+#include "hexdump.h"         // for hexdump_bytes
+#include "identify.h"        // for identify_file_system
+#include "media.h"           // for AbstractImageFile, make_hfe_file
+#include "storage.h"         // for DriveConfig, DriveAllocation, AbstractDrive
+#include "track.h"           // for Sector, SectorAddress, IbmFmDecoder, ...
 
 #undef ULTRA_VERBOSE
 
@@ -338,14 +349,14 @@ public:
       return buf;
     }
 
-    std::string description() const
+    std::string description() const override
     {
       std::ostringstream ss;
       ss << "side " << side_ << " of " << f_->description();
       return ss.str();
     }
 
-    DFS::Geometry geometry() const
+    DFS::Geometry geometry() const override
     {
       return geom_;
     }

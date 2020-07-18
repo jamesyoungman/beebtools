@@ -13,16 +13,24 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include <unistd.h>
-#include <stdlib.h>
+#include <assert.h>      // for assert
+#include <stdio.h>       // for perror, remove, fclose, fopen, fputc, EOF, FILE
+#include <stdlib.h>      // for mkstemp, NULL
+#include <unistd.h>      // for close
+#include <algorithm>     // for all_of, max
+#include <array>         // for array<>::const_iterator, array
+#include <functional>    // for function
+#include <iostream>      // for operator<<, basic_ostream::operator<<, ...
+#include <optional>      // for optional
+#include <string>        // for string, ...
+#include <vector>        // for vector<>::const_iterator, vector<>::iterator
 
-#include <algorithm>
-#include <string>
-#include <vector>
-
-#include "img_fileio.h"
-#include "img_sdf.h"
-#include "cleanup.h"
+#include "abstractio.h"  // for SECTOR_BYTES, DataAccess, FileAccess, Sector...
+#include "cleanup.h"     // for cleanup
+#include "dfstypes.h"    // for byte, sector_count_type
+#include "geometry.h"    // for Encoding, Geometry, Encoding::FM
+#include "img_fileio.h"  // for FileView, OsFile
+#include "img_sdf.h"     // for FilePresentedBlockwise
 
 namespace
 {

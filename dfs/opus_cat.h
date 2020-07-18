@@ -16,17 +16,18 @@
 #ifndef INC_DISC_CAT_H
 #define INC_DISC_CAT_H
 
-#include <iomanip>
-#include <optional>
-#include <vector>
-
-#include "abstractio.h"
-#include "dfstypes.h"
-#include "dfs_unused.h"
-#include "geometry.h"
+#include <assert.h>      // for assert
+#include <limits>        // for numeric_limits
+#include <optional>      // for optional
+#include <vector>        // for vector
+#include "abstractio.h"  // for SectorBuffer
+#include "dfstypes.h"    // for sector_count_type
 
 namespace DFS
 {
+  class SectorMap;
+  struct Geometry;
+
   namespace internal
   {
     class OpusDiscCatalogue

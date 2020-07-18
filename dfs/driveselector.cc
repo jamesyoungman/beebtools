@@ -15,9 +15,10 @@
 //
 #include "driveselector.h"
 
-#include <optional>
-#include <sstream>
-#include <stdexcept>
+#include <stdlib.h>   // for abort, size_t
+#include <optional>   // for optional, nullopt
+#include <sstream>    // for operator<<, ostream, ostringstream, basic_ostream
+#include <stdexcept>  // for out_of_range, invalid_argument
 
 namespace
 {

@@ -13,14 +13,19 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "regularexpression.h"
+#undef NDEBUG
+
+#include <assert.h>             // for assert
+#include <stdlib.h>             // for abort, exit
+#include <algorithm>            // for mismatch
+#include <iostream>             // for operator<<, basic_ostream, ostream
+#include <string>               // for string, operator<<, allocator
+#include <utility>              // for pair
+#include <vector>               // for vector, vector<>::const_iterator
+#include "regularexpression.h"  // for RegularExpression
 
 // The whole point of this program is to test assertsions,
 // so enable assertsions in all curcumstances.
-#undef NDEBUG
-#include <assert.h>
-
-#include <iostream>
 
 using DFS::RegularExpression;
 using std::string;

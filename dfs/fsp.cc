@@ -15,7 +15,12 @@
 //
 #include "fsp.h"
 
-#include <sstream>
+#include <stddef.h>      // for size_t
+#include <optional>      // for optional
+#include <sstream>       // for operator<<, basic_ostream, ostringstream
+#include <utility>       // for swap
+
+#include "dfscontext.h"  // for DFSContext
 
 using std::string;
 

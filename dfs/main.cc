@@ -13,21 +13,29 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include <getopt.h>
-#include <limits.h>
-#include <string.h>
+#include <exception>           // for exception
+#include <unistd.h>	       // for optarg, optind
+#include <ctype.h>             // for isupper
+#include <getopt.h>            // for option, getopt_long
+#include <limits.h>            // for SCHAR_MIN
+#include <string.h>            // for NULL, strlen, size_t
+#include <iostream>            // for operator<<, basic_ostream, cerr, ostream
+#include <map>                 // for map
+#include <memory>              // for unique_ptr, make_unique
+#include <optional>            // for optional, nullopt
+#include <set>                 // for set, _Rb_tree_const_iterator, _Rb_tree...
+#include <sstream>             // for stringstream
+#include <string>              // for string, operator<<, char_traits, alloc...
+#include <tuple>               // for tie, tuple
+#include <utility>             // for pair, make_pair, move
+#include <vector>              // for vector
 
-#include <optional>
-#include <set>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "commands.h"
-#include "dfs.h"
-#include "driveselector.h"
-#include "media.h"
-#include "storage.h"
+#include "commands.h"          // for CommandHelp, CIReg, CommandInterface
+#include "dfs.h"               // for get_option_help, verbose
+#include "dfscontext.h"        // for UiStyle, DFSContext, UiStyle::Acorn
+#include "driveselector.h"     // for VolumeSelector
+#include "media.h"             // for AbstractImageFile, make_image_file
+#include "storage.h"           // for DriveAllocation, DriveAllocation::PHYS...
 
 namespace
 {

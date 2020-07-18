@@ -14,24 +14,25 @@
 //   limitations under the License.
 //
 #include "dfs_volume.h"
+#include <map>            // for map
+#include <memory>         // for unique_ptr, make_unique, allocator
+#include <optional>       // for optional, nullopt_t, nullopt
+#include <type_traits>    // for remove_reference<>::type
+#include <utility>        // for pair, make_pair, move
+#include <vector>         // for vector
 
-#include <iomanip>
-#include <map>
-#include <memory>
-#include <optional>
-#include <sstream>
-
-#include "abstractio.h"
-#include "dfs.h"
-#include "dfs_catalog.h"
-#include "dfs_filesystem.h"
-#include "dfs_format.h"
-#include "opus_cat.h"
-#include "geometry.h"
-
+#include "abstractio.h"   // for DataAccess
+#include "dfs_catalog.h"  // for Catalog
+#include "dfs_format.h"   // for Format, Format::OpusDDOS
+#include "exceptions.h"   // for BadFileSystem
+#include "geometry.h"     // for Geometry
+#include "opus_cat.h"     // for OpusDiscCatalogue::VolumeLocation, ...
 
 namespace DFS
 {
+  class SectorMap;
+  class VolumeSelector;
+
   namespace internal
   {
     std::map<std::optional<char>, std::unique_ptr<DFS::Volume>>

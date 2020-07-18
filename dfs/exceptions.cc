@@ -15,6 +15,9 @@
 //
 #include "exceptions.h"
 
+#include <string.h>  // for strerror
+#include <sstream>   // for operator<<, ostringstream, basic_ostream, basic_...
+
 namespace
 {
   std::string make_errno_message(int errno_value)

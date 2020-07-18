@@ -15,21 +15,20 @@
 //
 #include "storage.h"
 
-#include <string.h>		// strerror
-
-#include <algorithm>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "dfs_filesystem.h"
-#include "dfs_volume.h"
-#include "dfstypes.h"
-#include "driveselector.h"
+#include <ext/alloc_traits.h>  // for __alloc_traits<>::value_type
+#include <string.h>            // for size_t
+#include <algorithm>           // for copy, max
+#include <array>               // for array
+#include <fstream>             // for operator<<, ostringstream, basic_ostream
+#include <functional>          // for function
+#include <iomanip>             // for operator<<, setw
+#include <iterator>            // for reverse_iterator
+#include <optional>            // for optional, nullopt
+#include <string>              // for string, operator<<, char_traits, basic...
+#include <vector>              // for vector, vector<>::size_type
+#include "dfs_filesystem.h"    // for FileSystem
+#include "dfstypes.h"          // for sector_count_type, byte
+#include "driveselector.h"     // for drive_number, operator<<, SurfaceSelector
 
 using std::vector;
 

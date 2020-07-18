@@ -15,23 +15,22 @@
 //
 #include "afsp.h"
 
-#include <algorithm>
-#include <functional>
-#include <iostream>
-#include <iomanip>
-#include <limits>
-#include <set>
-#include <string>
-#include <vector>
+#include <assert.h>             // for assert
+#include <ctype.h>              // for isdigit, tolower, toupper
+#include <stddef.h>             // for size_t
+#include <iostream>             // for operator<<, basic_ostream, ostringstream
+#include <optional>             // for optional
+#include <sstream>		// for ostringstream
+#include <string>               // for string, operator+, operator<<, char_t...
+#include <utility>              // for move
+#include <vector>               // for vector<>::const_iterator, vector
 
-#include <assert.h>
+#include "dfscontext.h"         // for DFSContext
+#include "driveselector.h"      // for VolumeSelector
+#include "regularexpression.h"  // for RegularExpression
+#include "stringutil.h"         // for rtrim
 
-#include "fsp.h"
-#include "stringutil.h"
-#include "dfscontext.h"
-#include "driveselector.h"
-#include "regularexpression.h"
-#include "storage.h"
+namespace DFS { class StorageConfiguration; }
 
 using std::string;
 using std::vector;
@@ -342,7 +341,7 @@ AFSPMatcher::make_unique(const DFSContext& ctx, const string& pattern, string *e
 								      error_message);
   if (!result->valid())
     result.reset();
-  return std::move(result);
+  return std::move(result);	// TODO: drop move to allow copy elision?
 }
 
 }  // namespace DFS

@@ -13,16 +13,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include <assert.h>
-#include <getopt.h>
-#include <limits.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
+#include <assert.h>            // for assert
+#include <unistd.h>	       // for optarg, optind
+#include <getopt.h>            // for getopt_long, option
+#include <stdbool.h>           // for bool, false, true
+#include <stdio.h>             // for fprintf, perror, stderr, NULL, fflush
+#include <stdlib.h>            // for strtol
+#include <string.h>            // for strcmp
 
-#include "tokens.h"
-#include "decoder.h"
+#include "decoder.h"           // for decode_file, destroy_decoder, new_decoder
+#include "tokens.h"            // for set_dialect, print_dialects, etc...
 
 
 static bool usage(FILE *f, const char *progname)

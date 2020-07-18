@@ -15,13 +15,15 @@
 //
 #include "opus_cat.h"
 
-#include <algorithm>
+#include <algorithm>     // for sort
+#include <iomanip>       // for operator<<, setw, dec
+#include <ostream>       // for operator<<, basic_ostream, char_traits, ostr...
 
-#include "abstractio.h"
-#include "dfs.h"
-#include "exceptions.h"
-#include "geometry.h"
-
+#include "abstractio.h"  // for SectorBuffer, DataAccess
+#include "dfs.h"         // for safe_unsigned_multiply
+#include "dfs_unused.h"  // for SectorMap
+#include "exceptions.h"  // for BadFileSystem
+#include "geometry.h"    // for Geometry
 
 namespace DFS
 {

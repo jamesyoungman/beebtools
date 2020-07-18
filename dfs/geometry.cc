@@ -15,13 +15,13 @@
 //
 #include "geometry.h"
 
-#include "abstractio.h"
+#include <cassert>       // for assert
+#include <limits>        // for numeric_limits
+#include <optional>      // for optional, operator==, nullopt
+#include <sstream>       // for operator<<, basic_ostream, basic_ostream::op...
+#include <stdexcept>     // for out_of_range
 
-#include <cassert>
-#include <cassert>
-#include <exception>
-#include <optional>
-#include <sstream>
+#include "abstractio.h"  // for SECTOR_BYTES
 
 namespace
 {

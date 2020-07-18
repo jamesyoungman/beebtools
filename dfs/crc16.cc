@@ -13,9 +13,10 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include <assert.h>
-
 #include "crc.h"
+
+#include <assert.h>             // for assert
+#include <stdint.h>		// for uint8_t, uint16_t
 
 namespace
 {

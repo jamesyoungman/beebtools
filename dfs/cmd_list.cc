@@ -13,14 +13,16 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "commands.h"
+#include <iomanip>     // for operator<<, setbase, setfill, setw
+#include <iostream>    // for operator<<, cout, ostream, ...
+#include <string>      // for string, allocator
+#include <vector>      // for vector
 
-#include <iomanip>
-#include <iostream>
-#include <string>
-#include <vector>
+#include "commands.h"  // for body_command, file_body_logic, CommandInterface
+#include "dfstypes.h"  // for byte
 
-#include "dfscontext.h"
+namespace DFS { class StorageConfiguration; }
+namespace DFS { struct DFSContext; }
 
 namespace DFS
 {

@@ -13,15 +13,21 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#include "media.h"
+#include "img_sdf.h"     // for ViewFile, make_mmb_file
 
-#include <iomanip>
-#include <memory>
-#include <string>
-
-#include "abstractio.h"
-#include "geometry.h"
-#include "img_sdf.h"
+#include <array>         // for array
+#include <iomanip>       // for operator<<, setw, setbase, setfill, uppercase
+#include <iostream>      // for operator<<, basic_ostream, basic_ostream::op...
+#include <memory>        // for unique_ptr, allocator, make_unique
+#include <optional>      // for optional
+#include <string>        // for string, char_traits, operator<<
+#include <utility>       // for move
+#include "abstractio.h"  // for DataAccess, SECTOR_BYTES
+#include "dfstypes.h"    // for sector_count
+#include "exceptions.h"  // for BadFileSystem
+#include "geometry.h"    // for Encoding, Geometry, Encoding::FM
+#include "img_fileio.h"  // for FileView
+#include "media.h"       // for AbstractImageFile
 
 namespace
 {

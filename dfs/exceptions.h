@@ -17,11 +17,7 @@
 #define INC_EXCEPTIONS_H
 
 #include <exception>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-
-#include <string.h>
+#include <string>            // for string, allocator
 
 namespace DFS {
 

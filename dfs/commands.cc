@@ -15,11 +15,22 @@
 //
 #include "commands.h"
 
-#include <iostream>
-#include <vector>
-#include <string>
+#include <algorithm>        // for copy
+#include <iostream>         // for operator<<, basic_ostream, ostream, cerr
+#include <iterator>         // for back_insert_iterator, back_inserter
+#include <optional>         // for optional
+#include <string>           // for string, operator<<, char_traits
+#include <vector>           // for vector, vector<>::const_iterator
 
-#include "dfs_volume.h"
+#include "dfs_catalog.h"    // for Catalog, CatalogEntry
+#include "dfs_volume.h"     // for Volume
+#include "dfstypes.h"       // for byte
+#include "driveselector.h"  // for operator<<
+#include "fsp.h"            // for ParsedFileName, parse_filename
+#include "storage.h"        // for VolumeMountResult, StorageConfiguration
+
+namespace DFS { class DataAccess; }
+namespace DFS { struct DFSContext; }
 
 namespace
 {
