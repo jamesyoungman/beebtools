@@ -341,7 +341,7 @@ AFSPMatcher::make_unique(const DFSContext& ctx, const string& pattern, string *e
 								      error_message);
   if (!result->valid())
     result.reset();
-  return std::move(result);	// TODO: drop move to allow copy elision?
+  return result;
 }
 
 }  // namespace DFS
