@@ -1,0 +1,25 @@
+- name: build # based on cmake swiss army knife
+  uses: lpenz/ghaction-cmake@v0.9
+  with:
+    # Dependencies as Debian packages to install; used if defined
+    dependencies_debian: [zlib1-dev, gzip, groff, diffutils]
+    # cd to this directory; used if defined
+    directory: # optional, default is 
+    # Initial flags for cmake; extended by presets
+    cmakeflags: -DPDF=ON -DCOVERAGE=ON
+    # Build command to use; override presets
+    build_command: # optional, default is 
+    # Test command to use; override presets
+    test_command: # optional, default is 
+    # Command to run after tests; override presets
+    post_command: # optional, default is 
+    # Preset to use:
+- cppcheck
+- iwyu
+- clang-tidy
+- clang-sanitize-*
+- valgrind
+- coverage
+- install
+
+    preset: # optional, default is 
