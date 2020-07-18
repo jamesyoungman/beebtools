@@ -53,13 +53,21 @@ check_extract_unused() {
 	fi
 
 	# Negative case: unwritable output directory.
-	rm -f "${d}"/*
-	chmod a-w "${d}"
-	if ! fails dfs extract-unused "${d}"; then
-	    echo "extract-unused command did not diagnose unwritable output directory" >&2
-	    ls -ld "${d}" >&2
-	    ls -l "${d}" >&2
-	    exit 1
+	if [ $(id -u) -eq 0 ]
+	then
+	    # A directory with no 'w' bit is not actually unwritable
+	    # for root, so skip this test if we are root (as is the
+	    # case in github actions).
+	    echo "Skipping unwritable-directory test, since we're running as root."
+	else
+            rm -f "${d}"/*
+            chmod a-w "${d}"
+            if ! fails dfs extract-unused "${d}"; then
+                echo "extract-unused command did not diagnose unwritable output directory" >&2
+                ls -ld "${d}" >&2
+                ls -l "${d}" >&2
+                exit 1
+            fi
 	fi
 
 	# Invalid: request drive 1, no media in drive 1
