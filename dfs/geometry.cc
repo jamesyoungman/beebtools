@@ -86,7 +86,7 @@ namespace DFS
     if (sectors_per_track == 10)
       g.encoding = Encoding::FM;
     else if (sectors_per_track == 18)
-      g.encoding == Encoding::MFM;
+      g.encoding = Encoding::MFM;
     return g;
   }
 
