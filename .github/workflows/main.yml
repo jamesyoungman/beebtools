@@ -15,4 +15,4 @@ jobs:
       - uses: docker://lpenz/ghaction-cmake:v0.9
         with:
           cmakeflags: ${{ format('-DCMAKE_C_COMPILER={0}', matrix.compiler) }}
-          dependencies_debian: zlib1-dev gzip groff diffutils
+          dependencies_debian: zlib1g-dev gzip groff diffutils
