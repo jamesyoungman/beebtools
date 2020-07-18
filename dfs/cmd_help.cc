@@ -87,7 +87,7 @@ namespace DFS
 
 	const std::string prefix = "      ";
 	cout << "Commands:\n";
-	auto show = [prefix, max_command_name_len](CommandInterface* c) -> bool
+	auto show = [prefix](CommandInterface* c) -> bool
 		    {
 		      cout << prefix << std::setw(max_command_name_len)
 			   << std::left << c->name() << ": "

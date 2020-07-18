@@ -171,7 +171,7 @@ public:
 
 	bool added_initial_gap = false;
 	auto add_initial_gap =
-	  [&root, &catalogs, maybe_gap, &gaps, &added_initial_gap]
+	  [&root, &catalogs, maybe_gap, &added_initial_gap]
 	  (std::optional<std::pair<int, int>> first_file)
 	  {
 	    assert(!added_initial_gap);
