@@ -2,6 +2,7 @@
 name: CI
 on: [push, pull_request]
 jobs:
+  # Build and test
   build_using_compiler_in_cmakeflags:
     strategy:
         matrix:
@@ -16,3 +17,14 @@ jobs:
         with:
           cmakeflags: ${{ format('-DCMAKE_C_COMPILER={0}', matrix.compiler) }}
           dependencies_debian: zlib1g-dev gzip groff diffutils unzip coreutils
+  # Static analyzers:
+  linters:
+    strategy:
+        matrix:
+          preset: [ cppcheck, iwyu, clang-tidy ]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: docker://lpenz/ghaction-cmake:v0.9
+        with:
+          preset: ${{ matrix.preset }}
