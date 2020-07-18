@@ -1,5 +1,7 @@
 # beebtools
 
+![CI](https://github.com/jamesyoungman/beebtools/workflows/CI/badge.svg)
+
 Beebtools is a set of tools for working with discs and files from
 computers in the BBC Microcomputer family.  It includes:
 
