@@ -57,6 +57,7 @@ check_extract_unused() {
 	chmod a-w "${d}"
 	if ! fails dfs extract-unused "${d}"; then
 	    echo "extract-unused command did not diagnose unwritable output directory" >&2
+	    ls -ld "${d}" >&2
 	    ls -l "${d}" >&2
 	    exit 1
 	fi
