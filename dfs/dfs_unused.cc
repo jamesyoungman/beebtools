@@ -43,9 +43,8 @@ namespace
 
 namespace DFS
 {
-  SectorMap::SectorMap(const DFS::sector_count_type total_sectors, bool multiple_catalogs)
-    : total_sectors_(total_sectors),
-      multiple_catalogs_(multiple_catalogs)
+  SectorMap::SectorMap(bool multiple_catalogs)
+    : multiple_catalogs_(multiple_catalogs)
   {
 
   }

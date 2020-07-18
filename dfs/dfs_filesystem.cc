@@ -231,8 +231,8 @@ DFS::sector_count_type FileSystem::file_storage_space() const
 
 std::unique_ptr<SectorMap> FileSystem::get_sector_map(const SurfaceSelector& surface) const
 {
-  const bool multiple_catalogs = volumes_.size() > 1;
-  std::unique_ptr<SectorMap> result = std::make_unique<SectorMap>(disc_sector_count(), multiple_catalogs);
+  std::unique_ptr<SectorMap> result =
+    std::make_unique<SectorMap>(volumes_.size() > 1);
   for (const auto& vol : volumes_)
     {
       DFS::VolumeSelector volsel(surface);
