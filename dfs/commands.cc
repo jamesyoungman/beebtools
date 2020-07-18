@@ -53,6 +53,10 @@ namespace
 
 namespace DFS
 {
+  CommandInterface::~CommandInterface()
+  {
+  }
+
   CommandInterface* CIReg::get_command(const std::string& name)
   {
     auto m = get_command_map();

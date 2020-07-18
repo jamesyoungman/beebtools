@@ -33,6 +33,7 @@ namespace DFS
   class CommandInterface
   {
   public:
+    virtual ~CommandInterface();
     virtual const std::string name() const = 0;
     virtual const std::string usage() const = 0;
     virtual const std::string description() const = 0;

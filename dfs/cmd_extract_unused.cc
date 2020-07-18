@@ -52,6 +52,8 @@ std::string make_name(const std::string& dest_dir, sector_count_type first_secto
 class CommandExtractUnused : public DFS::CommandInterface
 {
 public:
+  ~CommandExtractUnused() override {}
+
   const std::string name() const override
   {
     return "extract-unused";

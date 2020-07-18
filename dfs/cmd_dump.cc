@@ -38,6 +38,7 @@ struct DFSContext;
 class CommandDump : public CommandInterface // *DUMP
 {
 public:
+  ~CommandDump() override {}
   const std::string name() const override
     {
       return "dump";
