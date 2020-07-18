@@ -6,16 +6,16 @@ jobs:
   build_using_compiler_in_cmakeflags:
     strategy:
         matrix:
-          compiler:
-            - gcc
-            - clang
+          cfg:
+            - { cc: gcc, cxx: g++ }
+            - { cc: clang, cxx: clang++ }
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       # This examples uses the appropriate cmakeflags
       - uses: docker://lpenz/ghaction-cmake:v0.9
         with:
-          cmakeflags: ${{ format('-DCMAKE_C_COMPILER={0} -DCMAKE_CXX_COMPILER={0}', matrix.compiler) }}
+          cmakeflags: ${{ format('-DCMAKE_C_COMPILER={0} -DCMAKE_CXX_COMPILER={1}', matrix.cfg.cc, matrix.cfg.cxx) }}
           dependencies_debian: zlib1g-dev gzip groff diffutils unzip coreutils
   # Static analyzers:
   linters:
