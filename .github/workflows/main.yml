@@ -29,3 +29,21 @@ jobs:
         with:
           preset: ${{ matrix.preset }}
           dependencies_debian: zlib1g-dev gzip groff
+  # Tests with various sanitizers and valgrind:
+  test:
+    strategy:
+        matrix:
+          preset:
+            - clang-sanitizer-address
+            - clang-sanitizer-memory
+            - clang-sanitizer-undefined
+            - clang-sanitizer-dataflow
+            - clang-sanitizer-safe-stack
+            - valgrind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: docker://lpenz/ghaction-cmake:v0.9
+        with:
+          preset: ${{ matrix.preset }}
+          dependencies_debian: zlib1g-dev gzip groff diffutils unzip coreutils
