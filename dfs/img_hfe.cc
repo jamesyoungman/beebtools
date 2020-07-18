@@ -488,10 +488,11 @@ void copy_hfe(bool hfe3,
 {
   int take_this_bit = 0;
   int got_bits = 0;
+  byte out = 0;
   while (begin != end)
     {
       int skipbits = 0;
-      byte out, in = *begin++;
+      byte in = *begin++;
       if (hfe3 && is_hfe3_opcode(in))
 	{
 	  if (DFS::verbose)
@@ -606,6 +607,7 @@ void copy_hfe(bool hfe3,
       if (8 == got_bits)
 	{
 	  *dest++ = out;
+	  out = 0;
 	  got_bits = 0;
 	}
     }
