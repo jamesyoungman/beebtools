@@ -49,3 +49,12 @@ jobs:
         with:
           preset: ${{ matrix.preset }}
           dependencies_debian: zlib1g-dev gzip groff diffutils unzip coreutils
+  # Test installation:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: docker://lpenz/ghaction-cmake:v0.9
+        with:
+          preset: install
+          dependencies_debian: zlib1g-dev gzip groff diffutils unzip coreutils
