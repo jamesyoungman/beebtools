@@ -221,6 +221,7 @@ namespace
   {
   public:
     CommandCat() {}
+    virtual ~CommandCat() {}
 
     const std::string name() const override
     {
@@ -398,7 +399,7 @@ namespace
 			 cs.put('\n');
 			 current_col = 0;
 		       };
-      auto next_column = [&current_col, rmargin, col_width](colstream& cs)
+      auto next_column = [&current_col, rmargin](colstream& cs)
 			 {
 			   ++current_col;
 			   auto nextpos = current_col * col_width;
@@ -497,7 +498,7 @@ namespace
 
       auto entries = catalog.entries();
       auto compare_entries =
-	[&catalog, &ctx](const CatalogEntry& l, const CatalogEntry& r) -> bool
+	[&ctx](const CatalogEntry& l, const CatalogEntry& r) -> bool
 	{
 	  // Ensure that entries in the current directory sort
 	  // first.

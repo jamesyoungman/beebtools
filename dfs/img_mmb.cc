@@ -88,16 +88,16 @@ namespace
 		  slot_status_desc = "missing";
 		  present = false;
 		  fill = 4;
-		  continue;
+		  break;
 		default:
 		  slot_status_desc = "unknown";
 		  present = false;
 		  fill = 5;
-		  // TODO: provide infrsstructure for issuing warnings
+		  // TODO: provide infrastructure for issuing warnings
 		  std::cerr << "MMB entry " << i << " has unexpected type 0x"
 			    << std::setw(2) << std::uppercase << std::setbase(16)
 			    << entry[0x0F] << "\n";
-		  continue;
+		  break;
 		}
 	      std::ostringstream ss;
 	      ss << std::setfill(' ') << std::setw(fill) << "" << slot_status_desc

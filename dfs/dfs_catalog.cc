@@ -60,7 +60,6 @@ namespace
 	  {
 	    if (!s1[offset])
 	      {
-		title_done = true;
 		break;
 	      }
 	    title.push_back(byte_to_ascii7(s1[offset]));

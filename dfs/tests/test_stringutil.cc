@@ -309,7 +309,6 @@ namespace
 	bool got = case_insensitive_less(testcase.left, testcase.right);
 	if (expected != got)
 	  {
-	    outcome = false;
 	    std::cerr << std::boolalpha
 		      << "Expected case_insensitive_less(\""
 		      << testcase.left << "\", \"" << testcase.right << "\")"
@@ -330,7 +329,6 @@ namespace
 	bool got = case_insensitive_equal(testcase.left, testcase.right);
 	if (expected != got)
 	  {
-	    outcome = false;
 	    std::cerr << std::boolalpha
 		      << "Expected case_insensitive_equal(\""
 		      << testcase.left << "\", \"" << testcase.right << "\")"

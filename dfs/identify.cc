@@ -419,7 +419,7 @@ namespace DFS
 	// us distinguish 40 track two-sided SSD files from 80 track
 	// one-sided SSD files, for example.
 	auto other_side_has_catalog_too =
-	  [total_sectors, &media](const DFS::ImageFileFormat& ff) -> bool
+	  [&media](const DFS::ImageFileFormat& ff) -> bool
 	  {
 	    // TODO: figure out how to handle two-sided formats such as HDFS
 	    // which can (sometimes) occupy both sides of the disc.

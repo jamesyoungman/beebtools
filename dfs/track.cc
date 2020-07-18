@@ -31,9 +31,9 @@
 namespace
 {
 constexpr int normal_clock = 0xFF;
-constexpr int address_mark_clock = 0xC7;
 constexpr int id_address_mark = 0xFE;
 constexpr int data_address_mark = 0xFB;
+constexpr int deleted_data_address_mark = 0xF8;
 
 using std::optional;
 using byte = unsigned char;
@@ -57,7 +57,7 @@ void self_test_crc()
 
 
   const uint8_t id[7] = {
-			 0xFE,
+			 id_address_mark,
 			 0x4F,	// cylinder
 			 0,	// side
 			 6,	// sector
@@ -267,7 +267,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 					<< "\n";
 			    }
 #endif
-			  if (clock != 0xFF)
+			  if (clock != normal_clock)
 			    {
 			      std::cerr << std::hex
 					<< "copy_bytes: became desynchronised; got clock="
@@ -349,7 +349,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 #endif
 	    }
 	  /* clock=0xC7, data=0xFE - this is the index address mark */
-	  byte id[7] = {byte(0xFE)};
+	  byte id[7] = {byte(id_address_mark)};
 	  // Contents of the address
 	  // byte 0 - mark (data, 0xFE)
 	  // byte 1 - cylinder
@@ -434,7 +434,10 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // Read the sector itself.
 	  auto size_with_crc = sec_size + 2;  // add two bytes for the CRC
 	  sec.data.resize(size_with_crc);
-	  byte data_mark[1] = { byte(discard_record ? 0xF8 : 0xFB) };
+	  byte data_mark[1] =
+	    {
+	     byte(discard_record ? deleted_data_address_mark : data_address_mark)
+	    };
 	  if (!copy_bytes(size_with_crc, sec.data.data()))
 	    {
 	      if (verbose_)

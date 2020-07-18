@@ -264,9 +264,9 @@ public:
 
   SectorBuilder& with_u16(byte pos, uint16_t val)
   {
-    data_[pos] = (val >> 8) && 0xFF;
+    data_[pos] = (val >> 8) & 0xFF;
     ++pos;
-    data_[pos] = val && 0xFF;
+    data_[pos] = val & 0xFF;
     return *this;
   }
 

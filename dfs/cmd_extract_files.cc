@@ -68,6 +68,8 @@ namespace
 class CommandExtractFiles : public DFS::CommandInterface
 {
 public:
+  virtual ~CommandExtractFiles() {}
+
   const std::string name() const override
   {
     return "extract-files";
