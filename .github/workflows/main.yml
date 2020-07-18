@@ -21,8 +21,8 @@ jobs:
   linters:
     strategy:
         matrix:
-	  # Do not enable iwyu by default, it produces
-	  # some erroneous results.
+          # Do not enable iwyu by default, it produces
+          # some erroneous results.
           preset: [ cppcheck, clang-tidy ]
     runs-on: ubuntu-latest
     steps:
