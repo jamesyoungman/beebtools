@@ -28,3 +28,4 @@ jobs:
       - uses: docker://lpenz/ghaction-cmake:v0.9
         with:
           preset: ${{ matrix.preset }}
+          dependencies_debian: zlib1g-dev gzip groff
