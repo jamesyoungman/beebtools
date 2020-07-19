@@ -42,14 +42,14 @@ Watford Electronics DFS Manual, ISBN 0948663006
 
 ### Solidisk DFS
 [Solidisk DDFS User
-Manual](http://chrisacorns.computinghistory.org.uk/docs/Solidisk/Solidisk_DiskFilingSystem.pdf)
-- does not document the on-disc format.
+Manual](http://chrisacorns.computinghistory.org.uk/docs/Solidisk/Solidisk_DiskFilingSystem.pdf) -
+does not document the on-disc format.
 
 ### HDFS - "A Hierarchical Disc Filing System for the BBC Microcomputer"
 
 * Includes both user manual and format specification
 * [HTML](http://knackered.org/angus/beeb/hdfs.html)
-* [Compressed TAR file containing PDF and ROM image](ftp://ftp.knackered.org/pub/angus/BBC/hdfs.tar.gz)
+* Compressed TAR file containing PDF and ROM image: ftp://ftp.knackered.org/pub/angus/BBC/hdfs.tar.gz
 
 
 ## User Documentation
