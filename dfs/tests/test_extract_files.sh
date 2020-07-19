@@ -23,14 +23,14 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
-if ! extract_dfs=$(mktemp --tmpdir="${TMPDIR}" -d 'tmp_dfs.XXXXXX' )
+if ! extract_dfs=$(mktemp --tmpdir="${TMPDIR:?}" -d 'tmp_dfs.XXXXXX' )
 then
     echo "Unable to create a temporary directory" >&2
     exit 1
 fi
-if ! extract_zip=$(mktemp  --tmpdir="${TMPDIR}" -d 'tmp_zip.XXXXXX' )
+if ! extract_zip=$(mktemp  --tmpdir="${TMPDIR:?}" -d 'tmp_zip.XXXXXX' )
 then
     echo "Unable to create a temporary directory" >&2
     exit 1

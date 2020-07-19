@@ -25,7 +25,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 cleanup() {
     rm -f actual.txt
@@ -54,7 +54,7 @@ check_config() {
 }
 
 
-if ! imagefile="$(mktemp --tmpdir=${TMPDIR} show_config_imagefile_acorn-dfs-sd-40t.XXXXXX.ssd)"
+if ! imagefile="$(mktemp --tmpdir=${TMPDIR:?} show_config_imagefile_acorn-dfs-sd-40t.XXXXXX.ssd)"
 then
     echo "Unable to create temporary file." >&2
     exit 1

@@ -19,7 +19,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 
 check_show_titles() {
@@ -32,12 +32,12 @@ check_show_titles() {
 	"${DFS}" --file "${TEST_DATA_DIR}/${image}" "$@"
     }
 
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} test_show_titles_actual_XXXXXX)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} test_show_titles_actual_XXXXXX)"
     then
 	echo "Unable to create a temporary file to store actual output" >&2
 	exit 1
     fi
-    if ! te="$(mktemp --tmpdir=${TMPDIR} test_show_titles_expected_XXXXXX)"
+    if ! te="$(mktemp --tmpdir=${TMPDIR:?} test_show_titles_expected_XXXXXX)"
     then
 	echo "Unable to create a temporary file to store expected output" >&2
 	exit 1

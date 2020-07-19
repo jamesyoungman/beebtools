@@ -25,7 +25,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 expected="expected_stdout_acorn-dfs-sd-40t.txt"
 got="got_stdout_acorn-dfs-sd-40t.txt"
@@ -33,7 +33,7 @@ got="got_stdout_acorn-dfs-sd-40t.txt"
 # We uncompress here to ensure that there is at least one test which
 # operates on an uncompressed input file.
 base='acorn-dfs-sd-40t.ssd'
-if ! input="$(mktemp --tmpdir=${TMPDIR} acorn-dfs-sd-40t.XXXXXX.ssd)"
+if ! input="$(mktemp --tmpdir=${TMPDIR:?} acorn-dfs-sd-40t.XXXXXX.ssd)"
 then
     echo "Unable to create a temporary file" >&2
     exit 1

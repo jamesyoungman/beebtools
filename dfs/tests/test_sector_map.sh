@@ -25,11 +25,11 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 check_sector_map() {
 
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} test_sector_map_XXXXXX)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} test_sector_map_XXXXXX)"
     then
 	echo "Cannot create temporary file" >&2
 	exit 1

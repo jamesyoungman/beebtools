@@ -24,14 +24,14 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 check_dump() {
     input="$1"
     shift
     # The rest of the arguments are filename - regex pairs.
 
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} actual_dump_output_XXXXXX.txt)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} actual_dump_output_XXXXXX.txt)"
     then
 	echo "failed to create temporary file" >&2
 	exit 1

@@ -25,18 +25,18 @@ shift
 
 # TODO: move this into the test driver.
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 check_free() {
     input="$1"
     expected="$2"
 
-    if ! expected_f="$(mktemp --tmpdir=${TMPDIR} test_free_expected.XXXXXX.txt)"
+    if ! expected_f="$(mktemp --tmpdir=${TMPDIR:?} test_free_expected.XXXXXX.txt)"
     then
 	echo "failed to create a temporary file" >&2
 	exit 1
     fi
-    if ! actual_f="$(mktemp --tmpdir=${TMPDIR} test_free_actual.XXXXXX.txt)"
+    if ! actual_f="$(mktemp --tmpdir=${TMPDIR:?} test_free_actual.XXXXXX.txt)"
     then
 	echo "failed to create a temporary file" >&2
 	exit 1

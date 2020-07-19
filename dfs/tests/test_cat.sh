@@ -23,7 +23,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 
 check_cat() {
@@ -34,7 +34,7 @@ check_cat() {
 	COLUMNS=40 "${DFS}" --file "${TEST_DATA_DIR}/${input}" "$@"
     }
 
-    if ! workdir="$(mktemp --tmpdir=${TMPDIR} -d test_cat_XXXXXX)"
+    if ! workdir="$(mktemp --tmpdir=${TMPDIR:?} -d test_cat_XXXXXX)"
     then
 	echo "Unable to create a temporary directory" >&2
 	exit 1

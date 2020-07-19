@@ -24,7 +24,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 rv=0
 
@@ -32,12 +32,12 @@ check_space() {
     input="$1"
     expected_stdout="$2"
 
-    if ! expected="$(mktemp --tmpdir=${TMPDIR} expected_space_output_XXXXXX.txt)"
+    if ! expected="$(mktemp --tmpdir=${TMPDIR:?} expected_space_output_XXXXXX.txt)"
     then
 	echo "failed to create temporary file" >&2
 	exit 1
     fi
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} actual_space_output_XXXXXX.txt)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} actual_space_output_XXXXXX.txt)"
     then
 	echo "failed to create temporary file" >&2
 	exit 1
@@ -155,12 +155,12 @@ then
 fi
 
 # Additional arguments
-if ! actualm="$(mktemp --tmpdir=${TMPDIR} actual_space_outputM_XXXXXX.txt)"
+if ! actualm="$(mktemp --tmpdir=${TMPDIR:?} actual_space_outputM_XXXXXX.txt)"
 then
     echo "failed to create temporary file" >&2
     exit 1
 fi
-if ! expectedm="$(mktemp --tmpdir=${TMPDIR} expected_space_outputM_XXXXXX.txt)"
+if ! expectedm="$(mktemp --tmpdir=${TMPDIR:?} expected_space_outputM_XXXXXX.txt)"
 then
     echo "failed to create temporary file" >&2
     exit 1

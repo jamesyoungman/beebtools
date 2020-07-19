@@ -26,9 +26,9 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
-if ! actual="$(mktemp --tmpdir=${TMPDIR} actual_list.XXXXXX.txt)"
+if ! actual="$(mktemp --tmpdir=${TMPDIR:?} actual_list.XXXXXX.txt)"
 then
     echo "failed to create a temporary file." >&2
     exit 1

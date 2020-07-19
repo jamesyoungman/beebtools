@@ -25,9 +25,9 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
-if ! incomplete_image="$(mktemp --tmpdir=${TMPDIR} incomplete_XXXXXX.ssd.gz)"
+if ! incomplete_image="$(mktemp --tmpdir=${TMPDIR:?} incomplete_XXXXXX.ssd.gz)"
 then
     echo "Unable to create a temporary file" >&2
     exit 1

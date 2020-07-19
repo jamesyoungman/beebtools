@@ -32,9 +32,21 @@ TEST_LIB="$1"
 shift
 TEST_DATA_DIR="$1"
 shift
+
+: ${TMPDIR:=/tmp}
+
+if ! child_tmp=$(mktemp -d "${TMPDIR}/beebtools_test_runner.XXXXXX")
+then
+    echo "Unable to create temporary directory" >&2
+    exit 1
+fi
+
 #
 # The working directory is writeable.
 (
+    TMPDIR=${child_tmp}
+    export TMPDIR
+
     set x "${DFS}" "${TEST_DATA_DIR}"
     echo "sourcing ${TEST_LIB}..."
     if ! . "${TEST_LIB}"
@@ -53,4 +65,13 @@ shift
 )
 rv=$?
 echo "test ${TEST_SCRIPT} returned status $rv"
+
+junk="$(find ${child_tmp}/* -print)"
+if [ -n "${junk}" ]
+then
+    printf 'Inadequate cleanup after test:\n%s\n'  "${junk}" >&2
+    rv=1
+fi
+rm -rf "${child_tmp}"
+
 exit $rv

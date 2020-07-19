@@ -24,7 +24,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 input='watford-sd-62-with-62-files.ssd.gz'
 
@@ -52,7 +52,7 @@ expect_got() {
 
     # Use type on an uncompressed image file so that we exercise a call to
     # ImageFile::get_total_sectors().
-    if ! temp_image="$(mktemp --tmpdir=${TMPDIR} tmp_unc_img_watford-sd-62-with-62-files.XXXXXX.ssd)"
+    if ! temp_image="$(mktemp --tmpdir=${TMPDIR:?} tmp_unc_img_watford-sd-62-with-62-files.XXXXXX.ssd)"
     then
 	echo "failed to create temporary file" >&2
 	exit 1

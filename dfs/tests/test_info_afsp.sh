@@ -24,12 +24,12 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 check_info() {
     # The arguments are wildcard - regex pairs.
     # If ${options} is set, that is also included in the command line.
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} actual_info_afsp_output_XXXXXX.txt)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} actual_info_afsp_output_XXXXXX.txt)"
     then
 	echo "failed to create temporary file" >&2
 	exit 1

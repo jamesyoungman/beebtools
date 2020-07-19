@@ -24,7 +24,7 @@ TEST_DATA_DIR="$1"
 shift
 
 # Ensure TMPDIR is set.
-: ${TMPDIR:=/tmp}
+: ${TMPDIR:?}
 
 check_cat_impl() {
     input="$1"
@@ -33,13 +33,13 @@ check_cat_impl() {
     expected_text="$4"
     shift 4
 
-    if ! actual="$(mktemp --tmpdir=${TMPDIR} cat_out_XXXXXX)"
+    if ! actual="$(mktemp --tmpdir=${TMPDIR:?} cat_out_XXXXXX)"
     then
 	echo "Unable to create a temporary file" >&2
 	exit 1
     fi
 
-    if ! fexpected="$(mktemp --tmpdir=${TMPDIR} cat_exp_XXXXXX)"
+    if ! fexpected="$(mktemp --tmpdir=${TMPDIR:?} cat_exp_XXXXXX)"
     then
 	echo "Unable to create a temporary file" >&2
 	exit 1
