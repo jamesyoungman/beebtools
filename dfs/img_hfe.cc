@@ -24,6 +24,7 @@
 #include <string.h>          // for memcmp
 #include <algorithm>         // for copy, min, sort, transform
 #include <array>             // for array<>::iterator
+#include <iomanip>           // for setfill, etc.
 #include <iostream>          // for operator<<, basic_ostream, ostringstream
 #include <iterator>          // for back_insert_iterator, back_inserter, adv...
 #include <limits>            // for numeric_limits
@@ -46,6 +47,7 @@
 #include "track.h"           // for Sector, SectorAddress, IbmFmDecoder, ...
 
 #undef ULTRA_VERBOSE
+//#define ULTRA_VERBOSE 1
 
 namespace
 {
