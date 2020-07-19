@@ -20,6 +20,7 @@
 
 namespace DFS
 {
-  bool hexdump_bytes(std::ostream&, size_t pos, size_t len, size_t stride,
-		     const DFS::byte* data);
+  bool hexdump_bytes(std::ostream&,
+		     size_t origin, size_t stride,
+		     const DFS::byte* begin, const DFS::byte* end);
 }

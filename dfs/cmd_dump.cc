@@ -66,8 +66,7 @@ public:
 			    ostream_flag_saver restore_cout_flags(std::cout);
 			    std::cout << std::hex << std::uppercase;
 			    assert(body_end >= body_start);
-			    const size_t len = body_end - body_start;
-			    return hexdump_bytes(std::cout, 0, len, Stride, body_start);
+			    return hexdump_bytes(std::cout, 0, Stride, body_start, body_end);
 			  });
     }
 };

@@ -423,8 +423,9 @@ HfeFile::HfeFile(const std::string& name, bool compressed, std::unique_ptr<DFS::
 	  DFS::hexdump_bytes(ss,
 			     0,
 			     sizeof(header_.HEADERSIGNATURE),
-			     sizeof(header_.HEADERSIGNATURE),
-			     reinterpret_cast<const unsigned char*>(&header_.HEADERSIGNATURE));
+			     static_cast<const unsigned char*>(&header_.HEADERSIGNATURE[0]),
+			     static_cast<const unsigned char*>(&header_.HEADERSIGNATURE[sizeof(header_.HEADERSIGNATURE)]));
+
 	  throw InvalidHfeFile(ss.str());
 	}
 
@@ -678,9 +679,9 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 			<< "offset " << begin_offset << " to position "
 			<< track_stream.size() << " in the track stream\n";
 	      std::cerr << "Input:\n";
-	      DFS::hexdump_bytes(std::cerr, track_stream.size(),
-				 (end_offset - begin_offset),
-				 16, raw_data.data() + begin_offset);
+	      DFS::hexdump_bytes(std::cerr, begin_offset, 16,
+				 raw_data.data() + begin_offset,
+				 raw_data.data() + end_offset);
 #endif
 	    }
 #if ULTRA_VERBOSE
@@ -694,9 +695,9 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	    {
 #if ULTRA_VERBOSE
 	      std::cerr << "Output:\n";
-	      DFS::hexdump_bytes(std::cerr, oldsize,
-				 track_stream.size() - oldsize, 16,
-				 track_stream.data() + oldsize);
+	      DFS::hexdump_bytes(std::cerr, oldsize, 16,
+				 track_stream.data() + oldsize,
+				 track_stream.data() + track_stream.size());
 #endif
 	    }
 	  begin_offset += raw_data_block_size;
