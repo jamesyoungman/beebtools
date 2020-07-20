@@ -47,6 +47,10 @@ namespace DFS
 						   bool compressed,
 						   std::unique_ptr<DFS::FileAccess> file,
 						   std::string& error);
+  std::unique_ptr<AbstractImageFile> make_hxcmfm_file(const std::string& name,
+						      bool compressed,
+						      std::unique_ptr<FileAccess> file,
+						      std::string& error);
 
 }  // namespace DFS
 #endif

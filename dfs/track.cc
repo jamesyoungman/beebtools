@@ -15,6 +15,7 @@
 //
 #include "track.h"
 
+#include <algorithm>	        // for is_sorted
 #include <stdint.h>	        // for uint8_t
 #include <stddef.h>             // for size_t
 #include <cassert>              // for assert
@@ -478,3 +479,91 @@ namespace std
   }
 
 }  // namespace std
+
+namespace DFS
+{
+  bool check_track_is_supported(const std::vector<Sector> track_sectors,
+				unsigned int track,
+				unsigned int side,
+				unsigned int sector_bytes,
+				bool verbose,
+				std::string& error)
+  {
+    assert(std::is_sorted(track_sectors.begin(), track_sectors.end()));
+
+    // Validate the sectors themselves.
+    std::optional<int> prev_rec_num;
+    for (const Sector& sect : track_sectors)
+      {
+	// Many of the possible issues detected here are more likely
+	// to be a bug in our code than something weird about the
+	// HFE file.
+	std::ostringstream ss;
+	if (sect.address.head != side)
+	  {
+	    ss << "found sector with address " << sect.address
+	       << " in the data for side " << side;
+	    error = ss.str();
+	    return false;
+	  }
+	if (sect.address.cylinder != track)
+	  {
+	    ss << "found sector with address " << sect.address
+	       << " in the data for track " << track;
+	    error = ss.str();
+	    return false;
+	  }
+	if (prev_rec_num)
+	  {
+	    if (*prev_rec_num == sect.address.record)
+	      {
+		ss << "sector with address " << sect.address
+		   << " has a duplicate record number ";
+		error = ss.str();
+		return false;
+	      }
+	    else if (*prev_rec_num + 1 < sect.address.record)
+	      {
+		ss << "before sector with address " << sect.address
+		   << " there is no sector with record number "
+		   << (*prev_rec_num + 1);
+		error = ss.str();
+		return false;
+	      }
+	  }
+	else
+	  {
+	    // This is the first record (numerically, not in
+	    // physical order).  The IBM format specification
+	    // numbers records from 1, but Acorn DFS uses 0 as the
+	    // lowest sector number.
+	    if (sect.address.record != 0)
+	      {
+		if (verbose)
+		  {
+		    std::cerr << "warning: the lowest-numbered sector of "
+			      << "track " << track << " has address "
+			      << sect.address
+			      << " but it should have record number 0 "
+			      << "instead of "
+			      << unsigned(sect.address.record) << "\n";
+		  }
+	      }
+	  }
+
+	if (sect.data.size() != sector_bytes)
+	  {
+	    ss << "track " << track
+	       << " contains a sector with address " << sect.address
+	       << " but it has unsupported size " << sect.data.size()
+	       << " (the supported size is " << sector_bytes << ")";
+	    error = ss.str();
+	    return false;
+	  }
+
+	prev_rec_num = sect.address.record;
+      }
+    return true;
+  }
+
+}  // namespace DFS

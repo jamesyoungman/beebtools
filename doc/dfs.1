@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-17 23:39 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-07-20 10:30 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -630,9 +630,11 @@ results when the terminal is resized.
 
 Six disc image formats are supported.  Two (.ssd" and ".sdd") are
 non-interleaved formats.  Two (".dsd" and ".ddd") are interleaved
-formats.  The HFE format (extension ".hfe") is self-describing and
-supports a variety of types of disc.  The last one (".mmb") is a
-multi-disc format.
+formats.
+The HFE format (extension ".hfe") is self-describing and
+supports a variety of types of disc.
+The HxcMFM format supports double-density discs.
+The last one (".mmb") is a multi-disc format.
 
 Any of the supported disc images may be compressed with
 GNU
@@ -651,12 +653,16 @@ sdd|No|Double|16 or 18|1 or 2
 dsd|Yes|Single|10|Always 2
 ddd|Yes|Double|16 or 18|Always 2
 hfe|(Yes)|Single|10|1 or 2
+mfm|(Yes)|Double|any|1 or 2
 .TE
 
 The
 .BR dfs (1
 program currently only supports single-density HFE files, though this
 will likely change in the future.
+
+Support for HxCMFM files (extension ".mfm") is preliminary and likely
+does not yet work well.
 
 .SS Non-interleaved images
 

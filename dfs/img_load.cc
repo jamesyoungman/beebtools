@@ -97,6 +97,10 @@ namespace DFS
 	  {
 	    return make_hfe_file(name, compressed, std::move(fa), error);
 	  }
+	if (extensions.back() == "mfm")
+	  {
+	    return make_hxcmfm_file(name, compressed, std::move(fa), error);
+	  }
 	if (ext == "ssd" || ext == "sdd")
 	  {
 	    return make_noninterleaved_file(name, compressed, std::move(fa));

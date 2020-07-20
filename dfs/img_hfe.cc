@@ -365,7 +365,7 @@ public:
 
   private:
     HfeFile *f_;
-    DFS::Geometry geom_;  // geom has just one side.
+    DFS::Geometry geom_;  // geom_ has just one side.
     unsigned int side_;
     std::vector<Sector> sectors_;
   };
@@ -734,80 +734,17 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	  throw UnsupportedHfeFile(ss.str());
 	}
 
-      // Sort the sectors by address.
-      std::sort(track_sectors.begin(), track_sectors.end(),
-		[](const Sector& a, const Sector& b)
-		{
-		  return a.address < b.address;
-		});
-
-      // Validate the sectors themselves.
-      std::optional<int> prev_rec_num;
-      for (const Sector& sect : track_sectors)
+    // Sort the sectors by address.
+    std::sort(track_sectors.begin(), track_sectors.end(),
+	      [](const Sector& a, const Sector& b)
+	      {
+		return a.address < b.address;
+	      });
+      std::string error;
+      if (!DFS::check_track_is_supported(track_sectors, track, side, DFS::SECTOR_BYTES, DFS::verbose, error))
 	{
-	  // Many of the possible issues detected here are more likely
-	  // to be a bug in our code than something weird about the
-	  // HFE file.
-	  std::ostringstream ss;
-	  if (sect.address.head != side)
-	    {
-	      ss << "found sector with address " << sect.address
-		 << " in the data for side " << side;
-	      throw UnsupportedHfeFile(ss.str());
-	    }
-	  if (sect.address.cylinder != track)
-	    {
-	      ss << "found sector with address " << sect.address
-		 << " in the data for track " << track;
-	      throw UnsupportedHfeFile(ss.str());
-	    }
-	  if (prev_rec_num)
-	    {
-	      if (*prev_rec_num == sect.address.record)
-		{
-		  ss << "sector with address " << sect.address
-		     << " has a duplicate record number ";
-		  throw UnsupportedHfeFile(ss.str());
-		}
-	      else if (*prev_rec_num + 1 < sect.address.record)
-		{
-		  ss << "before sector with address " << sect.address
-		     << " there is no sector with record number "
-		     << (*prev_rec_num + 1);
-		  throw UnsupportedHfeFile(ss.str());
-		}
-	    }
-	  else
-	    {
-	      // This is the first record (numerically, not in
-	      // physical order).  The IBM format specification
-	      // numbers records from 1, but Acorn DFS uses 0 as the
-	      // lowest sector number.
-	      if (sect.address.record != 0)
-		{
-		  if (DFS::verbose)
-		    {
-		      std::cerr << "warning: the lowest-numbered sector of "
-				<< "track " << track << " has address "
-				<< sect.address
-				<< " but it should have record number 0 "
-				<< "instead of "
-				<< unsigned(sect.address.record) << "\n";
-		    }
-		}
-	    }
-
-	  if (sect.data.size() != DFS::SECTOR_BYTES)
-	    {
-	      ss << "track " << track
-		 << " contains a sector with address " << sect.address
-		 << " but it has unsupported size " << sect.data.size();
-	      throw UnsupportedHfeFile(ss.str());
-	    }
-
-	  prev_rec_num = sect.address.record;
+	  throw UnsupportedHfeFile(error);
 	}
-      // TODO: check the CRC
       std::copy(track_sectors.begin(), track_sectors.end(),
 		std::back_inserter(result));
     }

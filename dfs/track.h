@@ -41,6 +41,11 @@ struct Sector
   // We don't yield control sectors.
   std::vector<unsigned char> data;
   unsigned char crc[2];
+
+  bool operator<(const Sector& other) const
+  {
+    return address < other.address;
+  }
 };
 
 // IbmFmDecoder decodes an FM track into sectors.
@@ -60,5 +65,15 @@ public:
 private:
   bool verbose_;
 };
+
+namespace DFS
+{
+  bool check_track_is_supported(const std::vector<Sector> track,
+				unsigned int track_number,
+				unsigned int side,
+				unsigned int sector_bytes,
+				bool verbose,
+				std::string& error);
+}  // namespace DFS
 
 #endif

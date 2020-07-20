@@ -78,6 +78,7 @@ target_sources(dfslib
   # Disc image file handling
   img_fileio.cc
   img_hfe.cc
+  img_hxcmfm.cc
   img_mmb.cc
   img_sdf.cc
   img_load.cc
