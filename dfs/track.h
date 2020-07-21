@@ -19,6 +19,8 @@
 #include <iosfwd>  // for ostream
 #include <vector>  // for vector
 
+#include "dfstypes.h"
+
 struct SectorAddress
 {
   unsigned char cylinder;
@@ -66,6 +68,24 @@ private:
   bool verbose_;
 };
 
+// IbmMfmDecoder decodes an MFM track into sectors.
+class IbmMfmDecoder
+{
+public:
+  IbmMfmDecoder(bool verbose);
+
+  // decode() decodes an MFM data stream (as clock/data byte pairs)
+  // into a sector. source must be initialized such that the first
+  // byte it returns is after the index mark and before the sync
+  // field.
+  //
+  // Only data sectors are returned.
+  std::vector<Sector> decode(const std::vector<unsigned char>& track);
+
+private:
+  bool verbose_;
+};
+
 namespace DFS
 {
   bool check_track_is_supported(const std::vector<Sector> track,
@@ -74,6 +94,21 @@ namespace DFS
 				unsigned int sector_bytes,
 				bool verbose,
 				std::string& error);
+
+  /* reverse the ordering of bits in a byte. */
+  inline DFS::byte reverse_bit_order(DFS::byte in)
+  {
+    int out = 0;
+    if (in & 0x80)  out |= 0x01;
+    if (in & 0x40)  out |= 0x02;
+    if (in & 0x20)  out |= 0x04;
+    if (in & 0x10)  out |= 0x08;
+    if (in & 0x08)  out |= 0x10;
+    if (in & 0x04)  out |= 0x20;
+    if (in & 0x02)  out |= 0x40;
+    if (in & 0x01)  out |= 0x80;
+    return static_cast<byte>(out);
+  }
 }  // namespace DFS
 
 #endif

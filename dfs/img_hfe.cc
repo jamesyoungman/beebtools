@@ -53,22 +53,6 @@ namespace
 {
 using byte = unsigned char;
 
-/* reverse the ordering of bits in a byte. */
-inline byte reverse_bit_order(byte in)
-{
-  int out = 0;
-  if (in & 0x80)  out |= 0x01;
-  if (in & 0x40)  out |= 0x02;
-  if (in & 0x20)  out |= 0x04;
-  if (in & 0x10)  out |= 0x08;
-  if (in & 0x08)  out |= 0x10;
-  if (in & 0x04)  out |= 0x20;
-  if (in & 0x02)  out |= 0x40;
-  if (in & 0x01)  out |= 0x80;
-  return static_cast<byte>(out);
-}
-
-
 class InvalidHfeFile : public std::exception
 {
 public:
@@ -656,10 +640,10 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
       // While we could simply deal with the bit ordering in the input file when
       // dealing with subsequent stages, that will make it harder to interpret
       // nuumeric arguments to HFEv3 opcodes.
-      assert(reverse_bit_order(0x43) == 0xC2);
+      assert(DFS::reverse_bit_order(0x43) == 0xC2);
       std::transform(raw_data.begin(), raw_data.end(),
 		     raw_data.begin(), // transform in-place.
-		     reverse_bit_order);
+		     DFS::reverse_bit_order);
 
       // The data is in side_block_size chunks (side 0 then side 1,
       // etc.) but we only want the data for one of the sides.

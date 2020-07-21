@@ -83,9 +83,9 @@ struct Header // an in-memory, not on-disk, representation
 
   std::ostream& operator<<(std::ostream& os, const Header& h)
 {
-  std::ostream::sentry s(os);
-  using std::setw;
   int col1 = 18;
+  using std::setw;
+  std::ostream::sentry s(os);
   if (s)
     {
       os << std::dec;
@@ -120,6 +120,19 @@ struct TrackDataKey
   }
 };
 
+
+std::ostream& operator<<(std::ostream& os, const TrackDataKey& k)
+{
+  std::ostream::sentry s(os);
+  if (s)
+    {
+      std::ostringstream ss;
+      ss << '(' << std::setw(2) << k.track_number << ',' << k.side_number << ')';
+      os << ss.str();
+    }
+  return os;
+}
+
 struct TrackData		// an in-memory, not on-disk, representation
 {
   TrackData(unsigned long size, unsigned offset)
@@ -131,7 +144,18 @@ struct TrackData		// an in-memory, not on-disk, representation
   unsigned long mfmtrackoffset;
 };
 
-
+std::ostream& operator<<(std::ostream& os, const TrackData& d)
+{
+  std::ostream::sentry s(os);
+  if (s)
+    {
+      std::ostringstream ss;
+      ss << "(offset=" << std::setw(6) << d.mfmtrackoffset
+	 << ", size=" << std::setw(5) << d.mfmtracksize << ')';
+      os << ss.str();
+    }
+  return os;
+}
 
 unsigned short le_word(const byte *d)
 {
@@ -164,6 +188,8 @@ std::optional<Header> read_and_verify_header(DFS::FileAccess *f, std::string& er
     }
 
   Header result;
+  std::copy(header_data.begin(), header_data.begin() + sizeof(Header::signature),
+	    result.signature);
   assert(sizeof(result.signature) == 0x07u); // signature is followed immediately by...
   /* 0x07, 0x08  */ result.tracks = le_word(d + 0x07);
   /* 0x09        */ result.sides = d[0x09];
@@ -335,9 +361,20 @@ std::map<TrackDataKey, TrackData> HxcMfmFile::get_track_metadata()
       const byte* raw = raw_metadata.data();
       const TrackDataKey key(le_word(raw), raw[2]);
       const TrackData td(le_quad(raw+3), le_quad(raw+7));
+      if (DFS::verbose)
+	{
+	  std::cerr << "HxcMfmFile::get_track_metadata: data for "
+		    << std::setw(6) << key << " is at " << td << "\n";
+	}
+
       result.insert(result.end(), std::make_pair(key, td));
       if (key.track_number == header_.tracks-1 && key.side_number == header_.sides-1)
 	break;
+    }
+  if (DFS::verbose)
+    {
+      std::cerr << "HxcMfmFile::get_track_metadata: collected data for "
+		<< result.size() << " tracks\n";
     }
   return result;
 }
@@ -364,7 +401,12 @@ HxcMfmFile::read_all_sectors(unsigned int side)
 	     << td.mfmtracksize << " bytes long, but this doesn't fit within the file";
 	  throw InvalidHxcMfmFile(ss.str());
 	}
-      std::vector<Sector> track_sectors = IbmFmDecoder(DFS::verbose).decode(track); // XXX: shoudl be MFM decoder
+
+      std::transform(track.begin(), track.end(),
+		     track.begin(), // transform in-place.
+		     DFS::reverse_bit_order);
+
+      std::vector<Sector> track_sectors = IbmMfmDecoder(DFS::verbose).decode(track);
       std::sort(track_sectors.begin(), track_sectors.end(),
 		[](const Sector& a, const Sector& b)
 		{
