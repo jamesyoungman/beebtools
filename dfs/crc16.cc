@@ -26,7 +26,7 @@ namespace
     // is known as CRC16-CCITT.
     //
     // When computing CRCs for use in reading disc tracks
-    // (i.e. CCIT_CRC16), we initialise the cec_ state to 0xFFFF, as
+    // (i.e. CCITT_CRC16), we initialise the cec_ state to 0xFFFF, as
     // required for CRC16-CCIT.
     //
     // When computing CRCs for the INF files (i.e. TapeCRC), we
@@ -70,8 +70,8 @@ namespace DFS
   CRC16Base::CRC16Base(uint16_t init)
     : crc_(init) {}
 
-  CCIT_CRC16::CCIT_CRC16()
-    : CRC16Base(CCIT_CRC16::init) {}
+  CCITT_CRC16::CCITT_CRC16()
+    : CRC16Base(CCITT_CRC16::init) {}
 
   TapeCRC::TapeCRC()
     : CRC16Base(TapeCRC::init) {}

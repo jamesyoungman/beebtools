@@ -24,7 +24,7 @@
 #include <string>               // for operator<<
 #include <utility>              // for make_pair, pair
 
-#include "crc.h"                // for CCIT_CRC16
+#include "crc.h"                // for CCITT_CRC16
 
 #undef ULTRA_VERBOSE
 
@@ -41,7 +41,7 @@ using byte = unsigned char;
 
 void self_test_crc()
 {
-  DFS::CCIT_CRC16 crc;
+  DFS::CCITT_CRC16 crc;
   uint8_t input[2];
   input[0] = uint8_t('T');
   input[1] = uint8_t('Q');
@@ -51,7 +51,7 @@ void self_test_crc()
   crc.update(input+1, input+2);
   assert(crc.get() == 0x95A0);
 
-  DFS::CCIT_CRC16 crc2;
+  DFS::CCITT_CRC16 crc2;
   crc2.update(input, input+2);
   assert(crc.get() == 0x95A0);
 
@@ -65,7 +65,7 @@ void self_test_crc()
 			 0xE1,	// CRC byte 1
 			 0x07   // CRC byte 1
   };
-  DFS::CCIT_CRC16 crc3;
+  DFS::CCITT_CRC16 crc3;
   crc3.update(id, id+sizeof(id));
   assert(crc3.get() == 0);
 }
@@ -367,7 +367,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      state = Desynced;
 	      continue;
 	    }
-	  DFS::CCIT_CRC16 crc;
+	  DFS::CCITT_CRC16 crc;
 	  crc.update(id, id + sizeof(id));
 	  const auto addr_crc = crc.get();
 	  if (addr_crc)
@@ -447,7 +447,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	      state = Desynced;
 	      continue;
 	    }
-	  DFS::CCIT_CRC16 crc;
+	  DFS::CCITT_CRC16 crc;
 	  crc.update(data_mark, data_mark+1);
 	  crc.update(sec.data.data(), sec.data.data() + size_with_crc);
 	  // If we already know the record is a control record

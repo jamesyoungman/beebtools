@@ -48,11 +48,11 @@ namespace DFS
   };
 
 
-  class CCIT_CRC16 : public CRC16Base
+  class CCITT_CRC16 : public CRC16Base
   {
     static constexpr unsigned long init = 0xFFFFuL;
   public:
-    CCIT_CRC16();
+    CCITT_CRC16();
   };
 
   // TapeCRC appears to be the same as the XMODEM CRC, but the
