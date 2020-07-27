@@ -30,7 +30,7 @@
 
 namespace
 {
-constexpr int normal_clock = 0xFF;
+constexpr int normal_fm_clock = 0xFF;
 constexpr int id_address_mark = 0xFE;
 constexpr int data_address_mark = 0xFB;
 constexpr int deleted_data_address_mark = 0xF8;
@@ -84,6 +84,70 @@ public:
     auto i = bitpos / 8;
     auto b = bitpos % 8;
     return input_[i] & (1 << b);
+  }
+
+  std::optional<std::pair<byte, byte>> read_byte(size_t& start) const
+  {
+    // An FM-encoded byte occupies 16 bits on the disc, and looks like
+    // this (in the order bits appear on disc):
+    //
+    // first       last
+    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
+    unsigned int clock=0, data=0;
+    for (int bitnum = 0; bitnum < 8; ++bitnum)
+      {
+	if (start + 2 >= size_)
+	  return std::nullopt;
+
+	clock = (clock << 1) | getbit(start++);
+	data  = (data  << 1) | getbit(start++);
+      }
+    return std::make_pair(static_cast<unsigned char>(clock),
+			  static_cast<unsigned char>(data));
+  }
+
+  std::optional<std::pair<size_t, unsigned int>> scan_for(size_t start, unsigned int val, unsigned int mask) const
+  {
+    const unsigned needle = mask & val;
+    unsigned int shifter = 0, got = 0;
+    for (size_t i = start; i < size_; ++i)
+      {
+	shifter = (shifter << 1u) | (getbit(i) ? 1u : 0u);
+	got = (got << 1u) | 1u;
+	if ((mask & got) == mask)
+	  {
+	    // We have enough bits for the comparison to be valid.
+	    if ((mask & shifter) == needle)
+	      return std::make_pair(i, shifter);
+	  }
+      }
+    return std::nullopt;
+  }
+
+  bool copy_fm_bytes(size_t& thisbit, size_t n, byte* out, bool verbose) const
+  {
+    while (n--)
+      {
+	auto clock_and_data = read_byte(thisbit);
+	if (clock_and_data && clock_and_data->first == normal_fm_clock)
+	  {
+	    *out++ = clock_and_data->second;
+	    continue;
+	  }
+	if (verbose)
+	  {
+	    if (!clock_and_data)
+	      {
+		std::cerr << "end-of-track while reading data bytes\n";
+	      }
+	    else
+	      {
+		std::cerr << "desynced while reading data bytes\n";
+	      }
+	  }
+	return false;
+      }
+    return true;
   }
 
   size_t size() const
@@ -160,6 +224,7 @@ std::pair<unsigned char, unsigned char> declock(unsigned int word)
 			static_cast<unsigned char>(data));
 }
 
+
 // Decode a train of FM clock/data bits into a sequence of zero or more
 // sectors.
 std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
@@ -171,177 +236,90 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   // except for the fact that we won't mistake it for part of the sync
   // sequence (which is all just clock bits, all the data bits are
   // zero) or an address mark.
-  unsigned int shifter = 0x0000;
   const BitStream bits(raw_data);
   size_t bits_avail = bits.size();
   size_t thisbit = 0;
 
-  auto getbit = [&bits_avail, &thisbit, &bits]()
-		{
-		  const int result = bits.getbit(thisbit) ? 1 : 0;
-		  --bits_avail;
-		  ++thisbit;
-		  return result;
-		};
-  // copy_bytes must only be called when the next bit to be read (that
-  // is, the one at position i) is the clock bit which begins a new
-  // byte.
-  auto copy_bytes = [&bits_avail, &thisbit, &bits, this](size_t nbytes, byte* out) -> bool
-		    {
-		      if (verbose_)
-			{
-#if ULTRA_VERBOSE
-			  std::cerr << std::dec
-				    << "copy_bytes: " << bits_avail
-				    << " bits still left in track data; "
-				    << (nbytes * 16)
-				    << " bits needed to consume " << nbytes*2 << " clocked bytes "
-				    << "and yield " << nbytes
-				    << " bytes of actual data\n";
-#endif
-			}
-
-		      if (bits_avail / 16 < nbytes)
-			{
-			  if (verbose_)
-			    {
-			      std::cerr << "copy_bytes: not enough track data left to copy "
-					<< nbytes << " bytes\n";
-			    }
-			  return false;
-			}
-		      while (nbytes--)
-			{
-			  // An FM-encoded byte occupies 16 bits on
-			  // the disc, and looks like this (in the
-			  // order bits appear on disc):
-			  //
-			  // first       last
-			  // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-			  //
-			  // The FM-encoded bit sequence
-			  // 1010101010101010 (hex 0xAAAA) has all
-			  // clock bits set to 1 and all data bits set
-			  // to 0.  It represents clock=0xFF,
-			  // data=0x00.
-			  //
-			  // The FM-encoded sequence bit sequence
-			  // 1111010101111110 has the hex value
-			  // 0xF57E.  Dividing it into 4 nibbles we
-			  // can visualise the clock and data bits:
-			  //
-			  // Hex  binary  clock  data
-			  // F    1111     11..   11..
-			  // 5    0101     ..00   ..11
-			  //
-			  // that is, for the top nibbles we have
-			  // clock 1100=0xC and data 1111=0xF.
-			  //
-			  // Hex  binary  clock  data
-			  // 7    0111     01..   11..
-			  // E    1110     ..11   ..10
-			  //
-			  // that is, for the bottom nibbles we have
-			  // clock 0111=0x7 and data 1110=0xE.
-			  //
-			  // Putting together the nibbles we have data
-			  // 0xC7, clock 0xFE.  That happens to be
-			  // address mark 1, which introduces the
-			  // sector ID (address marks are unusual in
-			  // that the clock bits are not all-1).
-			  int clock=0, data=0;
-			  for (int bitnum = 0; bitnum < 8; ++bitnum)
-			    {
-			      clock = (clock << 1) | bits.getbit(thisbit++);
-			      data  = (data  << 1) | bits.getbit(thisbit++);
-			      bits_avail -= 2;
-			    }
-#if ULTRA_VERBOSE
-			  if (verbose_)
-			    {
-			      std::cerr << std::hex
-					<< "copy_bytes: got clock="
-					<< std::setw(2) << unsigned(clock)
-					<< ", data=" << std::setw(2)
-					<< unsigned(data)
-					<< "\n";
-			    }
-#endif
-			  if (clock != normal_clock)
-			    {
-			      std::cerr << std::hex
-					<< "copy_bytes: became desynchronised; got clock="
-					<< std::setw(2) << unsigned(clock)
-					<< " at track input byte " << (thisbit / 8u)
-					<< "\n";
-			      return false;
-			    }
-			  *out++ = static_cast<byte>(data);
-			}
-		      return true;
-		    };
+  auto find_record_address_mark =
+    [&thisbit, &bits, bits_avail]() -> std::optional<std::pair<size_t, unsigned int>>
+    {
+     while (thisbit < bits_avail)
+       {
+	/* We're searching for one of these:
+	   0xF56A: control record
+	   0xF56F: data record
+	   But, (0xF56A & 0xF56F) == 0xF56A, so we scan for that and check what we got.
+	   0xA == binary 1010
+	*/
+	auto searched_from = thisbit;
+	auto found = bits.scan_for(thisbit, 0xF56A, 0xFFFA);
+	if (!found)
+	  {
+	    thisbit = bits_avail;
+	    break;
+	  }
+	found->second &= 0xFFFF;
+	if (found->second == 0xF56A || found->second == 0xF56F)
+	  {
+	    return std::make_optional(std::make_pair(found->first+1, found->second));
+	  }
+	/* We could have seen some third bit pattern, for
+	   example 0xF56B.  A match exactly at the next bit
+	   is impossible, but advancing by just one bit
+	   keeps the code simpler and this case will be very
+	   rare.
+	*/
+	thisbit = searched_from + 1;
+       }
+     return std::nullopt;
+    };
 
   enum DecodeState { Desynced, LookingForAddress, LookingForRecord };
   enum DecodeState state = Desynced;
   Sector sec;
   int sec_size;
-  size_t countdown = 0u;
-  while (bits_avail)
+  while (thisbit < bits_avail)
     {
-      const int newbit = getbit();
-      assert(newbit == 0 || newbit == 1);
-      shifter = ((shifter << 1) | newbit) & 0xFFFF;
-      if (countdown)
-	--countdown;
-
-#if ULTRA_VERBOSE
-      if (verbose_)
-	{
-	  auto [clock, data] = declock(shifter);
-	  auto prevbit = thisbit-1;
-	  auto n = prevbit/8;
-	  auto mask = 1 << (prevbit % 8);
-	  auto bit_val = (raw_data[n] & mask) ? 1 : 0;
-	  std::cerr << "FM track: " << std::hex << std::setfill('0')
-		    << "newbit=" << newbit
-		    << " [" << bit_val << "]"
-		    << " (from bit " << (prevbit % 8) << " at "
-		    << "offset " << std::dec << n << ", byte value " << std::hex << unsigned(raw_data[n]) << ")"
-		    << ", shifter=" << std::setw(4) << shifter
-		    << ", clock=" << std::setw(2) << unsigned(clock)
-		    << ", data=" << std::setw(2) << unsigned(data)
-		    << ", countdown=" << countdown
-		    << ", state="
-		    << (state == Desynced ? "Desynced" :
-			(state == LookingForAddress ? "LookingForAddress" :
-			 (state == LookingForRecord ? "LookingForRecord" :
-			  "unknown")))
-		    << "\n";
-	}
-#endif
       if (state == Desynced)
 	{
-	  // Gap 1 is lots of 0xFF data (with 0xFF clocks too)
-	  // followed by the sync field, which is six bytes
-	  // (i.e. 48 bits, with clocks) of zero data.
-	  if (shifter == 0xAAAA)
-	    {
-	      // We found the sync field.
-	      state = LookingForAddress;
-	      // There should be four more bytes of sync.
-	      countdown = bits_avail;
-	    }
+	  // The FM-encoded bit sequence 1010101010101010 (hex 0xAAAA)
+	  // has all clock bits set to 1 and all data bits set to 0.
+	  // It represents clock=0xFF, data=0x00.  This is the sync
+	  // field.
+	  auto found = bits.scan_for(thisbit, 0xAAAA, 0xFFFF);
+	  if (!found)
+	    break;
+	  state = LookingForAddress;
+	  thisbit = found->first + 1u;
 	}
       else if (state == LookingForAddress)
 	{
-	  if (shifter != 0xF57E)
-	    {
-	      // There is a limit to how long we can reasonably stay
-	      // in the "LookingForAddress" state based on the maximum
-	      // length of gap 1.  But we don't implement such a
-	      // limit.
-	      continue;
-	    }
+	  // The FM-encoded sequence bit sequence 1111010101111110 has
+	  // the hex value 0xF57E.  Dividing it into 4 nibbles we can
+	  // visualise the clock and data bits:
+	  //
+	  // Hex  binary  clock  data
+	  // F    1111     11..   11..
+	  // 5    0101     ..00   ..11
+	  //
+	  // that is, for the top nibbles we have clock 1100=0xC and
+	  // data 1111=0xF.
+	  //
+	  // Hex  binary  clock  data
+	  // 7    0111     01..   11..
+	  // E    1110     ..11   ..10
+	  //
+	  // that is, for the bottom nibbles we have clock 0111=0x7
+	  // and data 1110=0xE.
+	  //
+	  // Putting together the nibbles we have data 0xC7, clock
+	  // 0xFE.  That is address mark 1, which introduces the
+	  // sector ID.  Address marks are unusual in that the clock
+	  // bits are not all set to 1.
+	  auto found = bits.scan_for(thisbit, 0xF57E, 0xFFFF);
+	  if (!found)
+	    break;
+	  thisbit = found->first + 1u;
 	  if (verbose_)
 	    {
 #if ULTRA_VERBOSE
@@ -358,7 +336,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // byte 4 - size code (see switch below)
 	  // byte 5 - CRC byte 1
 	  // byte 6 - CRC byte 2
-	  if (!copy_bytes(6u, &id[1]))
+	  if (!bits.copy_fm_bytes(thisbit, 6u, &id[1], verbose_))
 	    {
 	      if (verbose_)
 		{
@@ -406,21 +384,11 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	}
       else if (state == LookingForRecord)
 	{
-	  bool discard_record;
-	  if (shifter == 0xF56A)
-	    {
-	      // A deleted (initial byte of record is 'D' or defective
-	      // (initial byte 'F') non-data record.
-	      discard_record = true;  // control record (data = 0xF8).
-	    }
-	  else if (shifter == 0xF56F)
-	    {
-	      discard_record = false;  // AM2 for a data record (data = 0xFB).
-	    }
-	  else
-	    {
-	      continue;
-	    }
+	  std::optional<std::pair<size_t, unsigned int>> found = find_record_address_mark();
+	  if (!found)
+	    break;
+	  thisbit = found->first;
+	  const bool discard_record = (found->second & 0xFFFF) == 0xF56A;
 	  if (verbose_)
 	    {
 	      std::cerr << "This record has address " << sec.address
@@ -438,7 +406,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	    {
 	     byte(discard_record ? deleted_data_address_mark : data_address_mark)
 	    };
-	  if (!copy_bytes(size_with_crc, sec.data.data()))
+	  if (!bits.copy_fm_bytes(thisbit, size_with_crc, sec.data.data(), verbose_))
 	    {
 	      if (verbose_)
 		{

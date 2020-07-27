@@ -67,6 +67,7 @@ check_cat_impl() {
     if [ $rv -ne 0 ]
     then
 	echo "Exit status $rv for" "${DFS}" --ui "${ui}" --file "${infile}" "$@" cat
+	cleanup
 	exit 1
     fi
     if ! diff -u "${fexpected}" "${actual}"
