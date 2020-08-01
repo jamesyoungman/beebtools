@@ -19,6 +19,61 @@
 namespace Track
 {
 
+  class FmBitStream : public BitStream
+  {
+  public:
+    explicit FmBitStream(const std::vector<byte>& data)
+      : BitStream(data)
+    {
+    }
+
+    std::optional<std::pair<byte, byte>> read_byte(size_t& start) const
+    {
+      // An FM-encoded byte occupies 16 bits on the disc, and looks like
+      // this (in the order bits appear on disc):
+      //
+      // first       last
+      // cDcDcDcDcDcDcDcD (c are clock bits, D data)
+      unsigned int clock=0, data=0;
+      for (int bitnum = 0; bitnum < 8; ++bitnum)
+	{
+	  if (start + 2 >= size())
+	    return std::nullopt;
+
+	  clock = (clock << 1) | getbit(start++);
+	  data  = (data  << 1) | getbit(start++);
+	}
+      return std::make_pair(static_cast<unsigned char>(clock),
+			    static_cast<unsigned char>(data));
+    }
+
+    bool copy_fm_bytes(size_t& thisbit, size_t n, byte* out, bool verbose) const
+    {
+      while (n--)
+	{
+	  auto clock_and_data = read_byte(thisbit);
+	  if (clock_and_data && clock_and_data->first == normal_fm_clock)
+	    {
+	      *out++ = clock_and_data->second;
+	      continue;
+	    }
+	  if (verbose)
+	    {
+	      if (!clock_and_data)
+		{
+		  std::cerr << "end-of-track while reading data bytes\n";
+		}
+	      else
+		{
+		  std::cerr << "desynced while reading data bytes\n";
+		}
+	    }
+	  return false;
+	}
+      return true;
+    }
+  };
+
 IbmFmDecoder::IbmFmDecoder(bool verbose)
   : verbose_(verbose)
 {
@@ -36,7 +91,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   // except for the fact that we won't mistake it for part of the sync
   // sequence (which is all just clock bits, all the data bits are
   // zero) or an address mark.
-  const BitStream bits(raw_data);
+  const FmBitStream bits(raw_data);
   size_t bits_avail = bits.size();
   size_t thisbit = 0;
 

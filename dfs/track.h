@@ -122,7 +122,7 @@ inline byte reverse_bit_order(Track::byte in)
 class BitStream
 {
 public:
-  BitStream(const std::vector<byte>& data)
+  explicit BitStream(const std::vector<byte>& data)
     : input_(data), size_(data.size() * 8)
   {
   }
@@ -134,30 +134,12 @@ public:
     return input_[i] & (1 << b);
   }
 
-  std::optional<std::pair<byte, byte>> read_byte(size_t& start) const
+  std::optional<std::pair<size_t, int64_t>> scan_for(size_t start,
+						     uint64_t val,
+						     uint64_t mask) const
   {
-    // An FM-encoded byte occupies 16 bits on the disc, and looks like
-    // this (in the order bits appear on disc):
-    //
-    // first       last
-    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-    unsigned int clock=0, data=0;
-    for (int bitnum = 0; bitnum < 8; ++bitnum)
-      {
-	if (start + 2 >= size_)
-	  return std::nullopt;
-
-	clock = (clock << 1) | getbit(start++);
-	data  = (data  << 1) | getbit(start++);
-      }
-    return std::make_pair(static_cast<unsigned char>(clock),
-			  static_cast<unsigned char>(data));
-  }
-
-  std::optional<std::pair<size_t, unsigned int>> scan_for(size_t start, unsigned int val, unsigned int mask) const
-  {
-    const unsigned needle = mask & val;
-    unsigned int shifter = 0, got = 0;
+    const uint64_t needle = mask & val;
+    uint64_t shifter = 0, got = 0;
     for (size_t i = start; i < size_; ++i)
       {
 	shifter = (shifter << 1u) | (getbit(i) ? 1u : 0u);
@@ -170,32 +152,6 @@ public:
 	  }
       }
     return std::nullopt;
-  }
-
-  bool copy_fm_bytes(size_t& thisbit, size_t n, byte* out, bool verbose) const
-  {
-    while (n--)
-      {
-	auto clock_and_data = read_byte(thisbit);
-	if (clock_and_data && clock_and_data->first == normal_fm_clock)
-	  {
-	    *out++ = clock_and_data->second;
-	    continue;
-	  }
-	if (verbose)
-	  {
-	    if (!clock_and_data)
-	      {
-		std::cerr << "end-of-track while reading data bytes\n";
-	      }
-	    else
-	      {
-		std::cerr << "desynced while reading data bytes\n";
-	      }
-	  }
-	return false;
-      }
-    return true;
   }
 
   size_t size() const

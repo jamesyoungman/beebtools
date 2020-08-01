@@ -17,6 +17,7 @@
   HFC MFM file format support
 */
 #include <iomanip>		// for setw, hex, dec
+#include <set>			// for set
 #include <sstream>		// for ostringstream
 #include <string>		// for string
 #include <vector>		// for vector<>
@@ -35,6 +36,22 @@ namespace
 {
   constexpr unsigned int HEADER_SIZE_BYTES = 0x11u;
   constexpr unsigned int TRACK_METADATA_SIZE_BYTES = 0x11u;
+
+
+DFS::Geometry compute_geometry(unsigned int sides,
+			       const std::vector<Sector>& sectors)
+{
+  std::set<unsigned char> cylinders, records;
+  for (const Track::Sector s : sectors)
+    {
+      cylinders.insert(cylinders.end(), s.address.cylinder);
+      records.insert(s.address.record);
+    }
+  return DFS::Geometry(cylinders.size(), sides, records.size(),
+		       DFS::Encoding::MFM);
+
+}
+
 
 class InvalidHxcMfmFile : public std::exception
 {
@@ -227,7 +244,8 @@ public:
 
 private:
   std::map<TrackDataKey, TrackData> get_track_metadata();
-  std::vector<Track::Sector> read_all_sectors(unsigned int side);
+  std::vector<Track::Sector> read_all_sectors(unsigned int side,
+					      const std::map<TrackDataKey, TrackData>&);
 
   class DataAccessAdapter : public DFS::AbstractDrive
   {
@@ -277,7 +295,6 @@ private:
   std::string name_;
   std::unique_ptr<DFS::FileAccess> file_;
   const bool compressed_;
-  DFS::Geometry geom_;
   std::vector<DataAccessAdapter> acc_;
 };
 
@@ -309,12 +326,12 @@ HxcMfmFile::HxcMfmFile(const std::string& name, bool compressed, std::unique_ptr
   /* header is valid and represents a configuration we support. */
   header_ = *header;
 
+  const std::map<TrackDataKey, TrackData> track_metadata = get_track_metadata();
   for (unsigned int side = 0; side < header_.sides; ++side)
     {
-      std::vector<Sector> sectors = read_all_sectors(side);
-      DFS::Geometry geom = geom_;
-      geom.heads = 1;
-      acc_.emplace_back(this, geom, side, sectors);
+      std::vector<Sector> sectors = read_all_sectors(side, track_metadata);
+      DFS::Geometry g = compute_geometry(1, sectors);
+      acc_.emplace_back(this, g, side, sectors);
     }
 }
 
@@ -383,10 +400,10 @@ std::map<TrackDataKey, TrackData> HxcMfmFile::get_track_metadata()
 
 
 std::vector<Sector>
-HxcMfmFile::read_all_sectors(unsigned int side)
+HxcMfmFile::read_all_sectors(unsigned int side,
+			     const std::map<TrackDataKey, TrackData>& track_metadata)
 {
   std::vector<Sector> result;
-  std::map<TrackDataKey, TrackData> track_metadata = get_track_metadata();
   for (auto [key, td] : track_metadata)
     {
       if (key.side_number != side)
