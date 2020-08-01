@@ -28,7 +28,8 @@
 #include "storage.h"		// for StorageConfiguration
 #include "track.h"		// for Sector
 
-using DFS::byte;
+using Track::Sector;
+using Track::byte;
 
 namespace
 {
@@ -226,7 +227,7 @@ public:
 
 private:
   std::map<TrackDataKey, TrackData> get_track_metadata();
-  std::vector<Sector> read_all_sectors(unsigned int side);
+  std::vector<Track::Sector> read_all_sectors(unsigned int side);
 
   class DataAccessAdapter : public DFS::AbstractDrive
   {
@@ -234,7 +235,7 @@ private:
     DataAccessAdapter(HxcMfmFile* f,
 		      DFS::Geometry geom,
 		      unsigned int side,
-		      const std::vector<Sector> sectors)
+		      const std::vector<Track::Sector> sectors)
       : f_(f),
 	geom_(geom),
 	side_(side),
@@ -269,7 +270,7 @@ private:
     std::unique_ptr<DFS::FileAccess> file_;
     DFS::Geometry geom_;	// geom_ has just one side.
     unsigned int side_;
-    std::vector<Sector> sectors_;
+    std::vector<Track::Sector> sectors_;
   };
 
   Header header_;
@@ -404,9 +405,9 @@ HxcMfmFile::read_all_sectors(unsigned int side)
 
       std::transform(track.begin(), track.end(),
 		     track.begin(), // transform in-place.
-		     DFS::reverse_bit_order);
+		     Track::reverse_bit_order);
 
-      std::vector<Sector> track_sectors = IbmMfmDecoder(DFS::verbose).decode(track);
+      std::vector<Sector> track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(track);
       std::sort(track_sectors.begin(), track_sectors.end(),
 		[](const Sector& a, const Sector& b)
 		{

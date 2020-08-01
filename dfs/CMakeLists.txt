@@ -89,6 +89,8 @@ target_sources(dfslib
   driveselector.cc
   geometry.cc
   track.cc
+  track_fm.cc
+  track_mfm.cc
   crc16.cc # used in HFE reading and INF file writing.
   # File System implementation
   dfs_catalog.cc

@@ -16,10 +16,23 @@
 #ifndef INC_TRACK_H /* -*- Mode: C++ -*- */
 #define INC_TRACK_H 1
 
-#include <iosfwd>  // for ostream
-#include <vector>  // for vector
+#include <iosfwd>		// for ostream
+#include <iostream>		// for cerr
+#include <optional>		// for optional
+#include <vector>		// for vector
 
 #include "dfstypes.h"
+
+namespace Track
+{
+using byte = unsigned char;
+
+constexpr int normal_fm_clock = 0xFF;
+constexpr int id_address_mark = 0xFE;
+constexpr int data_address_mark = 0xFB;
+constexpr int deleted_data_address_mark = 0xF8;
+
+void self_test_crc();
 
 struct SectorAddress
 {
@@ -32,11 +45,15 @@ struct SectorAddress
   bool operator!=(const SectorAddress& a) const;
 };
 
+}  // namsepace Track
+
 namespace std
 {
-  ostream& operator<<(ostream&, const SectorAddress&);
+  ostream& operator<<(ostream&, const Track::SectorAddress&);
 }  // namespace std
 
+namespace Track
+{
 struct Sector
 {
   SectorAddress address;
@@ -86,29 +103,124 @@ private:
   bool verbose_;
 };
 
+/* reverse the ordering of bits in a byte. */
+inline byte reverse_bit_order(Track::byte in)
+{
+  int out = 0;
+  if (in & 0x80)  out |= 0x01;
+  if (in & 0x40)  out |= 0x02;
+  if (in & 0x20)  out |= 0x04;
+  if (in & 0x10)  out |= 0x08;
+  if (in & 0x08)  out |= 0x10;
+  if (in & 0x04)  out |= 0x20;
+  if (in & 0x02)  out |= 0x40;
+  if (in & 0x01)  out |= 0x80;
+  return static_cast<byte>(out);
+}
+
+
+class BitStream
+{
+public:
+  BitStream(const std::vector<byte>& data)
+    : input_(data), size_(data.size() * 8)
+  {
+  }
+
+  bool getbit(size_t bitpos) const
+  {
+    auto i = bitpos / 8;
+    auto b = bitpos % 8;
+    return input_[i] & (1 << b);
+  }
+
+  std::optional<std::pair<byte, byte>> read_byte(size_t& start) const
+  {
+    // An FM-encoded byte occupies 16 bits on the disc, and looks like
+    // this (in the order bits appear on disc):
+    //
+    // first       last
+    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
+    unsigned int clock=0, data=0;
+    for (int bitnum = 0; bitnum < 8; ++bitnum)
+      {
+	if (start + 2 >= size_)
+	  return std::nullopt;
+
+	clock = (clock << 1) | getbit(start++);
+	data  = (data  << 1) | getbit(start++);
+      }
+    return std::make_pair(static_cast<unsigned char>(clock),
+			  static_cast<unsigned char>(data));
+  }
+
+  std::optional<std::pair<size_t, unsigned int>> scan_for(size_t start, unsigned int val, unsigned int mask) const
+  {
+    const unsigned needle = mask & val;
+    unsigned int shifter = 0, got = 0;
+    for (size_t i = start; i < size_; ++i)
+      {
+	shifter = (shifter << 1u) | (getbit(i) ? 1u : 0u);
+	got = (got << 1u) | 1u;
+	if ((mask & got) == mask)
+	  {
+	    // We have enough bits for the comparison to be valid.
+	    if ((mask & shifter) == needle)
+	      return std::make_pair(i, shifter);
+	  }
+      }
+    return std::nullopt;
+  }
+
+  bool copy_fm_bytes(size_t& thisbit, size_t n, byte* out, bool verbose) const
+  {
+    while (n--)
+      {
+	auto clock_and_data = read_byte(thisbit);
+	if (clock_and_data && clock_and_data->first == normal_fm_clock)
+	  {
+	    *out++ = clock_and_data->second;
+	    continue;
+	  }
+	if (verbose)
+	  {
+	    if (!clock_and_data)
+	      {
+		std::cerr << "end-of-track while reading data bytes\n";
+	      }
+	    else
+	      {
+		std::cerr << "desynced while reading data bytes\n";
+	      }
+	  }
+	return false;
+      }
+    return true;
+  }
+
+  size_t size() const
+  {
+    return size_;
+  }
+
+private:
+  const std::vector<byte>& input_;
+  const size_t size_;
+};
+
+std::optional<int> decode_sector_size(unsigned char code);
+
+}  // namespace Track
+
 namespace DFS
 {
-  bool check_track_is_supported(const std::vector<Sector> track,
-				unsigned int track_number,
-				unsigned int side,
-				unsigned int sector_bytes,
-				bool verbose,
-				std::string& error);
+bool check_track_is_supported(const std::vector<Track::Sector> track,
+			      unsigned int track_number,
+			      unsigned int side,
+			      unsigned int sector_bytes,
+			      bool verbose,
+			      std::string& error);
 
-  /* reverse the ordering of bits in a byte. */
-  inline DFS::byte reverse_bit_order(DFS::byte in)
-  {
-    int out = 0;
-    if (in & 0x80)  out |= 0x01;
-    if (in & 0x40)  out |= 0x02;
-    if (in & 0x20)  out |= 0x04;
-    if (in & 0x10)  out |= 0x08;
-    if (in & 0x08)  out |= 0x10;
-    if (in & 0x04)  out |= 0x20;
-    if (in & 0x02)  out |= 0x40;
-    if (in & 0x01)  out |= 0x80;
-    return static_cast<byte>(out);
-  }
 }  // namespace DFS
 
 #endif

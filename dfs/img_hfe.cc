@@ -51,7 +51,9 @@
 
 namespace
 {
-using byte = unsigned char;
+using Track::Sector;
+using Track::SectorAddress;
+using Track::byte;
 
 class InvalidHfeFile : public std::exception
 {
@@ -640,10 +642,10 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
       // While we could simply deal with the bit ordering in the input file when
       // dealing with subsequent stages, that will make it harder to interpret
       // nuumeric arguments to HFEv3 opcodes.
-      assert(DFS::reverse_bit_order(0x43) == 0xC2);
+      assert(Track::reverse_bit_order(0x43) == 0xC2);
       std::transform(raw_data.begin(), raw_data.end(),
 		     raw_data.begin(), // transform in-place.
-		     DFS::reverse_bit_order);
+		     Track::reverse_bit_order);
 
       // The data is in side_block_size chunks (side 0 then side 1,
       // etc.) but we only want the data for one of the sides.
@@ -699,7 +701,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 #endif
 
       // Extract the FM-encoded sectors.
-      std::vector<Sector> track_sectors =  IbmFmDecoder(DFS::verbose).decode(track_stream);
+      std::vector<Sector> track_sectors =  Track::IbmFmDecoder(DFS::verbose).decode(track_stream);
       if (DFS::verbose)
 	{
 	  std::cerr << "Found " << track_sectors.size() << " sectors on track "
