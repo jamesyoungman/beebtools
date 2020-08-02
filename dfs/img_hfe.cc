@@ -471,11 +471,12 @@ bool is_hfe3_opcode(byte val)
 }
 
 
-void copy_hfe(bool hfe3,
+void copy_hfe(bool hfe3, unsigned char encoding,
 	      const byte* begin, const byte* end,
 	      std::back_insert_iterator<std::vector<byte>> dest)
 {
-  int take_this_bit = 0;
+  // I don't know how EMU_FM_ENCODING differs from ISOIBM_FM_ENCODING.
+  int take_this_bit = (encoding != ISOIBM_FM_ENCODING);
   int got_bits = 0;
   byte out = 0;
   while (begin != end)
@@ -585,13 +586,17 @@ void copy_hfe(bool hfe3,
 	    }
 	  if (take_this_bit)
 	    {
-	      const int bit = in & (1 << (7-bitnum)) ? 0x80 : 0;
+	      int mask = (1 << (7-bitnum));
+	      const int bit = in & mask ? 0x80 : 0;
 	      /* the output bit might be a clock bit or it might be
 		 data, we worry about that separately. */
 	      out = static_cast<byte>((out >> 1 ) | bit);
 	      ++got_bits;
 	    }
-	  take_this_bit = !take_this_bit;
+	  if (encoding == ISOIBM_FM_ENCODING)
+	    {
+	      take_this_bit = !take_this_bit;
+	    }
 	}
       if (8 == got_bits)
 	{
@@ -614,7 +619,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
   for (unsigned int track = 0 ; track < header_.number_of_track; ++track)
     {
       const unsigned char encoding = encoding_of_track(side, track);
-      if (encoding != ISOIBM_FM_ENCODING)
+      if (encoding != ISOIBM_FM_ENCODING && encoding != ISOIBM_MFM_ENCODING)
 	{
 	  std::ostringstream ss;
 	  ss << "track " << track << " has unsupported track encoding value "
@@ -673,7 +678,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 #if ULTRA_VERBOSE
 	  auto oldsize = track_stream.size();
 #endif
-	  copy_hfe(3 == hfe_version_,
+	  copy_hfe(3 == hfe_version_, encoding,
 		   raw_data.data() + begin_offset,
 		   raw_data.data() + end_offset,
 		   std::back_inserter(track_stream));
@@ -700,8 +705,17 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	}
 #endif
 
-      // Extract the FM-encoded sectors.
-      std::vector<Sector> track_sectors =  Track::IbmFmDecoder(DFS::verbose).decode(track_stream);
+      // Extract the encoded sectors.
+      assert(encoding == ISOIBM_FM_ENCODING || encoding == ISOIBM_MFM_ENCODING);
+      std::vector<Sector> track_sectors;
+      if (encoding == ISOIBM_FM_ENCODING)
+	{
+	  track_sectors = Track::IbmFmDecoder(DFS::verbose).decode(track_stream);
+	}
+      else
+	{
+	  track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(track_stream);
+	}
       if (DFS::verbose)
 	{
 	  std::cerr << "Found " << track_sectors.size() << " sectors on track "
