@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-07-20 10:30 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-08-02 09:36 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -13,7 +13,6 @@ dfs \- read Acorn DFS disc images
 The
 .B dfs
 program reads data from an Acorn DFS disc image file.
-Only single-sided disc images are currently supported.
 
 The command line consists of global options (for example
 .BR "\-\-file" )
@@ -633,7 +632,7 @@ non-interleaved formats.  Two (".dsd" and ".ddd") are interleaved
 formats.
 The HFE format (extension ".hfe") is self-describing and
 supports a variety of types of disc.
-The HxcMFM format supports double-density discs.
+The HxCMFM format (with extension ".mfm") supports double-density discs.
 The last one (".mmb") is a multi-disc format.
 
 Any of the supported disc images may be compressed with
@@ -661,8 +660,10 @@ The
 program currently only supports single-density HFE files, though this
 will likely change in the future.
 
-Support for HxCMFM files (extension ".mfm") is preliminary and likely
-does not yet work well.
+Support for HxCMFM files (extension ".mfm") is preliminary and you may
+find that some files cannot be read, or give unexpected results.
+Please repose such cases (see
+.BR BUGS ).
 
 .SS Non-interleaved images
 
