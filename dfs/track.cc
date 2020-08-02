@@ -69,16 +69,44 @@ void self_test_crc()
   assert(crc3.get() == 0);
 }
 
-std::optional<int> decode_sector_size(unsigned char code)
+bool decode_sector_address_and_size(const byte* header, SectorAddress* address,
+				    int* siz, std::string& error)
 {
-  switch (code)
+  if (header[0] != 0xFE)
     {
-    case 0x00: return 128;
-    case 0x01: return 256;
-    case 0x02: return 512;
-    case 0x03: return 1024;
-    default: return std::nullopt;
+      std::ostringstream ss;
+      ss << "expected address mark byte 0xFE, found " << std::hex << std::uppercase
+	 << std::setfill('0') << std::setw(2) << unsigned(header[0]);
+      error = ss.str();
+      return false;
     }
+  address->cylinder = header[1];
+  address->head = header[2];
+  address->record = header[3];
+
+  switch (header[4])
+    {
+    case 0x00:
+      *siz = 128;
+      break;
+    case 0x01:
+      *siz = 256;
+      break;
+    case 0x02:
+      *siz = 512;
+      break;
+    case 0x03:
+      *siz = 1024;
+      break;
+    default:
+      {
+	std::ostringstream ss;
+	ss << "saw unexpected sector size code " << header[4] << "\n";
+	error = ss.str();
+	return false;
+      }
+    }
+  return true;
 }
 
 bool SectorAddress::operator<(const SectorAddress& a) const

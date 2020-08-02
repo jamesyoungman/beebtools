@@ -14,7 +14,24 @@
 //   limitations under the License.
 //
 #include "track.h"
+
+#include <iostream>
+#include <optional>
+#include <utility>
+#include <vector>
+
 #include "crc.h"
+
+namespace
+{
+  unsigned long get_crc(const std::vector<Track::byte>& data)
+  {
+    DFS::CCITT_CRC16 crc;
+    crc.update(data.data(), data.data() + data.size());
+    return crc.get();
+  }
+
+}  // namespace
 
 namespace Track
 {
@@ -47,14 +64,14 @@ namespace Track
 			    static_cast<unsigned char>(data));
     }
 
-    bool copy_fm_bytes(size_t& thisbit, size_t n, byte* out, bool verbose) const
+    bool copy_fm_bytes(size_t& thisbit, size_t n, std::vector<byte>* out, bool verbose) const
     {
       while (n--)
 	{
 	  auto clock_and_data = read_byte(thisbit);
 	  if (clock_and_data && clock_and_data->first == normal_fm_clock)
 	    {
-	      *out++ = clock_and_data->second;
+	      out->push_back(clock_and_data->second);
 	      continue;
 	    }
 	  if (verbose)
@@ -96,58 +113,54 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   size_t thisbit = 0;
 
   auto find_record_address_mark =
-    [&thisbit, &bits, bits_avail]() -> std::optional<std::pair<size_t, unsigned int>>
+    [&thisbit, &bits, bits_avail]() -> std::optional<unsigned int>
     {
      while (thisbit < bits_avail)
        {
-	/* We're searching for one of these:
+	/* We're searching for two bytes (though usually there are
+	   more) of FM-encoded 0x00 followed by one of these:
+
 	   0xF56A: control record
 	   0xF56F: data record
 	   But, (0xF56A & 0xF56F) == 0xF56A, so we scan for that and check what we got.
 	   0xA == binary 1010
+
+	   A data byte of 0 is 0xAAAA in clocked form (as the clock
+	   bits are always 1 except for address marks and in gaps
+	   where the data is indeterminate).  So 0xAAAAAAAA matches
+	   two data bytes of 0x00 with normal FM clocks.
 	*/
-	auto searched_from = thisbit;
-	auto found = bits.scan_for(thisbit, 0xF56A, 0xFFFA);
+	auto found = bits.scan_for(thisbit,
+				   0xAAAAAAAAF56A,
+				   0xFFFFFFFFFFFA);
 	if (!found)
 	  {
 	    thisbit = bits_avail;
 	    break;
 	  }
 	found->second &= 0xFFFF;
+	thisbit = found->first + 1;
 	if (found->second == 0xF56A || found->second == 0xF56F)
 	  {
-	    return std::make_optional(std::make_pair(found->first+1, found->second));
+	    return found->second;
 	  }
-	/* We could have seen some third bit pattern, for
-	   example 0xF56B.  A match exactly at the next bit
-	   is impossible, but advancing by just one bit
-	   keeps the code simpler and this case will be very
-	   rare.
+	/* We could have seen some third bit pattern, for example
+	   0xF56B.  But that pattern isn't a prefix of the pattern
+	   we're searching for (because of the AAAA prefix) so it's
+	   safe to just continue the search from the spot where we
+	   found this bit pattern.
 	*/
-	thisbit = searched_from + 1;
        }
      return std::nullopt;
     };
 
-  enum DecodeState { Desynced, LookingForAddress, LookingForRecord };
-  enum DecodeState state = Desynced;
+  enum class DecodeState { LookingForAddress, LookingForRecord };
   Sector sec;
   int sec_size;
+  enum DecodeState state = DecodeState::LookingForAddress;
   while (thisbit < bits_avail)
     {
-      if (state == Desynced)
-	{
-	  // The FM-encoded bit sequence 1010101010101010 (hex 0xAAAA)
-	  // has all clock bits set to 1 and all data bits set to 0.
-	  // It represents clock=0xFF, data=0x00.  This is the sync
-	  // field.
-	  auto found = bits.scan_for(thisbit, 0xAAAA, 0xFFFF);
-	  if (!found)
-	    break;
-	  state = LookingForAddress;
-	  thisbit = found->first + 1u;
-	}
-      else if (state == LookingForAddress)
+      if (state == DecodeState::LookingForAddress)
 	{
 	  // The FM-encoded sequence bit sequence 1111010101111110 has
 	  // the hex value 0xF57E.  Dividing it into 4 nibbles we can
@@ -171,7 +184,12 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // 0xFE.  That is address mark 1, which introduces the
 	  // sector ID.  Address marks are unusual in that the clock
 	  // bits are not all set to 1.
-	  auto found = bits.scan_for(thisbit, 0xF57E, 0xFFFF);
+	  //
+	  // The address mark is preceded by at least two FM-encoded
+	  // zero bytes; 0x00 encodes to 0xAAAA.
+	  auto found = bits.scan_for(thisbit,
+				     0xAAAAAAAAF57E,
+				     0xFFFFFFFFFFFF);
 	  if (!found)
 	    break;
 	  thisbit = found->first + 1u;
@@ -182,7 +200,6 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 #endif
 	    }
 	  /* clock=0xC7, data=0xFE - this is the index address mark */
-	  byte id[7] = {byte(id_address_mark)};
 	  // Contents of the address
 	  // byte 0 - mark (data, 0xFE)
 	  // byte 1 - cylinder
@@ -191,18 +208,18 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // byte 4 - size code (see switch below)
 	  // byte 5 - CRC byte 1
 	  // byte 6 - CRC byte 2
-	  if (!bits.copy_fm_bytes(thisbit, 6u, &id[1], verbose_))
+	  std::vector<byte> id;
+	  id.push_back(byte(id_address_mark));
+	  if (!bits.copy_fm_bytes(thisbit, 6u, &id, verbose_))
 	    {
 	      if (verbose_)
 		{
 		  std::cerr << "Failed to read sector address\n";
 		}
-	      state = Desynced;
+	      state = DecodeState::LookingForAddress;
 	      continue;
 	    }
-	  DFS::CCITT_CRC16 crc;
-	  crc.update(id, id + sizeof(id));
-	  const auto addr_crc = crc.get();
+	  const auto addr_crc = get_crc(id);
 	  if (addr_crc)
 	    {
 	      if (verbose_)
@@ -210,37 +227,28 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 		  std::cerr << "Sector address CRC mismatch: 0x"
 			    << std::hex << addr_crc << " should be 0\n";
 		}
-	      state = Desynced;
+	      state = DecodeState::LookingForAddress;
 	      continue;
 	    }
 
-	  const byte* addr = &id[1];
-	  sec.address.cylinder = id[1];
-	  sec.address.head = id[2];
-	  sec.address.record = id[3];
-	  std::optional<int> ssiz = decode_sector_size(id[4]);
-	  if (!ssiz)
+	  std::string error;
+	  if (!decode_sector_address_and_size(id.data(), &sec.address, &sec_size, error))
 	    {
 	      if (verbose_)
-		{
-		  std::cerr << "saw unexpected sector size code " << addr[3] << "\n";
-		}
-	      sec_size = addr[3];
-	      state = Desynced;
+		std::cerr << error << "\n";
+	      state = DecodeState::LookingForAddress;
 	      continue;
 	    }
-	  sec_size = *ssiz;
 	  // id[5] and id[6] are the CRC bytes, and these already got
 	  // included in our evaluation of addr_crc.
-	  state = LookingForRecord;
+	  state = DecodeState::LookingForRecord;
 	}
-      else if (state == LookingForRecord)
+      else if (state == DecodeState::LookingForRecord)
 	{
-	  std::optional<std::pair<size_t, unsigned int>> found = find_record_address_mark();
+	  std::optional<unsigned int> found = find_record_address_mark();
 	  if (!found)
 	    break;
-	  thisbit = found->first;
-	  const bool discard_record = (found->second & 0xFFFF) == 0xF56A;
+	  const bool discard_record = *found == 0xF56A;
 	  if (verbose_)
 	    {
 	      std::cerr << "This record has address " << sec.address
@@ -252,19 +260,20 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 			<< " it.\n";
 	    }
 	  // Read the sector itself.
-	  auto size_with_crc = sec_size + 2;  // add two bytes for the CRC
+	  size_t size_with_crc = sec_size + 2;  // add two bytes for the CRC
 	  sec.data.resize(size_with_crc);
 	  byte data_mark[1] =
 	    {
 	     byte(discard_record ? deleted_data_address_mark : data_address_mark)
 	    };
-	  if (!bits.copy_fm_bytes(thisbit, size_with_crc, sec.data.data(), verbose_))
+	  sec.data.clear();
+	  if (!bits.copy_fm_bytes(thisbit, size_with_crc, &sec.data, verbose_))
 	    {
 	      if (verbose_)
 		{
 		  std::cerr << "Lost sync in sector data\n";
 		}
-	      state = Desynced;
+	      state = DecodeState::LookingForAddress;
 	      continue;
 	    }
 	  DFS::CCITT_CRC16 crc;
@@ -283,7 +292,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 			    << std::hex << data_crc << " should be 0; "
 			    << "dropping the sector\n";
 		}
-	      state = Desynced;
+	      state = DecodeState::LookingForAddress;
 	      continue;
 	    }
 	  sec.crc[0] = sec.data[sec_size + 0];
@@ -305,7 +314,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	    {
 	      std::cerr << "Dropping the control record\n";
 	    }
-	  state = Desynced;
+	  state = DecodeState::LookingForAddress;
 	}
     }
   return result;

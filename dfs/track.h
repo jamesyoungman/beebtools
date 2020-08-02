@@ -164,8 +164,8 @@ private:
   const size_t size_;
 };
 
-std::optional<int> decode_sector_size(unsigned char code);
-
+bool decode_sector_address_and_size(const byte* header, SectorAddress* sec, int* siz,
+				    std::string& error);
 }  // namespace Track
 
 namespace DFS
