@@ -1,5 +1,5 @@
 '\" t
-.TH DFS 1 "2020-08-02 09:36 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-08-02 20:35 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
@@ -627,20 +627,21 @@ results when the terminal is resized.
 
 .SH DISC IMAGE FILES
 
-Six disc image formats are supported.  Two (.ssd" and ".sdd") are
+Seven disc image formats are supported.  Two (.ssd" and ".sdd") are
 non-interleaved formats.  Two (".dsd" and ".ddd") are interleaved
 formats.
 The HFE format (extension ".hfe") is self-describing and
 supports a variety of types of disc.
-The HxCMFM format (with extension ".mfm") supports double-density discs.
+The HxC MFM format (with extension ".mfm") supports double-density
+discs.
 The last one (".mmb") is a multi-disc format.
 
 Any of the supported disc images may be compressed with
 GNU
 .B gzip
 are also accepted and should have the additional file extension ".gz".
-For example a compressed non-interleaved double-density image file
-would have a name ending with ".sdd.gz".
+For example a compressed non-interleaved double-density sector-dump
+image file would have a name ending with ".sdd.gz".
 
 .TS
 tab(|);
@@ -651,17 +652,13 @@ ssd|No|Single|10|1 or 2
 sdd|No|Double|16 or 18|1 or 2
 dsd|Yes|Single|10|Always 2
 ddd|Yes|Double|16 or 18|Always 2
-hfe|(Yes)|Single|10|1 or 2
-mfm|(Yes)|Double|any|1 or 2
+hfe|n/a|Either|Any|1 or 2
+mfm|n/a|Double|Any|1 or 2
+mmb|No|Single|10|(many 1-side disc images)
 .TE
 
-The
-.BR dfs (1
-program currently only supports single-density HFE files, though this
-will likely change in the future.
-
-Support for HxCMFM files (extension ".mfm") is preliminary and you may
-find that some files cannot be read, or give unexpected results.
+Support for HxC MFM files (extension ".mfm") is preliminary and you
+may find that some files cannot be read, or give unexpected results.
 Please repose such cases (see
 .BR BUGS ).
 
@@ -673,7 +670,6 @@ initial track, and so on up that surface of the disc.  If a second
 side is also included in the image file, it immediately follows the
 first.
 
-
 .SS Interleaved images
 
 The data in an interleaved image file starts with all the sectors of
@@ -681,6 +677,27 @@ the first track of side 0, followed by all the sectors of the first
 track of side 1, then all the sectors of the second track of side 0
 and all the sectors of the second track of side 1, and so on.  Two
 sides always exist in the file.
+
+.SS HFE files
+
+The HFE file format supports a much wider range of possiblities than
+are currently implemented in
+.BR dfs (1).
+For example, discs which use any of several copy-protection schemes
+(weak and fuzzy bits for example) can be represented in an HFE file
+but cannot be read by normal DFS implementations (including
+.BR dfs (1)).
+See also
+.B "Variable per-track sector counts"
+below.
+Support for the HFE format is new, is only lightly tested, and covers
+HFE versions 1 and 3 only (that is, not version 2).
+There may be some problems still to be ironed out.
+
+.SS HxC MFM files
+
+The HxC MFM file format supports only double-density images.  Data is
+represented as a bitstream, and this is decoded into sectors.
 
 .SS MMB files
 
@@ -694,17 +711,21 @@ See the
 .BR mmb (5)
 manual page for a description of the MMB format.
 
-.SS HFE files
+.SS Variable per-track sector counts
 
-The HFE file format supports a much wider range of possiblities than
-are currently implemented in
-.BR dfs (1).
-For example, the HFE file format supports double-density disks but
-this is not currently implemented in
-.BR dfs (1).
-Support for the HFE format is new, is only lightly tested, and covers
-HFE versions 1 and 3 only (that is, not version 2).
-There may be some problems still to be ironed out.
+File systems in the DFS family identify sectors only by ordinal number
+(this is sometimes known as "logical block addressing").  In order to
+make this work, they ensure that all tracks contain the same number of
+sectors.
+
+The HxC and HFE file formats can represent disc images which don't
+have this property, but
+.BR dfs (1)
+will not read such disc images.
+This means that
+.BR dfs (1)
+can't always read floppy disc images which include copy-protection
+schemes.
 
 .SH CONFORMING TO
 
