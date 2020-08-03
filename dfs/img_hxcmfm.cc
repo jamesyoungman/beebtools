@@ -14,7 +14,7 @@
 //   limitations under the License.
 //
 /*
-  HFC MFM file format support
+  HxC MFM file format support
 */
 #include <iomanip>		// for setw, hex, dec
 #include <set>			// for set
@@ -34,8 +34,8 @@ using Track::byte;
 
 namespace
 {
-  constexpr unsigned int HEADER_SIZE_BYTES = 0x11u;
-  constexpr unsigned int TRACK_METADATA_SIZE_BYTES = 0x11u;
+constexpr unsigned int HEADER_SIZE_BYTES = 0x11u;
+constexpr unsigned int TRACK_METADATA_SIZE_BYTES = 0x11u;
 
 
 DFS::Geometry compute_geometry(unsigned int sides,
@@ -190,8 +190,8 @@ std::optional<Header> read_and_verify_header(DFS::FileAccess *f, std::string& er
 {
   std::vector<byte> header_data = f->read(0, 19);
   const byte* d = header_data.data();
-  /* 0x00 - 0x06 is the magic string we already checked. */
-  const char expected_magic[7] = "HXCMFM"; // the NUL is also there on-disc.
+  /* 0x00 - 0x06 is a magic string, including a terminating NUL. */
+  const char expected_magic[7] = "HXCMFM";
   if (memcmp(expected_magic, header_data.data(), sizeof(expected_magic)))
     {
       std::ostringstream ss;
@@ -309,7 +309,7 @@ HxcMfmFile::HxcMfmFile(const std::string& name, bool compressed, std::unique_ptr
     {
       throw InvalidHxcMfmFile(error);
     }
-  // header is valid but we may not support it; check this now. */
+  /* header is valid but we may not support it; check this now. */
   if (header->sides > 2)
     {
       std::ostringstream ss;
