@@ -19,7 +19,7 @@
   Documentation: https://hxc2001.com/download/floppy_drive_emulator/SDCard_HxC_Floppy_Emulator_HFE_file_format.pdf
 */
 #include <assert.h>          // for assert
-#include <bits/exception.h>  // for exception
+#include <exception>	     // for std::exception
 #include <errno.h>           // for EIO
 #include <string.h>          // for memcmp
 #include <algorithm>         // for copy, min, sort, transform
@@ -469,7 +469,6 @@ bool is_hfe3_opcode(byte val)
 {
   return (val & OPCODE_MASK) == OPCODE_MASK;
 }
-
 
 void copy_hfe(bool hfe3, unsigned char encoding,
 	      const byte* begin, const byte* end,
