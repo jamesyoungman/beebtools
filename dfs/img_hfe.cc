@@ -17,6 +17,14 @@
   HFE file format support
   Based on Rev.1.1 - 06/20/2012 of the format specification.
   Documentation: https://hxc2001.com/download/floppy_drive_emulator/SDCard_HxC_Floppy_Emulator_HFE_file_format.pdf
+
+  This code isn't really useful as a general HFE implementation, for
+  the following reasons:
+  1. Only some track encodings are supported.
+  2. No support for images where tracks don't all have the same number of sectors.
+  3. The RAND opcode is supported in a way that copy protection schemes won't like.
+  4. Limited testing of double-sided image files.
+  5. No support for HFEv2 (though this is unlikely to be an issue in practice).
 */
 #include <assert.h>          // for assert
 #include <exception>	     // for std::exception
@@ -500,11 +508,11 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 
 		 It's not clear how we would need to use it.  In a
 		 physical floppy, detection of the index mark tells us
-		 we've seen the whole track (and e.g. allows us to
-		 know when to give up searching for a sector in the
-		 track data.  But we have a finite amount of input
-		 data anyway, so we won't loop forever even if we
-		 don't know where in the bitsteam the index mark is.
+		 we've seen the whole track.  That allows us for
+		 example to know when to give up searching for a
+		 sector.  But we have a finite amount of input data
+		 anyway, so we won't loop forever even if we don't
+		 know where in the bitsteam the index mark is.
 	       */
 	      continue;
 
@@ -555,13 +563,14 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 	       *
 	       * In an attempt to achieve a similar effect we simply
 	       * return zero data, so that the clock bits are missing
-	       * and we lose sync.  The HFE3 container would not
-	       * implement things this way as it would not be
-	       * convincing to a copy-protection scheme which itself
-	       * reads the track data directly, but we have the luxury
-	       * of knowing our caller isn't trying to do that (as we
-	       * know a-prori that the high-level code is not part of
-	       * a copy-protection scheme).
+	       * and we lose sync.  A general HFE3 implementation
+	       * would not implement things this way as it would not
+	       * be convincing to code implementing a copy-protection
+	       * scheme which itself reads the track data directly.
+	       * We on the other hand have the luxury of knowing our
+	       * caller isn't trying to do that, as we know a-prori
+	       * that the high-level code is not part of a
+	       * copy-protection scheme.
 	       */
 	      in = 0;		// has no clock bits, see above.
 	      break;
