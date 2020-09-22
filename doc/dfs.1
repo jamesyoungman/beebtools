@@ -1,13 +1,15 @@
 '\" t
-.TH DFS 1 "2020-08-02 20:35 GMT" Youngman \" -*- nroff -*-
+.TH DFS 1 "2020-09-22 08:21 GMT" Youngman \" -*- nroff -*-
 
 .SH NAME
 dfs \- read Acorn DFS disc images
 
 .SH SYNOPSIS
 .B dfs
-[\-\-file image.ssd] [\-\-dir D] cat|dump|extract\-files|extract\-unused|free|help|info|list|sector\-map|show-titles|space|type
-[args...]
+[\-\-file image.ssd] [\-\-dir D] cat|dump|free|help|info|list|space|type [args...]
+.br
+.B dfs
+[\-\-file image.ssd] [\-\-dir D] dump\-sector|extract\-files|extract\-unused|sector\-map|show-titles|space [args...]
 
 .SH DESCRIPTION
 The
@@ -128,6 +130,21 @@ option) and the environment (see
 Dumps the contents of a single file in hexadecimal and text.
 This is analogous to the Acorn DFS command
 .BR "*DUMP" .
+
+.SS "dump-sector drive track sector"
+
+Dumps the contents of a single sector in hexadecimal and text.
+The
+.IR drive ,
+.I track
+and
+.I sector
+parameters identify which sector to dump.  These start at zero.
+For
+.I track
+and
+.IR sector ,
+the upper limit depends on the format of the disc.
 
 .SS "extract-files directory"
 
