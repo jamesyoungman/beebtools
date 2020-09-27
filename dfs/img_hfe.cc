@@ -536,18 +536,11 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 	  /* this byte the operant to an HFEv3 opcode. */
 	  switch (this_op)
 	    {
+	    case NOP_OPCODE:
 	    case SETINDEX_OPCODE:
-	      /* For now, we ignore this (i.e. we consume the opcode
-		 but do nothing about it).
-
-		 It's not clear how we would need to use it.  In a
-		 physical floppy, detection of the index mark tells us
-		 we've seen the whole track.  That allows us for
-		 example to know when to give up searching for a
-		 sector.  But we have a finite amount of input data
-		 anyway, so we won't loop forever even if we don't
-		 know where in the bitsteam the index mark is.
-	      */
+	      std::cerr << "HFEv3: unecpected this_op value "
+			<< std::hex << std::setw(2) << std::setfill('0')
+			<< this_op << "\n";
 	      this_op = 0;
 	      continue;
 
@@ -617,10 +610,33 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 			<< std::hex << unsigned(in) << " ("
 			<< opcode_name(in) << ")\n";
 	    }
-	  this_op = in & OPCODE_MASK;
-	  if (this_op == NOP_OPCODE)
-	    this_op = 0;
-	  continue;
+	  switch (in & OPCODE_MASK)
+	    {
+	    case NOP_OPCODE:
+	      this_op = 0;  /* takes no argument, so nothing more to do. */
+	      continue;
+
+	    case SETINDEX_OPCODE:
+	      /* For now, we ignore this (i.e. we consume the opcode
+		 but do nothing about it).
+
+		 It's not clear how we would need to use it.  In a
+		 physical floppy, detection of the index mark tells us
+		 we've seen the whole track.  That allows us for
+		 example to know when to give up searching for a
+		 sector.  But we have a finite amount of input data
+		 anyway, so we won't loop forever even if we don't
+		 know where in the bitsteam the index mark is.
+	      */
+	      this_op = 0;  /* takes no argument */
+	      continue;
+
+	    default:
+	      this_op = in & OPCODE_MASK;
+	      /* Collect argument next time around the loop and
+		 operate on it. */
+	      continue;
+	    }
 	}
       else
 	{
