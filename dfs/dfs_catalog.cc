@@ -183,7 +183,7 @@ namespace DFS
 	assert(sec <= end);
 	auto buf = media.read_block(sec);
 	if (!buf)
-	  throw BadFileSystem("end of media during body of file");
+	  throw BadFileSystem("end of media or unreadable sector in body of file");
 	unsigned long visit_len = len > SECTOR_BYTES ? SECTOR_BYTES : len;
 	if (!visitor(buf->begin(), buf->begin() + visit_len))
 	  return false;
@@ -379,8 +379,8 @@ CatalogFragment::CatalogFragment(DFS::Format format,
 	  {
 	    std::ostringstream os;
 	    os << "to contain a valid " << format_name(disc_format_)
-	       << " catalog, the file system must contain at least "
-	       << (frag_count * 2) << " sectors";
+	       << " catalog, we must be able to read the first "
+	       << "two sectors of the file system";
 	    throw new BadFileSystem(os.str());
 	  }
 	fragments_.push_back(CatalogFragment(format, *names, *metadata));

@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "crc.h"
+#include "hexdump.h"
 
 namespace
 {
@@ -291,6 +292,8 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 		  std::cerr << "Sector data CRC mismatch: 0x"
 			    << std::hex << data_crc << " should be 0; "
 			    << "dropping the sector\n";
+		  DFS::hexdump_bytes(std::cerr, 0, 1, data_mark, data_mark+1);
+		  DFS::hexdump_bytes(std::cerr, 1, 32, sec.data.data(), sec.data.data() + size_with_crc);
 		}
 	      state = DecodeState::LookingForAddress;
 	      continue;

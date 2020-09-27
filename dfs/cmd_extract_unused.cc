@@ -170,9 +170,7 @@ private:
 	auto got = drive->read_block(sec);
 	if (!got)
 	  {
-	    std::cerr << "warning: media ("
-		      << drive->geometry().total_sectors() << " sectors) is shorter "
-		      << "than file system (" << end_sector << " sectors)\n";
+	    std::cerr << "warning: failed to read sector number " << sec << "\n";
 	    break;
 	  }
 	errno = 0;

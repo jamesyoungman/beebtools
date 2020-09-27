@@ -43,7 +43,7 @@ namespace DFS
 	{
 	  auto got = media.read_block(16);
 	  if (!got)
-	    throw DFS::BadFileSystem("file system detected as Opus DDOS but it's too short to contain a disc catalogue");
+	    throw DFS::BadFileSystem("file system detected as Opus DDOS but the sector which should contain the disc catalogue is unreadable");
 	  auto dc = OpusDiscCatalogue(*got, geom);
 	  for (const auto& vol_loc : dc.get_volume_locations())
 	    {

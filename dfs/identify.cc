@@ -101,17 +101,23 @@ namespace
 			     unsigned long location,
 			     std::string& error)
   {
-    std::optional<DFS::SectorBuffer> s0 = media.read_block(location);
-    std::optional<DFS::SectorBuffer> s1 = media.read_block(location + 1uL);
-    if (!s0 || !s1)
+    std::vector<DFS::SectorBuffer> sectors;
+    for (int secnum = 0; secnum < 2; ++secnum)
       {
-	std::ostringstream os;
-	os << "media is too short to contain a catalog at location "
-	   << std::dec << location;
-	error = os.str();
-	return false;
+	std::optional<DFS::SectorBuffer> s = media.read_block(location + secnum);
+	if (!s)
+	  {
+	    std::ostringstream os;
+	    os << "media cannot contain a catalog at logical block address "
+	       << std::dec << location + secnum
+	       << " because that sector is not readable";
+	    error = os.str();
+	    return false;
+	  }
+	sectors.push_back(*s);
       }
-    DFS::CatalogFragment f(DFS::Format::DFS, *s0, *s1);
+
+    DFS::CatalogFragment f(DFS::Format::DFS, sectors[0], sectors[1]);
     const bool valid = f.valid(error);
     if (valid)
       {
