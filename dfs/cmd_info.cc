@@ -103,7 +103,7 @@ public:
     auto mounted = storage.mount(vol, error);
     if (!mounted)
       {
-	std::cerr << "failed to select drive " << vol << ": " << error << "\n";
+	failed_to_mount_volume(std::cerr, vol, error);
 	return false;
       }
     const auto& catalog(mounted->volume()->root());

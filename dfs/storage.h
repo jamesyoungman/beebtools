@@ -61,8 +61,8 @@ namespace DFS
   {
   public:
     //DriveConfig(const DriveConfig&) = default;
-    Format format() const;
-    DriveConfig(Format fmt, AbstractDrive* p);
+    std::optional<Format> format() const;
+    DriveConfig(std::optional<Format> fmt, AbstractDrive* p);
     ~DriveConfig() {}
     AbstractDrive* drive() const;
 
@@ -70,7 +70,7 @@ namespace DFS
     bool operator==(const DriveConfig&);
 
   private:
-    Format fmt_;
+    std::optional<Format> fmt_;
     AbstractDrive* drive_;	// not owned
   };
 
@@ -121,6 +121,9 @@ namespace DFS
     std::map<drive_number, std::optional<DriveConfig>> drives_;
     std::map<drive_number, std::unique_ptr<AbstractDrive>> caches_;
   };
+
+  void failed_to_mount_surface(std::ostream&, const SurfaceSelector&, const std::string&);
+  void failed_to_mount_volume(std::ostream&, const VolumeSelector&, const std::string&);
 }
 
 #endif

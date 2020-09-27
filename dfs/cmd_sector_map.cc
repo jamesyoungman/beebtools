@@ -64,11 +64,6 @@ public:
 	      const std::vector<std::string>& args) override
   {
     std::string error;
-    auto faild = [&error](DFS::drive_number d)
-		 {
-		   std::cerr << "failed to select drive " << d << ": " << error << "\n";
-		   return false;
-		 };
     auto fail = [&error]()
 		 {
 		   std::cerr << error << "\n";
@@ -107,7 +102,10 @@ public:
       }
     std::unique_ptr<DFS::FileSystem> fs = (storage.mount_fs(drive_num, error));
     if (!fs)
-      return faild(drive_num);
+      {
+	failed_to_mount_surface(std::cerr, drive_num, error);
+	return false;
+      }
     std::unique_ptr<DFS::SectorMap> sector_map = fs->get_sector_map(drive_num);
 
     int column = 0;

@@ -104,8 +104,7 @@ public:
     std::string error;
     auto fail = [&surface, &error]()
 		{
-		  std::cerr << "failed to select drive " << surface
-			    << ": " << error << "\n";
+		  failed_to_mount_surface(std::cerr, surface, error);
 		  return false;
 		};
     DFS::AbstractDrive *drive = 0;

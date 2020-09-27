@@ -76,11 +76,6 @@ class CommandShowTitles : public DFS::CommandInterface
 	      const std::vector<std::string>& args) override
   {
     std::string error;
-    auto faild = [&error](DFS::drive_number d)
-		 {
-		   std::cerr << "failed to select drive " << d << ": " << error << "\n";
-		   return false;
-		 };
     auto fail = [&error]()
 		 {
 		   std::cerr << error << "\n";
@@ -112,12 +107,15 @@ class CommandShowTitles : public DFS::CommandInterface
 	todo = storage.get_all_occupied_drive_numbers();
       }
 
+    bool ok = true;
     for (DFS::SurfaceSelector surface : todo)
       {
 	if (!show_title(storage, surface, error))
-	  return faild(surface);
+	  {
+	    ok = false;
+	  }
       }
-    return true;
+    return ok;
   }
 
 };

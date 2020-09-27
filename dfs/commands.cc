@@ -113,7 +113,7 @@ bool body_command(const StorageConfiguration& storage, const DFSContext& ctx,
   auto mounted = storage.mount(name.vol, error);
   if (!mounted)
     {
-      std::cerr << "failed to select drive " << name.vol << ": " << error << "\n";
+      failed_to_mount_volume(std::cerr, name.vol, error);
       return false;
     }
   const auto& root(mounted->volume()->root());

@@ -121,7 +121,7 @@ public:
     auto mounted = storage.mount(ctx.current_volume, error);
     if (!mounted)
       {
-	cerr << "failed to select drive " << ctx.current_volume << ": " << error << "\n";
+	failed_to_mount_volume(std::cerr, ctx.current_volume, error);
 	return false;
       }
     const DFS::Catalog& catalog(mounted->volume()->root());

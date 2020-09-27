@@ -117,7 +117,7 @@ public:
 	auto mounted = storage.mount(selector, error);
 	if (!mounted)
 	  {
-	    std::cerr << error << "\n";
+	    failed_to_mount_volume(std::cerr, selector, error);
 	    return false;
 	  }
 	auto root(mounted->volume()->root());

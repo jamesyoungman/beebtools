@@ -113,17 +113,27 @@ namespace
     mutable SectorCache cache_;
   };
 
+  template <typename SELECTOR>
+  void announce_mount_failed(std::ostream& os, const SELECTOR& which, const std::string& error)
+  {
+    os << "failed to select drive " << which << " (is it formatted?)";
+    if (!error.empty())
+      {
+	os << ": " << error;
+      }
+    os << "\n";
+  }
 }  // namespace
 
 
 namespace DFS
 {
-  DriveConfig::DriveConfig(DFS::Format fmt, AbstractDrive* p)
+  DriveConfig::DriveConfig(std::optional<DFS::Format> fmt, AbstractDrive* p)
     : fmt_(fmt), drive_(p)
   {
   }
 
-  Format DriveConfig::format() const
+  std::optional<Format> DriveConfig::format() const
   {
     return fmt_;
   }
@@ -373,6 +383,16 @@ namespace DFS
     if (!pvol)
       return std::nullopt;
     return VolumeMountResult(std::move(fs), pvol);
+  }
+
+  void failed_to_mount_volume(std::ostream& os, const VolumeSelector& vol, const std::string& error)
+  {
+    return announce_mount_failed(os, vol, error);
+  }
+
+  void failed_to_mount_surface(std::ostream& os, const SurfaceSelector& surface, const std::string& error)
+  {
+    return announce_mount_failed(os, surface, error);
   }
 
 }  // namespace DFS

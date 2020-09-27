@@ -795,14 +795,12 @@ bool HfeFile::connect_drives(DFS::StorageConfiguration* storage,
     {
       std::optional<DFS::Format> fmt =
 	DFS::identify_file_system(accessor, accessor.geometry(), false, error);
-      if (!fmt)
-	return false;
       // TODO: detect unformatted drive (relevant because side 1 may be absent).
       //
       // TODO: decide how many devices to present when sides=2, presumably
       // based on the value of fmt, and bear this in mind when converting
       // the lba value in read_block back onto a track, side and sector number.
-      DFS::DriveConfig dc(*fmt, &accessor);
+      DFS::DriveConfig dc(fmt, &accessor);
       drives.push_back(dc);
     }
   return storage->connect_drives(drives, how);

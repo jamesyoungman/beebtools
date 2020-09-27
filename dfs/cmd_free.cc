@@ -72,11 +72,6 @@ public:
 	      const std::vector<std::string>& args) override
   {
     std::string error;
-    auto faild = [&error](const DFS::VolumeSelector& vol)
-		 {
-		   std::cerr << "failed to select drive " << vol << ": " << error << "\n";
-		   return false;
-		 };
     auto fail = [&error]()
 		 {
 		   std::cerr << error << "\n";
@@ -103,7 +98,10 @@ public:
       }
     auto mounted = storage.mount(vol, error);
     if (!mounted)
-      return faild(vol);
+      {
+	failed_to_mount_volume(std::cerr, vol, error);
+	return false;
+      }
     auto catalog(mounted->volume()->root());
 
     int sectors_used = 2;

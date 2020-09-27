@@ -345,11 +345,6 @@ namespace
 		    std::cerr << error << "\n";
 		    return false;
 		  };
-      auto faild = [&error](DFS::VolumeSelector vol)
-		  {
-		    std::cerr << "failed to select drive " << vol << ": " << error << "\n";
-		    return false;
-		  };
       DFS::VolumeSelector d(0);
       if (args.size() > 2)
 	{
@@ -378,7 +373,10 @@ namespace
 	}
       auto mounted = storage.mount(d, error);
       if (!mounted)
-	return faild(d);
+	{
+	  failed_to_mount_volume(std::cerr, d, error);
+	  return false;
+	}
       DFS::FileSystem* file_system = mounted->file_system();
       const Catalog& catalog(mounted->volume()->root());
       DFS::Geometry geom = file_system->geometry();
