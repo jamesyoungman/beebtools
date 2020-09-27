@@ -339,10 +339,23 @@ public:
     {
       if (lba >= sectors_.size())
 	return std::nullopt;
-      const Sector& sect(sectors_[lba]);
-      DFS::SectorBuffer buf;
-      std::copy(sect.data.begin(), sect.data.end(), buf.begin());
-      return buf;
+      SectorAddress addr;
+      const auto sectors_per_side = geom_.cylinders * geom_.sectors;
+      addr.head = lba / sectors_per_side;
+      lba = lba % sectors_per_side;
+      addr.cylinder = lba / geom_.sectors;
+      addr.record = lba % geom_.sectors;
+      std::vector<Sector>::const_iterator it = find_sector(addr);
+      if (it != sectors_.cend())
+	{
+	  DFS::SectorBuffer buf;
+	  std::copy(it->data.begin(), it->data.end(), buf.begin());
+	  return buf;
+	}
+      else
+	{
+	  return std::nullopt;
+	}
     }
 
     std::string description() const override
@@ -355,6 +368,20 @@ public:
     DFS::Geometry geometry() const override
     {
       return geom_;
+    }
+
+    std::vector<Sector>::const_iterator find_sector(const SectorAddress& want) const
+    {
+      std::vector<Sector>::const_iterator it = sectors_.cbegin();
+      while (it != sectors_.cend())
+	{
+	  if (it->address == want)
+	    {
+	      break;
+	    }
+	  ++it;
+	}
+      return it;
     }
 
   private:
@@ -478,6 +505,19 @@ bool is_hfe3_opcode(byte val)
   return (val & OPCODE_MASK) == OPCODE_MASK;
 }
 
+std::string opcode_name(byte op)
+{
+  switch (op)
+    {
+    case NOP_OPCODE: return "nop";
+    case SETINDEX_OPCODE: return "setindex";
+    case SETBITRATE_OPCODE: return "setbitrate";
+    case SKIPBITS_OPCODE: return "skipbits";
+    case RAND_OPCODE: return "rand";
+    default: return "(unknown opcode)";
+    }
+}
+
 void copy_hfe(bool hfe3, unsigned char encoding,
 	      const byte* begin, const byte* end,
 	      std::back_insert_iterator<std::vector<byte>> dest)
@@ -495,7 +535,8 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 	  if (DFS::verbose)
 	    {
 	      std::cerr << "HFEv3: processing opcode "
-			<< std::hex << unsigned(in) << "\n";
+			<< std::hex << unsigned(in) << " ("
+			<< opcode_name(in) << ")\n";
 	    }
 	  switch (in)
 	    {
@@ -742,12 +783,13 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	  throw UnsupportedHfeFile(ss.str());
 	}
 
-    // Sort the sectors by address.
-    std::sort(track_sectors.begin(), track_sectors.end(),
-	      [](const Sector& a, const Sector& b)
-	      {
-		return a.address < b.address;
-	      });
+      // Sort the sectors by address.
+      std::sort(track_sectors.begin(), track_sectors.end(),
+		[](const Sector& a, const Sector& b)
+		{
+		  return a.address < b.address;
+		});
+
       std::string error;
       if (!DFS::check_track_is_supported(track_sectors, track, side, DFS::SECTOR_BYTES, DFS::verbose, error))
 	{

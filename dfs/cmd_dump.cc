@@ -178,9 +178,8 @@ public:
       auto got = drive->read_block(sec_addr);
       if (!got)
 	{
-	  std::cerr << "error: media ("
-		    << drive->geometry().total_sectors() << " sectors) is shorter "
-		    << "than file system (" << geom.total_sectors() << " sectors)\n";
+	  std::cerr << "error: failed to read sector at track "
+		    << *track << ", sector " << *sector << "\n";
 	  return false;
 	}
       return hexdump_bytes(std::cout, 0, Stride, got->data(), got->data()+got->size());
