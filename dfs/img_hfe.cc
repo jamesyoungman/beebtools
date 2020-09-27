@@ -494,10 +494,10 @@ std::string HfeFile::description() const
   return ss.str();
 }
 
-void premature_stream_end(const std::string& opcode)
+void premature_stream_end(DFS::byte opcode)
 {
   std::cerr << "warning: track data stream ends in the middle of an HFEv3 "
-	    << opcode << " instruction";
+	    << std::hex << opcode << " instruction\n";
 }
 
 bool is_hfe3_opcode(byte val)
@@ -526,23 +526,16 @@ void copy_hfe(bool hfe3, unsigned char encoding,
   int take_this_bit = (encoding != ISOIBM_FM_ENCODING);
   int got_bits = 0;
   byte out = 0;
+  byte this_op = 0;
   while (begin != end)
     {
       int skipbits = 0;
       byte in = *begin++;
-      if (hfe3 && is_hfe3_opcode(in))
+      if (this_op)
 	{
-	  if (DFS::verbose)
+	  /* this byte the operant to an HFEv3 opcode. */
+	  switch (this_op)
 	    {
-	      std::cerr << "HFEv3: processing opcode "
-			<< std::hex << unsigned(in) << " ("
-			<< opcode_name(in) << ")\n";
-	    }
-	  switch (in)
-	    {
-	    case NOP_OPCODE:
-	      continue;		// just consume the opcode.
-
 	    case SETINDEX_OPCODE:
 	      /* For now, we ignore this (i.e. we consume the opcode
 		 but do nothing about it).
@@ -554,34 +547,24 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 		 sector.  But we have a finite amount of input data
 		 anyway, so we won't loop forever even if we don't
 		 know where in the bitsteam the index mark is.
-	       */
+	      */
+	      this_op = 0;
 	      continue;
 
 	    case SETBITRATE_OPCODE:
 	      // We only care about the sector contents, so ignore the
 	      // change in bit rate.
-	      if (begin == end)
-		{
-		  premature_stream_end("SETBITRATE");
-		  continue;
-		}
-	      ++begin;		// consume the bit-rate byte
+	      this_op = 0;
 	      continue;
 
 	    case SKIPBITS_OPCODE:
 	      {
-		if (begin == end)
+		skipbits = in;
+		if (in >= 8)
 		  {
-		    premature_stream_end("SKIPBITS");
+		    std::cerr << "HFEv3: unecpected SKIPBITS argument " << in << "\n";
 		    continue;
 		  }
-		skipbits = *begin++;
-		if (begin == end)
-		  {
-		    premature_stream_end("SKIPBITS");
-		    continue;
-		  }
-		in = *begin++;	// the byte in which to skip some bits.
 	      }
 	      break;
 
@@ -624,6 +607,24 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 		throw InvalidHfeFile(ss.str());
 	      }
 	    }
+	  this_op = 0;
+	}
+      else if (hfe3 && is_hfe3_opcode(in))
+	{
+	  if (DFS::verbose)
+	    {
+	      std::cerr << "HFEv3: processing opcode "
+			<< std::hex << unsigned(in) << " ("
+			<< opcode_name(in) << ")\n";
+	    }
+	  this_op = in & OPCODE_MASK;
+	  if (this_op == NOP_OPCODE)
+	    this_op = 0;
+	  continue;
+	}
+      else
+	{
+	  this_op = 0;
 	}
 
       for (int bitnum = 0; bitnum < 8; ++bitnum)
@@ -653,6 +654,10 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 	  out = 0;
 	  got_bits = 0;
 	}
+    }
+  if (this_op)
+    {
+      premature_stream_end(this_op);
     }
 }
 
