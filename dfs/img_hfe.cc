@@ -781,11 +781,11 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
       Track::BitStream bits(track_stream);
       if (encoding == ISOIBM_FM_ENCODING)
 	{
-	  track_sectors = Track::IbmFmDecoder(DFS::verbose).decode(bits);
+	  track_sectors = decode_fm_track(bits, DFS::verbose);
 	}
       else
 	{
-	  track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(bits);
+	  track_sectors = decode_mfm_track(bits, DFS::verbose);
 	}
       if (DFS::verbose)
 	{

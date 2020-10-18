@@ -32,19 +32,64 @@ namespace
     return crc.get();
   }
 
+
+std::optional<std::pair<Track::byte, Track::byte>>
+read_byte(const Track::BitStream& bits, size_t& start)
+{
+  // An FM-encoded byte occupies 16 bits on the disc, and looks like
+  // this (in the order bits appear on disc):
+  //
+  // first       last
+  // cDcDcDcDcDcDcDcD (c are clock bits, D data)
+  unsigned int clock=0, data=0;
+  for (int bitnum = 0; bitnum < 8; ++bitnum)
+    {
+      if (start + 2 >= bits.size())
+	return std::nullopt;
+
+      clock = (clock << 1) | bits.getbit(start++);
+      data  = (data  << 1) | bits.getbit(start++);
+    }
+  return std::make_pair(static_cast<unsigned char>(clock),
+			static_cast<unsigned char>(data));
+}
+
+bool copy_fm_bytes(const Track::BitStream& bits, size_t& thisbit,
+		   size_t n, std::vector<Track::byte>* out,
+		   bool verbose)
+{
+  while (n--)
+    {
+      auto clock_and_data = read_byte(bits, thisbit);
+      if (clock_and_data && clock_and_data->first == Track::normal_fm_clock)
+	{
+	  out->push_back(clock_and_data->second);
+	  continue;
+	}
+      if (verbose)
+	{
+	  if (!clock_and_data)
+	    {
+	      std::cerr << "end-of-track while reading data bytes\n";
+	    }
+	  else
+	    {
+	      std::cerr << "desynced while reading data bytes\n";
+	    }
+	}
+      return false;
+    }
+  return true;
+}
+
 }  // namespace
 
 namespace Track
 {
-IbmFmDecoder::IbmFmDecoder(bool verbose)
-  : verbose_(verbose)
-{
-}
-
 
 // Decode a train of FM clock/data bits into a sequence of zero or more
 // sectors.
-std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
+  std::vector<Sector> decode_fm_track(const BitStream& bits, bool verbose)
 {
   self_test_crc();
 
@@ -137,7 +182,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  if (!found)
 	    break;
 	  thisbit = found->first + 1u;
-	  if (verbose_)
+	  if (verbose)
 	    {
 #if ULTRA_VERBOSE
 	      std::cerr << "Found AM1, reading sector address\n";
@@ -154,9 +199,9 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  // byte 6 - CRC byte 2
 	  std::vector<byte> id;
 	  id.push_back(byte(id_address_mark));
-	  if (!copy_fm_bytes(bits, thisbit, 6u, &id, verbose_))
+	  if (!copy_fm_bytes(bits, thisbit, 6u, &id, verbose))
 	    {
-	      if (verbose_)
+	      if (verbose)
 		{
 		  std::cerr << "Failed to read sector address\n";
 		}
@@ -166,7 +211,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  const auto addr_crc = get_crc(id);
 	  if (addr_crc)
 	    {
-	      if (verbose_)
+	      if (verbose)
 		{
 		  std::cerr << "Sector address CRC mismatch: 0x"
 			    << std::hex << addr_crc << " should be 0\n";
@@ -178,7 +223,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  std::string error;
 	  if (!decode_sector_address_and_size(id.data(), &sec.address, &sec_size, error))
 	    {
-	      if (verbose_)
+	      if (verbose)
 		std::cerr << error << "\n";
 	      state = DecodeState::LookingForAddress;
 	      continue;
@@ -193,7 +238,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  if (!found)
 	    break;
 	  const bool discard_record = *found == 0xF56A;
-	  if (verbose_)
+	  if (verbose)
 	    {
 	      std::cerr << "This record has address " << sec.address
 			<< " and should contain "
@@ -211,9 +256,9 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	     byte(discard_record ? deleted_data_address_mark : data_address_mark)
 	    };
 	  sec.data.clear();
-	  if (!copy_fm_bytes(bits, thisbit, size_with_crc, &sec.data, verbose_))
+	  if (!copy_fm_bytes(bits, thisbit, size_with_crc, &sec.data, verbose))
 	    {
-	      if (verbose_)
+	      if (verbose)
 		{
 		  std::cerr << "Lost sync in sector data\n";
 		}
@@ -230,7 +275,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 	  auto data_crc = crc.get();
 	  if (data_crc != 0 && !discard_record)
 	    {
-	      if (verbose_)
+	      if (verbose)
 		{
 		  std::cerr << "Sector data CRC mismatch: 0x"
 			    << std::hex << data_crc << " should be 0; "
@@ -248,7 +293,7 @@ std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 
 	  if (!discard_record)
 	    {
-	      if (verbose_)
+	      if (verbose)
 		{
 		  std::cerr << "Accepting record/sector with address "
 			    << sec.address << "; " << "it has "

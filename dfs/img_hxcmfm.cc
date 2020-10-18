@@ -423,7 +423,7 @@ HxcMfmFile::read_all_sectors(unsigned int side,
 		     Track::reverse_bit_order);
 
       Track::BitStream bits(track);
-      std::vector<Sector> track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(bits);
+      std::vector<Sector> track_sectors = decode_mfm_track(bits, DFS::verbose);
       std::sort(track_sectors.begin(), track_sectors.end(),
 		[](const Sector& a, const Sector& b)
 		{

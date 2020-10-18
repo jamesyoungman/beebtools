@@ -113,128 +113,21 @@ private:
   const size_t size_;
 };
 
-// IbmFmDecoder decodes an FM track into sectors.
-class IbmFmDecoder
-{
-public:
-  IbmFmDecoder(bool verbose);
+// decode_fm_track() decodes an FM data stream (as clock/data byte pairs)
+// into a sector. If no more sectors are available in source, nullopt
+// is returned.  source must be initialized such that the first byte
+// it returns is after the index mark and before the sync field.
+//
+// Only data sectors are returned.
+std::vector<Sector> decode_fm_track(const BitStream& track, bool verbose);
 
-  // decode() decodes an FM data stream (as clock/data byte pairs)
-  // into a sector. If no more sectors are available in source, nullopt
-  // is returned.  source must be initialized such that the first byte
-  // it returns is after the index mark and before the sync field.
-  //
-  // Only data sectors are returned.
-  std::vector<Sector> decode(const BitStream& track);
-
-  std::optional<std::pair<byte, byte>> read_byte(const BitStream& bits, size_t& start) const
-  {
-    // An FM-encoded byte occupies 16 bits on the disc, and looks like
-    // this (in the order bits appear on disc):
-    //
-    // first       last
-    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-    unsigned int clock=0, data=0;
-    for (int bitnum = 0; bitnum < 8; ++bitnum)
-      {
-	if (start + 2 >= bits.size())
-	  return std::nullopt;
-
-	clock = (clock << 1) | bits.getbit(start++);
-	data  = (data  << 1) | bits.getbit(start++);
-      }
-    return std::make_pair(static_cast<unsigned char>(clock),
-			  static_cast<unsigned char>(data));
-  }
-
-  bool copy_fm_bytes(const BitStream& bits, size_t& thisbit, size_t n, std::vector<byte>* out, bool verbose) const
-  {
-    while (n--)
-      {
-	auto clock_and_data = read_byte(bits, thisbit);
-	if (clock_and_data && clock_and_data->first == normal_fm_clock)
-	  {
-	    out->push_back(clock_and_data->second);
-	    continue;
-	  }
-	if (verbose)
-	  {
-	    if (!clock_and_data)
-	      {
-		std::cerr << "end-of-track while reading data bytes\n";
-	      }
-	    else
-	      {
-		std::cerr << "desynced while reading data bytes\n";
-	      }
-	  }
-	return false;
-      }
-    return true;
-  }
-private:
-  bool verbose_;
-};
-
-// IbmMfmDecoder decodes an MFM track into sectors.
-class IbmMfmDecoder
-{
-public:
-  IbmMfmDecoder(bool verbose);
-
-  // decode() decodes an MFM data stream (as clock/data byte pairs)
-  // into a sector. source must be initialized such that the first
-  // byte it returns is after the index mark and before the sync
-  // field.
-  //
-  // Only data sectors are returned.
-  std::vector<Sector> decode(const BitStream& track);
-
-  std::optional<byte> read_byte(const BitStream& bits, size_t& pos, std::string& error) const
-  {
-    // An FM-encoded byte occupies 16 bits on the disc, and looks like
-    // this (in the order bits appear on disc):
-    //
-    // first       last
-    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-    assert(pos > 0u);
-    auto began_at = pos;
-    bool prev_data_bit = bits.getbit(began_at - 1u);
-    unsigned int data=0;
-    for (int bitnum = 0; bitnum < 8; ++bitnum)
-      {
-	if (pos + 2 >= bits.size())
-	  {
-	    error = "unexpected end-of-track";
-	    return std::nullopt;
-	  }
-	const int clock_bit = bits.getbit(pos++);
-	const int data_bit = bits.getbit(pos++);
-	const int expected_clock = (prev_data_bit || data_bit) ? 0 : 1;
-	prev_data_bit = data_bit;
-
-	if (clock_bit != expected_clock)
-	  {
-	    std::ostringstream ss;
-	    ss << "at track bit position " << pos
-	       << " (" << (pos-began_at) << " bits into the data block)"
-	       << ", MFM clock bit was "
-	       << clock_bit << " where " << expected_clock << " was expected";
-	    error = ss.str();
-	    return std::nullopt;
-	  }
-	data  = (data  << 1) | data_bit;
-      }
-    return data;
-  }
-
-  bool copy_mfm_bytes(const BitStream& bits, size_t& thisbit,
-		      size_t n, std::vector<byte>* out,
-		      std::string& error) const;
-
-private:
-  bool verbose_;
-};
+// decode_mfm_track() decodes an MFM data stream (as clock/data byte
+// pairs) into a sector. source must be initialized such that the
+// first byte it returns is after the index mark and before the sync
+// field.
+//
+// Only data sectors are returned.
+std::vector<Sector> decode_mfm_track(const BitStream& track, bool verbose);
 
 /* reverse the ordering of bits in a byte. */
 inline byte reverse_bit_order(Track::byte in)

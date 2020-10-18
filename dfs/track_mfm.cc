@@ -53,34 +53,67 @@ bool check_crc_with_a1s(const std::vector<byte>& data, std::string& error)
   return true;
 }
 
+std::optional<Track::byte> read_byte(const Track::BitStream& bits, size_t& pos,
+				     std::string& error)
+{
+  // An FM-encoded byte occupies 16 bits on the disc, and looks like
+  // this (in the order bits appear on disc):
+  //
+  // first       last
+  // cDcDcDcDcDcDcDcD (c are clock bits, D data)
+  assert(pos > 0u);
+  auto began_at = pos;
+  bool prev_data_bit = bits.getbit(began_at - 1u);
+  unsigned int data=0;
+  for (int bitnum = 0; bitnum < 8; ++bitnum)
+    {
+      if (pos + 2 >= bits.size())
+	{
+	  error = "unexpected end-of-track";
+	  return std::nullopt;
+	}
+      const int clock_bit = bits.getbit(pos++);
+      const int data_bit = bits.getbit(pos++);
+      const int expected_clock = (prev_data_bit || data_bit) ? 0 : 1;
+      prev_data_bit = data_bit;
+
+      if (clock_bit != expected_clock)
+	{
+	  std::ostringstream ss;
+	  ss << "at track bit position " << pos
+	     << " (" << (pos-began_at) << " bits into the data block)"
+	     << ", MFM clock bit was "
+	     << clock_bit << " where " << expected_clock << " was expected";
+	  error = ss.str();
+	  return std::nullopt;
+	}
+      data  = (data  << 1) | data_bit;
+    }
+  return data;
+}
+
+bool copy_mfm_bytes(const Track::BitStream& bits, size_t& thisbit,
+		    size_t n, std::vector<byte>* out,
+		    std::string& error)
+{
+  while (n--)
+    {
+      std::optional<Track::byte> data = read_byte(bits, thisbit, error);
+      if (data)
+	{
+	  out->push_back(*data);
+	  continue;
+	}
+      return false;
+    }
+  return true;
+}
+
 }  // namespace
 
 namespace Track
 {
-IbmMfmDecoder::IbmMfmDecoder(bool verbose)
-  : verbose_(verbose)
-{
-}
-
-
-  bool IbmMfmDecoder::copy_mfm_bytes(const BitStream& bits, size_t& thisbit,
-				     size_t n, std::vector<byte>* out,
-				     std::string& error) const
-  {
-    while (n--)
-      {
-	std::optional<byte> data = read_byte(bits, thisbit, error);
-	if (data)
-	  {
-	    out->push_back(*data);
-	    continue;
-	  }
-	return false;
-      }
-    return true;
-  }
-
-std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
+std::vector<Sector> decode_mfm_track(const BitStream& bits, bool verbose)
 {
   self_test_crc();
 
@@ -126,7 +159,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 	    std::vector<byte> header;
 	    if (copy_mfm_bytes(bits, thisbit, 7, &header, error))
 	      {
-		if (verbose_)
+		if (verbose)
 		  {
 		    std::cerr << "read " << std::dec << header.size()
 			      << " bytes of data:\n";
@@ -143,7 +176,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 		      }
 		  }
 	      }
-	    if (verbose_)
+	    if (verbose)
 	      {
 		std::cerr << "Failed to read sector address: " << error << "\n";
 	      }
@@ -163,7 +196,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 	    if (copy_mfm_bytes(bits, thisbit, sec_size + 3, // see above for extra bytes
 			       &mark_and_data, error))
 	      {
-		if (verbose_)
+		if (verbose)
 		  {
 		    std::cerr << "read " << std::dec << mark_and_data.size()
 			      << " bytes of sector data:\n";
@@ -182,7 +215,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 			std::copy(mark_and_data.begin() + 1,
 				  mark_and_data.begin() + 1 + sec_size,
 				  sec.data.begin());
-			if (verbose_)
+			if (verbose)
 			  {
 			    std::cerr << "Accepting record/sector with address "
 				      << sec.address << "; " << "it has "
@@ -195,7 +228,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 		  }
 		else
 		  {
-		    if (verbose_)
+		    if (verbose)
 		      {
 			std::cerr << "Failed to read sector " << sec.address
 				  << ": " << error << "\n";
@@ -204,7 +237,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 		    continue;
 		  }
 	      }
-	    if (verbose_)
+	    if (verbose)
 	      std::cerr << "Failed to read sector data: " << error << "\n";
 	  }
 	  state = MfmDecodeState::LookingForSectorHeader;
