@@ -496,12 +496,6 @@ std::string HfeFile::description() const
   return ss.str();
 }
 
-void premature_stream_end(DFS::byte opcode)
-{
-  std::cerr << "warning: track data stream ends in the middle of an HFEv3 "
-	    << std::hex << opcode << " instruction\n";
-}
-
 bool is_hfe3_opcode(byte val)
 {
   return (val & OPCODE_MASK) == OPCODE_MASK;
@@ -518,6 +512,14 @@ std::string opcode_name(byte op)
     case RAND_OPCODE: return "rand";
     default: return "(unknown opcode)";
     }
+}
+
+void premature_stream_end(DFS::byte opcode)
+{
+  std::cerr << "warning: track data stream ends in the middle of an HFEv3 0x"
+	    << std::hex << static_cast<unsigned>(opcode)
+	    << " (" << opcode_name(opcode)
+	    << ") instruction\n";
 }
 
 void copy_hfe(bool hfe3, const byte* begin, const byte* end,
@@ -537,9 +539,9 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	    {
 	    case NOP_OPCODE:
 	    case SETINDEX_OPCODE:
-	      std::cerr << "HFEv3: unecpected this_op value "
+	      std::cerr << "HFEv3: unexpected this_op value "
 			<< std::hex << std::setw(2) << std::setfill('0')
-			<< this_op << "\n";
+			<< static_cast<unsigned int>(this_op) << "\n";
 	      this_op = 0;
 	      continue;
 
@@ -547,14 +549,24 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	      // We only care about the sector contents, so ignore the
 	      // change in bit rate.
 	      this_op = 0;
+	      if (DFS::verbose)
+		{
+		  std::cerr << "HFEv3: setbitrate: ignoring value 0x"
+			    << std::setfill('0') << std::hex << skipbits << "\n";
+		}
 	      continue;
 
 	    case SKIPBITS_OPCODE:
 	      {
 		skipbits = in;
+		this_op = 0;
+		if (DFS::verbose)
+		  {
+		  std::cerr << "HFEv3: skipbits: " << skipbits << " bits to skip\n";
+		  }
 		if (in >= 8)
 		  {
-		    std::cerr << "HFEv3: unecpected SKIPBITS argument " << in << "\n";
+		    std::cerr << "HFEv3: unexpected SKIPBITS argument " << in << "\n";
 		    continue;
 		  }
 	      }
@@ -589,6 +601,7 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	       * copy-protection scheme.
 	       */
 	      in = 0;		// has no clock bits, see above.
+	      this_op = 0;
 	      break;
 
 	    default:
@@ -609,10 +622,14 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 			<< std::hex << unsigned(in) << " ("
 			<< opcode_name(in) << ")\n";
 	    }
-	  switch (in & OPCODE_MASK)
+	  switch (in)
 	    {
 	    case NOP_OPCODE:
 	      this_op = 0;  /* takes no argument, so nothing more to do. */
+	      continue;
+
+	    case SKIPBITS_OPCODE:
+	      this_op = SKIPBITS_OPCODE;
 	      continue;
 
 	    case SETINDEX_OPCODE:
@@ -631,7 +648,7 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	      continue;
 
 	    default:
-	      this_op = in & OPCODE_MASK;
+	      this_op = in;
 	      /* Collect argument next time around the loop and
 		 operate on it. */
 	      continue;
@@ -647,6 +664,11 @@ void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	  if (skipbits > 0)
 	    {
 	      --skipbits;
+	      if (DFS::verbose)
+		{
+		  std::cerr << "HFEv3: skipping a bit ("
+			    << std::dec << skipbits << " more to skip)\n";
+		}
 	      continue;
 	    }
 	  int mask = (1 << (7-bitnum));
