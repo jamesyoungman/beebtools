@@ -53,69 +53,6 @@ bool check_crc_with_a1s(const std::vector<byte>& data, std::string& error)
   return true;
 }
 
-class MfmBitStream : public Track::BitStream
-{
-public:
-  explicit MfmBitStream(const std::vector<byte>& data)
-    : BitStream(data)
-  {
-  }
-
-  std::optional<byte> read_byte(size_t& pos, std::string& error) const
-  {
-    // An FM-encoded byte occupies 16 bits on the disc, and looks like
-    // this (in the order bits appear on disc):
-    //
-    // first       last
-    // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-    assert(pos > 0u);
-    auto began_at = pos;
-    bool prev_data_bit = getbit(began_at - 1u);
-    unsigned int data=0;
-    for (int bitnum = 0; bitnum < 8; ++bitnum)
-	{
-	  if (pos + 2 >= size())
-	    {
-	      error = "unexpected end-of-track";
-	      return std::nullopt;
-	    }
-	  const int clock_bit = getbit(pos++);
-	  const int data_bit = getbit(pos++);
-	  const int expected_clock = (prev_data_bit || data_bit) ? 0 : 1;
-	  prev_data_bit = data_bit;
-
-	  if (clock_bit != expected_clock)
-	    {
-	      std::ostringstream ss;
-	      ss << "at track bit position " << pos
-		 << " (" << (pos-began_at) << " bits into the data block)"
-		 << ", MFM clock bit was "
-		 << clock_bit << " where " << expected_clock << " was expected";
-	      error = ss.str();
-	      return std::nullopt;
-	    }
-	  data  = (data  << 1) | data_bit;
-	}
-    return data;
-  }
-
-  bool copy_mfm_bytes(size_t& thisbit, size_t n, std::vector<byte>* out,
-		      std::string& error) const
-  {
-    while (n--)
-	{
-	  std::optional<byte> data = read_byte(thisbit, error);
-	  if (data)
-	    {
-	      out->push_back(*data);
-	      continue;
-	    }
-	  return false;
-	}
-    return true;
-  }
-};
-
 }  // namespace
 
 namespace Track
@@ -125,12 +62,29 @@ IbmMfmDecoder::IbmMfmDecoder(bool verbose)
 {
 }
 
-std::vector<Sector> IbmMfmDecoder::decode(const std::vector<byte>& raw_data)
+
+  bool IbmMfmDecoder::copy_mfm_bytes(const BitStream& bits, size_t& thisbit,
+				     size_t n, std::vector<byte>* out,
+				     std::string& error) const
+  {
+    while (n--)
+      {
+	std::optional<byte> data = read_byte(bits, thisbit, error);
+	if (data)
+	  {
+	    out->push_back(*data);
+	    continue;
+	  }
+	return false;
+      }
+    return true;
+  }
+
+std::vector<Sector> IbmMfmDecoder::decode(const BitStream& bits)
 {
   self_test_crc();
 
   std::vector<Sector> result;
-  const MfmBitStream bits(raw_data);
   size_t bits_avail = bits.size();
   size_t thisbit = 0;
   enum class MfmDecodeState { LookingForSectorHeader, LookingForRecord };
@@ -170,7 +124,7 @@ std::vector<Sector> IbmMfmDecoder::decode(const std::vector<byte>& raw_data)
 	    // byte 6 - CRC byte 2
 	    std::string error;
 	    std::vector<byte> header;
-	    if (bits.copy_mfm_bytes(thisbit, 7, &header, error))
+	    if (copy_mfm_bytes(bits, thisbit, 7, &header, error))
 	      {
 		if (verbose_)
 		  {
@@ -206,8 +160,8 @@ std::vector<Sector> IbmMfmDecoder::decode(const std::vector<byte>& raw_data)
 	    // byte 3 + sec_size: second byte of CRC
 	    std::string error;
 	    std::vector<byte> mark_and_data;
-	    if (bits.copy_mfm_bytes(thisbit, sec_size + 3, // see above for extra bytes
-				    &mark_and_data, error))
+	    if (copy_mfm_bytes(bits, thisbit, sec_size + 3, // see above for extra bytes
+			       &mark_and_data, error))
 	      {
 		if (verbose_)
 		  {

@@ -36,62 +36,6 @@ namespace
 
 namespace Track
 {
-
-  class FmBitStream : public BitStream
-  {
-  public:
-    explicit FmBitStream(const std::vector<byte>& data)
-      : BitStream(data)
-    {
-    }
-
-    std::optional<std::pair<byte, byte>> read_byte(size_t& start) const
-    {
-      // An FM-encoded byte occupies 16 bits on the disc, and looks like
-      // this (in the order bits appear on disc):
-      //
-      // first       last
-      // cDcDcDcDcDcDcDcD (c are clock bits, D data)
-      unsigned int clock=0, data=0;
-      for (int bitnum = 0; bitnum < 8; ++bitnum)
-	{
-	  if (start + 2 >= size())
-	    return std::nullopt;
-
-	  clock = (clock << 1) | getbit(start++);
-	  data  = (data  << 1) | getbit(start++);
-	}
-      return std::make_pair(static_cast<unsigned char>(clock),
-			    static_cast<unsigned char>(data));
-    }
-
-    bool copy_fm_bytes(size_t& thisbit, size_t n, std::vector<byte>* out, bool verbose) const
-    {
-      while (n--)
-	{
-	  auto clock_and_data = read_byte(thisbit);
-	  if (clock_and_data && clock_and_data->first == normal_fm_clock)
-	    {
-	      out->push_back(clock_and_data->second);
-	      continue;
-	    }
-	  if (verbose)
-	    {
-	      if (!clock_and_data)
-		{
-		  std::cerr << "end-of-track while reading data bytes\n";
-		}
-	      else
-		{
-		  std::cerr << "desynced while reading data bytes\n";
-		}
-	    }
-	  return false;
-	}
-      return true;
-    }
-  };
-
 IbmFmDecoder::IbmFmDecoder(bool verbose)
   : verbose_(verbose)
 {
@@ -100,7 +44,7 @@ IbmFmDecoder::IbmFmDecoder(bool verbose)
 
 // Decode a train of FM clock/data bits into a sequence of zero or more
 // sectors.
-std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
+std::vector<Sector> IbmFmDecoder::decode(const BitStream& bits)
 {
   self_test_crc();
 
@@ -109,7 +53,6 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
   // except for the fact that we won't mistake it for part of the sync
   // sequence (which is all just clock bits, all the data bits are
   // zero) or an address mark.
-  const FmBitStream bits(raw_data);
   size_t bits_avail = bits.size();
   size_t thisbit = 0;
 
@@ -211,7 +154,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	  // byte 6 - CRC byte 2
 	  std::vector<byte> id;
 	  id.push_back(byte(id_address_mark));
-	  if (!bits.copy_fm_bytes(thisbit, 6u, &id, verbose_))
+	  if (!copy_fm_bytes(bits, thisbit, 6u, &id, verbose_))
 	    {
 	      if (verbose_)
 		{
@@ -268,7 +211,7 @@ std::vector<Sector> IbmFmDecoder::decode(const std::vector<byte>& raw_data)
 	     byte(discard_record ? deleted_data_address_mark : data_address_mark)
 	    };
 	  sec.data.clear();
-	  if (!bits.copy_fm_bytes(thisbit, size_with_crc, &sec.data, verbose_))
+	  if (!copy_fm_bytes(bits, thisbit, size_with_crc, &sec.data, verbose_))
 	    {
 	      if (verbose_)
 		{

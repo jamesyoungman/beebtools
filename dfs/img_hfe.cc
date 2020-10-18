@@ -778,13 +778,14 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
       // Extract the encoded sectors.
       assert(encoding == ISOIBM_FM_ENCODING || encoding == ISOIBM_MFM_ENCODING);
       std::vector<Sector> track_sectors;
+      Track::BitStream bits(track_stream);
       if (encoding == ISOIBM_FM_ENCODING)
 	{
-	  track_sectors = Track::IbmFmDecoder(DFS::verbose).decode(track_stream);
+	  track_sectors = Track::IbmFmDecoder(DFS::verbose).decode(bits);
 	}
       else
 	{
-	  track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(track_stream);
+	  track_sectors = Track::IbmMfmDecoder(DFS::verbose).decode(bits);
 	}
       if (DFS::verbose)
 	{
