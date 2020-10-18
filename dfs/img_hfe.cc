@@ -520,12 +520,9 @@ std::string opcode_name(byte op)
     }
 }
 
-void copy_hfe(bool hfe3, unsigned char encoding,
-	      const byte* begin, const byte* end,
+void copy_hfe(bool hfe3, const byte* begin, const byte* end,
 	      std::back_insert_iterator<std::vector<byte>> dest)
 {
-  // I don't know how EMU_FM_ENCODING differs from ISOIBM_FM_ENCODING.
-  int take_this_bit = (encoding != ISOIBM_FM_ENCODING);
   int got_bits = 0;
   byte out = 0;
   byte this_op = 0;
@@ -652,19 +649,12 @@ void copy_hfe(bool hfe3, unsigned char encoding,
 	      --skipbits;
 	      continue;
 	    }
-	  if (take_this_bit)
-	    {
-	      int mask = (1 << (7-bitnum));
-	      const int bit = in & mask ? 0x80 : 0;
-	      /* the output bit might be a clock bit or it might be
-		 data, we worry about that separately. */
-	      out = static_cast<byte>((out >> 1 ) | bit);
-	      ++got_bits;
-	    }
-	  if (encoding == ISOIBM_FM_ENCODING)
-	    {
-	      take_this_bit = !take_this_bit;
-	    }
+	  int mask = (1 << (7-bitnum));
+	  const int bit = in & mask ? 0x80 : 0;
+	  /* the output bit might be a clock bit or it might be
+	     data, we worry about that separately. */
+	  out = static_cast<byte>((out >> 1 ) | bit);
+	  ++got_bits;
 	}
       if (8 == got_bits)
 	{
@@ -764,7 +754,7 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 #if ULTRA_VERBOSE
 	  auto oldsize = track_stream.size();
 #endif
-	  copy_hfe(3 == hfe_version_, encoding,
+	  copy_hfe(3 == hfe_version_,
 		   raw_data.data() + begin_offset,
 		   raw_data.data() + end_offset,
 		   std::back_inserter(track_stream));
@@ -793,8 +783,11 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 
       // Extract the encoded sectors.
       assert(encoding == ISOIBM_FM_ENCODING || encoding == ISOIBM_MFM_ENCODING);
-      Track::BitStream bits(track_stream);
-      auto decoder = (encoding == ISOIBM_FM_ENCODING ? decode_fm_track : decode_mfm_track);
+      const bool is_fm = encoding == ISOIBM_FM_ENCODING;
+      const size_t first_bit = is_fm ? 1 : 0;
+      const size_t stride = is_fm ? 2 : 1;
+      Track::BitStream bits(track_stream, first_bit, stride);
+      auto decoder = (is_fm ? decode_fm_track : decode_mfm_track);
       const std::vector<Sector> track_sectors = sorted_sectors(decoder(bits, DFS::verbose));
 
       if (DFS::verbose)

@@ -71,15 +71,25 @@ struct Sector
 class BitStream
 {
 public:
-  explicit BitStream(const std::vector<byte>& data)
-    : input_(data), size_(data.size() * 8)
+  explicit BitStream(const std::vector<byte>& data, size_t first_bit, size_t stride)
+    : input_(data), raw_bit_size_(data.size() * 8), first_(first_bit), stride_(stride)
   {
+  }
+
+  size_t raw_pos(size_t bitpos) const
+  {
+    return bitpos * stride_ + first_;
   }
 
   bool getbit(size_t bitpos) const
   {
-    auto i = bitpos / 8;
-    auto b = bitpos % 8;
+    return rawbit(raw_pos(bitpos));
+  }
+
+  bool rawbit(size_t raw_bitpos) const
+  {
+    const size_t i = raw_bitpos / 8;
+    const size_t b = raw_bitpos % 8;
     return input_[i] & (1 << b);
   }
 
@@ -89,15 +99,16 @@ public:
   {
     const uint64_t needle = mask & val;
     uint64_t shifter = 0, got = 0;
-    for (size_t i = start; i < size_; ++i)
+    size_t i_cooked = start;
+    for (size_t i = raw_pos(start); i < raw_bit_size_; ++i_cooked, i += stride_)
       {
-	shifter = (shifter << 1u) | (getbit(i) ? 1u : 0u);
+	shifter = (shifter << 1u) | (rawbit(i) ? 1u : 0u);
 	got = (got << 1u) | 1u;
 	if ((mask & got) == mask)
 	  {
 	    // We have enough bits for the comparison to be valid.
 	    if ((mask & shifter) == needle)
-	      return std::make_pair(i, shifter);
+	      return std::make_pair(i_cooked, shifter);
 	  }
       }
     return std::nullopt;
@@ -105,12 +116,14 @@ public:
 
   size_t size() const
   {
-    return size_;
+    return (raw_bit_size_ - first_) / stride_;
   }
 
 private:
   const std::vector<byte>& input_;
-  const size_t size_;
+  const size_t raw_bit_size_;
+  const size_t first_;
+  const size_t stride_;
 };
 
 // decode_fm_track() decodes an FM data stream (as clock/data bit pairs)
