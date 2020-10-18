@@ -13,7 +13,7 @@
 //   See the License for the specific language governing permissions and
 //   limitations under the License.
 //
-#ifndef INC_TRACK_H /* -*- Mode: C++ -*- */
+#ifndef INC_TRACK_H
 #define INC_TRACK_H 1
 
 #include <iosfwd>		// for ostream

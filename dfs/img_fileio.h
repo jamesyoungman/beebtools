@@ -85,6 +85,3 @@ namespace DFS
 }
 
 #endif
-// Local Vartiables:
-// Mode: C++
-// End:

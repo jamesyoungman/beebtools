@@ -243,6 +243,3 @@ namespace std
 }  // namespace std
 
 #endif
-// Local Variables:
-// Mode: C++
-// End:
