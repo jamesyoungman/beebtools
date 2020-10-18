@@ -113,7 +113,7 @@ private:
   const size_t size_;
 };
 
-// decode_fm_track() decodes an FM data stream (as clock/data byte pairs)
+// decode_fm_track() decodes an FM data stream (as clock/data bit pairs)
 // into a sector. If no more sectors are available in source, nullopt
 // is returned.  source must be initialized such that the first byte
 // it returns is after the index mark and before the sync field.
@@ -121,7 +121,7 @@ private:
 // Only data sectors are returned.
 std::vector<Sector> decode_fm_track(const BitStream& track, bool verbose);
 
-// decode_mfm_track() decodes an MFM data stream (as clock/data byte
+// decode_mfm_track() decodes an MFM data stream (as clock/data bit
 // pairs) into a sector. source must be initialized such that the
 // first byte it returns is after the index mark and before the sync
 // field.
