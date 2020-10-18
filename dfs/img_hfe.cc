@@ -60,6 +60,8 @@
 namespace
 {
 using Track::Sector;
+using Track::decode_fm_track;
+using Track::decode_mfm_track;
 using Track::SectorAddress;
 using Track::byte;
 
@@ -677,6 +679,20 @@ void copy_hfe(bool hfe3, unsigned char encoding,
     }
 }
 
+// Sort the sectors by address.
+std::vector<Sector>
+sorted_sectors(std::vector<Sector>&& track_sectors)
+{
+  std::vector<Sector> result;
+  std::sort(track_sectors.begin(), track_sectors.end(),
+	    [](const Sector& a, const Sector& b)
+	    {
+	      return a.address < b.address;
+	    });
+  std::swap(result, track_sectors);
+  return result;
+}
+
 std::vector<Sector>
 HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 			  unsigned int side)
@@ -777,16 +793,10 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 
       // Extract the encoded sectors.
       assert(encoding == ISOIBM_FM_ENCODING || encoding == ISOIBM_MFM_ENCODING);
-      std::vector<Sector> track_sectors;
       Track::BitStream bits(track_stream);
-      if (encoding == ISOIBM_FM_ENCODING)
-	{
-	  track_sectors = decode_fm_track(bits, DFS::verbose);
-	}
-      else
-	{
-	  track_sectors = decode_mfm_track(bits, DFS::verbose);
-	}
+      auto decoder = (encoding == ISOIBM_FM_ENCODING ? decode_fm_track : decode_mfm_track);
+      const std::vector<Sector> track_sectors = sorted_sectors(decoder(bits, DFS::verbose));
+
       if (DFS::verbose)
 	{
 	  std::cerr << "Found " << track_sectors.size() << " sectors on track "
@@ -804,13 +814,6 @@ HfeFile::read_all_sectors(const std::vector<PicTrack>& lut,
 	     << " sectors; this is not supported";
 	  throw UnsupportedHfeFile(ss.str());
 	}
-
-      // Sort the sectors by address.
-      std::sort(track_sectors.begin(), track_sectors.end(),
-		[](const Sector& a, const Sector& b)
-		{
-		  return a.address < b.address;
-		});
 
       std::string error;
       if (!DFS::check_track_is_supported(track_sectors, track, side, DFS::SECTOR_BYTES, DFS::verbose, error))
